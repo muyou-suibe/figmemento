@@ -21,7 +21,8 @@ test("server-renders the PhotoGift storefront", async () => {
   const html = await response.text();
   assert.match(html, /<title>PhotoGift — Little pieces of the people you love<\/title>/i);
   assert.match(html, /Your favorite moments/);
-  assert.match(html, /Custom Couple Figure/);
+  assert.match(html, /Loading the gift collection/);
+  assert.doesNotMatch(html, /Custom Couple Figure/);
   assert.match(html, /Gift categories/);
   assert.match(html, /How it works/);
   assert.doesNotMatch(html, /Your site is taking shape|codex-preview|react-loading-skeleton/i);

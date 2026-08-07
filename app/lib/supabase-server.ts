@@ -1,15 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY;
+import { readSupabaseServerConfig } from "../config/server";
 
 export function getSupabaseServerClient() {
-  if (!supabaseUrl || !supabaseSecretKey) {
-    throw new Error("Supabase server environment variables are missing.");
-  }
+  const { url, secretKey } = readSupabaseServerConfig();
 
-  return createClient(supabaseUrl, supabaseSecretKey, {
+  return createClient(url, secretKey, {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
   });
 }
-

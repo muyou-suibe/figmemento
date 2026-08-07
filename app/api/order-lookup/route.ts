@@ -1,4 +1,6 @@
 import { getSupabaseServerClient } from "../../lib/supabase-server";
+import { readUploadConfig } from "../../config/server";
+import { omitPrivateOrderLookupFields } from "../../application/order-lookup";
 
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => ({}))) as { orderNumber?: unknown; email?: unknown };
@@ -23,13 +25,13 @@ export async function POST(request: Request) {
   }
   if (!data) return Response.json({ error: "We could not find an order with those details." }, { status: 404 });
 
-  const bucket = process.env.SUPABASE_UPLOAD_BUCKET || "photogift-uploads";
+  const { bucket } = readUploadConfig();
   const items = await Promise.all(((data.order_items || []) as Array<{ product_name: string; quantity: number; customization: { digitalDeliveryPath?: string; digitalDeliveryName?: string } | null; products?: { is_digital?: boolean } | null }>).map(async (item) => {
     const path = item.customization?.digitalDeliveryPath;
     const canDownload = Boolean(item.products?.is_digital && path && data.payment_status === "paid" && ["quality_check", "shipped", "delivered"].includes(data.fulfillment_status));
     const signed = canDownload ? await supabase.storage.from(bucket).createSignedUrl(path!, 60 * 15) : null;
     return { product_name: item.product_name, quantity: item.quantity, is_digital: Boolean(item.products?.is_digital), digital_delivery_name: item.customization?.digitalDeliveryName || null, digital_download_url: signed?.data?.signedUrl || null };
   }));
-  const safeOrder = Object.fromEntries(Object.entries(data).filter(([key]) => key !== "order_items" && key !== "id"));
+  const safeOrder = omitPrivateOrderLookupFields(data);
   return Response.json({ order: { ...safeOrder, items } });
 }

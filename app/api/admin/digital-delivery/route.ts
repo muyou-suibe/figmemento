@@ -1,5 +1,6 @@
 import { getSessionCookieName, isValidAdminSession } from "../../../lib/admin-auth";
 import { getSupabaseServerClient } from "../../../lib/supabase-server";
+import { readUploadConfig } from "../../../config/server";
 
 const maxBytes = 15 * 1024 * 1024;
 
@@ -27,7 +28,7 @@ export async function POST(request: Request) {
   if (!item) return Response.json({ error: "Order item not found." }, { status: 404 });
   if (!(item.products as { is_digital?: boolean } | null)?.is_digital) return Response.json({ error: "This order item is not digital." }, { status: 409 });
   const storageKey = `deliveries/${orderNumber}/${orderItemId}/${crypto.randomUUID()}.${extension}`;
-  const { error: uploadError } = await supabase.storage.from(process.env.SUPABASE_UPLOAD_BUCKET || "photogift-uploads").upload(storageKey, new Uint8Array(await file.arrayBuffer()), { contentType: file.type || "application/octet-stream", upsert: false });
+  const { error: uploadError } = await supabase.storage.from(readUploadConfig().bucket).upload(storageKey, new Uint8Array(await file.arrayBuffer()), { contentType: file.type || "application/octet-stream", upsert: false });
   if (uploadError) return Response.json({ error: "Could not upload digital delivery." }, { status: 500 });
   const { error: updateError } = await supabase.from("order_items").update({ customization: { ...(item.customization || {}), digitalDeliveryPath: storageKey, digitalDeliveryName: file.name } }).eq("id", orderItemId).eq("order_id", order.id);
   if (updateError) return Response.json({ error: "Could not save digital delivery." }, { status: 500 });

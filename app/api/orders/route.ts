@@ -1,25 +1,14 @@
 import { getSupabaseServerClient } from "../../lib/supabase-server";
+import { isStripeConfigured, readStripeServerConfig } from "../../config/server";
+import { parseOrderRequestItem } from "../../domain/order";
+import type { OrderRequestItem } from "../../domain/order";
+import type { StripeCheckoutSession } from "../../domain/payment";
+import { calculateCouponDiscount, calculateServerProductSubtotal } from "../../application/pricing";
 
 const freeShippingCents = 4900;
 const standardShippingCents = 799;
 
-type StripeSession = { id: string; url: string | null };
-
-type OrderRequestItem = {
-  slug: string;
-  quantity?: number;
-  customization?: {
-    note?: string;
-    photoPath?: string;
-    photoMeta?: { originalFilename?: unknown; contentType?: unknown; fileSizeBytes?: unknown; width?: unknown; height?: unknown; quality?: unknown };
-  };
-};
-
 type Coupon = { code: string; discount_type: "percent" | "fixed"; discount_value: number; min_subtotal_cents: number; max_redemptions: number | null; redemption_count: number; active: boolean; expires_at: string | null };
-
-function couponDiscount(coupon: Coupon, subtotalCents: number): number {
-  return Math.min(subtotalCents, coupon.discount_type === "percent" ? Math.floor(subtotalCents * coupon.discount_value / 100) : coupon.discount_value);
-}
 
 function isEmail(value: unknown): value is string {
   return typeof value === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
@@ -32,9 +21,8 @@ async function createStripeCheckout(input: {
   shippingCents: number;
   discountCents: number;
   siteUrl: string;
-}): Promise<StripeSession> {
-  const secretKey = process.env.STRIPE_SECRET_KEY;
-  if (!secretKey) throw new Error("STRIPE_NOT_CONFIGURED");
+}): Promise<StripeCheckoutSession> {
+  const { secretKey } = readStripeServerConfig();
 
   const params = new URLSearchParams({
     mode: "payment",
@@ -69,7 +57,7 @@ async function createStripeCheckout(input: {
     headers: { Authorization: `Bearer ${secretKey}`, "Content-Type": "application/x-www-form-urlencoded" },
     body: params,
   });
-  const result = (await response.json()) as StripeSession & { error?: { message?: string } };
+  const result = (await response.json()) as StripeCheckoutSession & { error?: { message?: string } };
   if (!response.ok || !result.id || !result.url) throw new Error(result.error?.message || "Stripe checkout could not be created");
   return result;
 }
@@ -86,7 +74,11 @@ export async function POST(request: Request) {
       return Response.json({ error: "Your bag is empty or too large to check out." }, { status: 400 });
     }
 
-    const requestedItems = body.items as OrderRequestItem[];
+    const parsedItems = (body.items as unknown[]).map(parseOrderRequestItem);
+    if (parsedItems.some((item) => item === null)) {
+      return Response.json({ error: "One of the products in your bag is invalid." }, { status: 400 });
+    }
+    const requestedItems = parsedItems.filter((item): item is OrderRequestItem => item !== null);
     const quantities = new Map<string, number>();
     for (const item of requestedItems) {
       if (!item || typeof item.slug !== "string" || !/^[a-z0-9-]+$/.test(item.slug)) {
@@ -121,7 +113,7 @@ export async function POST(request: Request) {
       return Response.json({ error: "A product in your bag is no longer available." }, { status: 409 });
     }
 
-    const subtotalCents = products.reduce((sum, product) => sum + product.price_cents * (quantities.get(product.slug) ?? 1), 0);
+    const subtotalCents = calculateServerProductSubtotal(products, (slug) => quantities.get(slug) ?? 1);
     let discountCents = 0;
     let coupon: Coupon | null = null;
     const couponCode = typeof body.couponCode === "string" ? body.couponCode.trim().toUpperCase() : "";
@@ -131,7 +123,7 @@ export async function POST(request: Request) {
       coupon = foundCoupon as Coupon | null;
       if (!coupon || !coupon.active || (coupon.expires_at && new Date(coupon.expires_at).getTime() <= Date.now()) || (coupon.max_redemptions !== null && coupon.redemption_count >= coupon.max_redemptions)) return Response.json({ error: "This coupon is unavailable." }, { status: 409 });
       if (subtotalCents < coupon.min_subtotal_cents) return Response.json({ error: `This coupon requires a subtotal of at least $${(coupon.min_subtotal_cents / 100).toFixed(2)}.` }, { status: 409 });
-      discountCents = couponDiscount(coupon, subtotalCents);
+      discountCents = calculateCouponDiscount(coupon, subtotalCents);
     }
     const shippingCents = subtotalCents >= freeShippingCents ? 0 : standardShippingCents;
     const orderNumber = `PG-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 6).toUpperCase()}`;
@@ -182,7 +174,7 @@ export async function POST(request: Request) {
     }
 
     let checkoutUrl: string | null = null;
-    if (process.env.STRIPE_SECRET_KEY) {
+    if (isStripeConfigured()) {
       const session = await createStripeCheckout({
         orderNumber: order.order_number,
         email: body.email,

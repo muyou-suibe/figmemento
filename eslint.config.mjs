@@ -12,6 +12,12 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Retained D1/Drizzle example and template material is not part of the
+    // active PhotoGift Supabase application.
+    "db/**",
+    "drizzle/**",
+    "drizzle.config.ts",
+    "examples/d1/**",
   ]),
 ]);
 

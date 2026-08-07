@@ -1,20 +1,8 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import type { OrderLookupResult } from "../domain/order";
 import styles from "./track-order.module.css";
-
-type OrderResult = {
-  order_number: string;
-  payment_status: string;
-  fulfillment_status: string;
-  tracking_carrier: string | null;
-  tracking_number: string | null;
-  tracking_status: string | null;
-  created_at: string;
-  total_cents: number;
-  currency: string;
-  items: Array<{ product_name: string; quantity: number; is_digital: boolean; digital_delivery_name: string | null; digital_download_url: string | null }>;
-};
 
 function label(value: string): string {
   return value.replaceAll("_", " ").replace(/\b\w/g, (character) => character.toUpperCase());
@@ -25,7 +13,7 @@ const fulfillmentSteps = ["awaiting_review", "in_production", "quality_check", "
 export function TrackOrderForm() {
   const [orderNumber, setOrderNumber] = useState("");
   const [email, setEmail] = useState("");
-  const [order, setOrder] = useState<OrderResult | null>(null);
+  const [order, setOrder] = useState<OrderLookupResult | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -47,7 +35,7 @@ export function TrackOrderForm() {
     setOrder(null);
     try {
       const response = await fetch("/api/order-lookup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ orderNumber: normalizedOrderNumber, email: normalizedEmail }) });
-      const result = await response.json() as { error?: string; order?: OrderResult };
+      const result = await response.json() as { error?: string; order?: OrderLookupResult };
       if (!response.ok || !result.order) throw new Error(result.error || "Order lookup failed.");
       setOrder(result.order);
       setCopied(false);
