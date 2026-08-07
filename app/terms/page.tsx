@@ -1,0 +1,7 @@
+import { InfoPage, Section } from "../info-page";
+
+export const metadata = { title: "Terms of Service — PhotoGift", description: "Terms for using PhotoGift and ordering personalized keepsakes." };
+
+export default function TermsPage() {
+  return <InfoPage eyebrow="PhotoGift" title="Terms of service" intro="These MVP terms describe the basic conditions for using the store and ordering personalized products."><Section title="Orders and payment"><p>Orders are accepted subject to product availability and successful payment authorization. Prices, shipping fees, and applicable taxes are shown during checkout. An order is not confirmed until payment is completed.</p></Section><Section title="Customer content"><p>You confirm that you have the right to upload the photos and instructions you provide, and that they do not infringe another person’s rights or contain unlawful content. We may reject content that cannot reasonably be fulfilled.</p></Section><Section title="Personalized products"><p>Personalized products may contain small variations because they are made from customer-provided photos and production processes. We review the submitted details before production where practical.</p></Section><Section title="Acceptable use"><p>Do not misuse the store, attempt unauthorized access, submit malicious files, or use the service to create unlawful or harmful content.</p></Section><Section title="Contact"><p>Questions about an order or these terms can be sent to hello@photogift.example.</p></Section></InfoPage>;
+}
