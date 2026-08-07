@@ -1,5 +1,6 @@
 import { getSessionCookieName, isValidAdminSession } from "../../../lib/admin-auth";
 import { getSupabaseServerClient } from "../../../lib/supabase-server";
+import { readUploadConfig } from "../../../config/server";
 
 function cookieValue(request: Request, name: string): string | null {
   const cookie = request.headers.get("cookie")?.split(";").find((part) => part.trim().startsWith(`${name}=`));
@@ -17,7 +18,7 @@ export async function POST(request: Request) {
   const dryRun = body.dryRun !== false;
   const olderThanHours = typeof body.olderThanHours === "number" && Number.isFinite(body.olderThanHours) ? Math.min(Math.max(Math.floor(body.olderThanHours), 24), 24 * 30) : 24;
   const cutoff = Date.now() - olderThanHours * 60 * 60 * 1000;
-  const bucket = process.env.SUPABASE_UPLOAD_BUCKET || "photogift-uploads";
+  const { bucket } = readUploadConfig();
   const supabase = getSupabaseServerClient();
 
   try {
@@ -35,7 +36,7 @@ export async function POST(request: Request) {
       if (typeof customization?.photoPath === "string") referenced.add(customization.photoPath);
     }
 
-    const files: Array<{ name: string; created_at?: string }> = [];
+    const files: Array<{ name: string; created_at?: string | null }> = [];
     for (let offset = 0; offset < 5000; offset += 1000) {
       const { data, error } = await supabase.storage.from(bucket).list("drafts", { limit: 1000, offset, sortBy: { column: "created_at", order: "asc" } });
       if (error) throw error;

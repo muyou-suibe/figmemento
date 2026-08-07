@@ -1,53 +1,19 @@
 import { getSupabaseServerClient } from "../../../lib/supabase-server";
-
-const signatureToleranceSeconds = 300;
-
-function safeEqual(left: string, right: string): boolean {
-  if (left.length !== right.length) return false;
-  let difference = 0;
-  for (let index = 0; index < left.length; index += 1) {
-    difference |= left.charCodeAt(index) ^ right.charCodeAt(index);
-  }
-  return difference === 0;
-}
-
-async function verifyStripeSignature(payload: string, header: string, secret: string): Promise<boolean> {
-  const values = header.split(",").reduce<Record<string, string[]>>((result, part) => {
-    const [key, value] = part.split("=", 2);
-    if (key && value) result[key] = [...(result[key] ?? []), value];
-    return result;
-  }, {});
-  const timestampValue = values.t?.[0];
-  const signatures = values.v1 ?? [];
-  const timestamp = Number(timestampValue);
-  if (!timestampValue || !Number.isFinite(timestamp) || signatures.length === 0) return false;
-  if (Math.abs(Date.now() / 1000 - timestamp) > signatureToleranceSeconds) return false;
-
-  const encoder = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    "raw",
-    encoder.encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
-  const digest = await crypto.subtle.sign("HMAC", key, encoder.encode(`${timestamp}.${payload}`));
-  const expected = [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
-  return signatures.some((signature) => safeEqual(signature, expected));
-}
-
-type StripeSession = {
-  id: string;
-  payment_status?: string;
-  client_reference_id?: string | null;
-  metadata?: { order_number?: string };
-  payment_intent?: string | null;
-};
+import type { StripeWebhookEvent } from "../../../domain/payment";
+import { readStripeWebhookConfig, ServerConfigurationError } from "../../../config/server";
+import { decideExistingWebhookAction, verifyStripeSignature } from "../../../application/stripe-webhook";
 
 export async function POST(request: Request) {
-  const secret = process.env.STRIPE_WEBHOOK_SECRET;
+  let secret: string;
+  try {
+    secret = readStripeWebhookConfig().secret;
+  } catch (error) {
+    if (error instanceof ServerConfigurationError) {
+      return Response.json({ error: "Stripe webhook is not configured." }, { status: 503 });
+    }
+    throw error;
+  }
   const signature = request.headers.get("stripe-signature");
-  if (!secret) return Response.json({ error: "Stripe webhook is not configured." }, { status: 503 });
   if (!signature) return Response.json({ error: "Missing Stripe signature." }, { status: 400 });
 
   const payload = await request.text();
@@ -56,7 +22,7 @@ export async function POST(request: Request) {
       return Response.json({ error: "Invalid Stripe signature." }, { status: 400 });
     }
 
-    const event = JSON.parse(payload) as { type?: string; data?: { object?: StripeSession } };
+    const event = JSON.parse(payload) as StripeWebhookEvent;
     if (event.type !== "checkout.session.completed" && event.type !== "checkout.session.expired") {
       return Response.json({ received: true });
     }
@@ -83,10 +49,15 @@ export async function POST(request: Request) {
     }
 
     const existingOrder = bySession.data ?? (orderNumber ? (await supabase.from("orders").select("id, payment_status, status").eq("order_number", orderNumber).maybeSingle()).data : null);
-    if (event.type === "checkout.session.completed") {
+    const action = decideExistingWebhookAction({
+      eventType: event.type,
+      paymentStatus: existingOrder?.payment_status,
+      orderStatus: existingOrder?.status,
+    });
+    if (action === "duplicate") return Response.json({ received: true, duplicate: true });
+    if (action === "complete") {
       // Webhooks can be retried. Once payment is confirmed, a replay must not
       // move the order backwards or trigger downstream work a second time.
-      if (existingOrder?.payment_status === "paid") return Response.json({ received: true, duplicate: true });
       const update: Record<string, string> = {
         status: "paid",
         payment_status: "paid",
@@ -95,7 +66,7 @@ export async function POST(request: Request) {
       if (session.payment_intent) update.stripe_payment_intent_id = session.payment_intent;
       const { error } = await supabase.from("orders").update(update).eq("id", orderId).neq("payment_status", "paid");
       if (error) throw error;
-    } else if (event.type === "checkout.session.expired") {
+    } else if (action === "expire") {
       // An expired checkout must never cancel an order that was already paid
       // by a delayed or replayed completed event.
       const { error } = await supabase

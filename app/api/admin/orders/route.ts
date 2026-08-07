@@ -53,7 +53,7 @@ export async function PATCH(request: Request) {
     if (error) return Response.json({ error: "Could not update photo review." }, { status: 500 });
     const { error: uploadReviewError } = await supabase.from("order_uploads").update({ review_status: body.photoReviewStatus }).eq("order_item_id", body.orderItemId);
     if (uploadReviewError) return Response.json({ error: "Could not update uploaded photo review." }, { status: 500 });
-    await writeOrderLog({ orderId: order.id, orderItemId: body.orderItemId, action: "photo_review", toValue: String(body.photoReviewStatus) });
+    await writeOrderLog({ orderId: order.id, orderItemId: typeof body.orderItemId === "string" ? body.orderItemId : undefined, action: "photo_review", toValue: String(body.photoReviewStatus) });
   }
   if (hasDigitalDeliveryUpdate && !hasPhotoReviewUpdate) {
     const { data: item, error: itemError } = await supabase.from("order_items").select("customization, products(is_digital)").eq("id", body.orderItemId).eq("order_id", order.id).maybeSingle();

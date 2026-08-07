@@ -1,100 +1,100 @@
-# vinext-starter
+# PhotoGift
 
-A clean full-stack starter running on
-[vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and
-Drizzle support.
+PhotoGift is a personalized-gift ecommerce MVP built with a Next.js-compatible App Router, React, TypeScript, vinext/Vite, Cloudflare Workers, Supabase PostgreSQL, private object storage, and Stripe Checkout.
+
+The confirmed product baseline is [`独立站构建项目需求.md`](./独立站构建项目需求.md). OpenSpec changes under `openspec/changes/` control implementation scope.
+
+## Current architecture
+
+- `app/domain/` contains provider-neutral contracts for the existing Product, Cart, Customization, Upload, Order, and Payment payloads.
+- `app/application/` contains existing use-case logic that can be tested without live services.
+- `app/infrastructure/` contains Supabase and explicit fixture adapters.
+- `app/config/` separates browser-safe configuration from server-only secrets and validates integrations when they are used.
+- `app/api/` contains the current product, upload, coupon, order, Stripe webhook, order-lookup, and admin transport routes.
+- Supabase PostgreSQL is the authoritative MVP business database. PhotoGift business persistence does not use D1 or Drizzle.
+- vinext/Vite builds the application for the Cloudflare Worker entry in `worker/index.ts`.
+
+This foundation does not add the future Product/SKU schema, customer authentication, PayPal, production preview, shipping rules, or new Stripe validation behavior.
 
 ## Prerequisites
 
 - Node.js `>=22.13.0`
+- npm
+- A Supabase project when using the authoritative product and business-data source
 
-## Quick Start
+## Local setup
 
 ```bash
 npm install
+cp .env.example .env.local
 npm run dev
+```
+
+Keep real credentials in ignored `.env*` files or in the hosting provider's runtime-secret configuration. Never commit them.
+
+## Product source policy
+
+Production always uses Supabase for product data. A missing Supabase configuration or failed product query produces an explicit unavailable state; the application never silently substitutes hardcoded products.
+
+For deterministic local UI work, fixtures may be selected explicitly in a non-production `.env.local`:
+
+```bash
+PHOTOGIFT_PRODUCT_SOURCE=fixture
+```
+
+Fixture selection is rejected when `NODE_ENV=production`. Tests inject fixture repositories directly and do not read a developer's `.env.local`.
+
+## Environment boundaries
+
+Browser-safe values:
+
+- `NEXT_PUBLIC_SITE_URL`
+- `NEXT_PUBLIC_BRAND_NAME`
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` (reserved for the current checkout UI boundary)
+
+Server-only values:
+
+- `SUPABASE_SECRET_KEY`
+- `SUPABASE_UPLOAD_BUCKET`
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `ADMIN_PASSWORD`
+- `PHOTOGIFT_PRODUCT_SOURCE`
+
+Additional R2, Resend, and tracking variables in `.env.example` are placeholders for later approved changes; C0 does not integrate them.
+
+Cloudflare may inject server secrets after compilation. Modules therefore validate each required secret before the affected integration is first used, rather than requiring every secret during the production build.
+
+## Verification gates
+
+```bash
+npm run lint
+npm run typecheck
+npm run test:offline
 npm run build
+npm run verify
 ```
 
-This starter does not use `wrangler.jsonc`.
+`test:offline` uses controlled fakes and fixtures. It must not call live Supabase, Stripe, PayPal, Resend, 17TRACK, or other third-party services. Each gate remains separately runnable so failures identify their owner.
 
-## Included Shape
+## Database migrations
 
-- edit site code under `app/`
-- `.openai/hosting.json` declares optional Sites D1 and R2 bindings
-- `vite.config.ts` simulates declared bindings for local development
-- `db/schema.ts` starts intentionally empty
-- `examples/d1/` contains an optional D1 example surface
-- `drizzle.config.ts` supports local migration generation when needed
+Future business migrations use timestamped, ordered SQL under `supabase/migrations/`. See [`docs/database-migrations.md`](./docs/database-migrations.md) for baseline reconciliation, RLS/index/grant verification, deployment ordering, and rollback guidance.
 
-## Workspace Auth Headers
+The existing `supabase/schema.sql`, `seed.sql`, `coupons.sql`, and `operations.sql` files are legacy bootstrap inputs. They are not proof of the connected project's applied state and are not the template for new migrations. C0 creates or applies no business migration.
 
-Signed-in visitors receive both `oai-authenticated-user-id` and `oai-authenticated-user-email`. Private Sites require every visitor to sign in; public Sites may also have anonymous visitors, for whom neither header is present.
+## D1 and Drizzle status
 
-The user ID is stable for the same user on the same Site and different across Sites. Email and name are intended for display or contact purposes.
+The Cloudflare runtime support in `vite.config.ts`, `worker/index.ts`, `build/sites-vite-plugin.ts`, and `.openai/hosting.json` remains active. The optional D1 branch in `vite.config.ts` is retained but currently has no configured binding.
 
-SIWC-authenticated workspace sites may also receive
-`oai-authenticated-user-full-name` when the user's SIWC profile has a non-empty
-`name` claim. The full-name value is percent-encoded UTF-8 and is accompanied by
-`oai-authenticated-user-full-name-encoding: percent-encoded-utf-8`.
+Root D1/Drizzle template files are retained as inactive material and excluded from PhotoGift compilation, linting, package scripts, dependencies, and deployment output. `examples/d1/` is explicitly example-only and is not part of PhotoGift's business architecture. See [`docs/d1-drizzle-inventory.md`](./docs/d1-drizzle-inventory.md).
 
-Treat the full name as optional and fall back to email when it is absent:
+## Storage status
 
-```tsx
-import { headers } from "next/headers";
+The prototype currently uses private Supabase Storage operations. The final choice between Supabase Storage and Cloudflare R2 is intentionally unresolved and must be made by a later private-upload/storage OpenSpec change. C0 does not make that architecture decision.
 
-export default async function Home() {
-  const requestHeaders = await headers();
-  const userId = requestHeaders.get("oai-authenticated-user-id");
-  const email = requestHeaders.get("oai-authenticated-user-email");
-  const encodedFullName = requestHeaders.get("oai-authenticated-user-full-name");
-  const fullName =
-    encodedFullName &&
-    requestHeaders.get("oai-authenticated-user-full-name-encoding") ===
-      "percent-encoded-utf-8"
-      ? decodeURIComponent(encodedFullName)
-      : null;
+## Deferred work
 
-  const displayName = fullName ?? email;
-  // ...
-}
-```
-
-## Optional Dispatch-Owned ChatGPT Sign-In
-
-Import the ready-to-use helpers from `app/chatgpt-auth.ts` when the site needs
-optional or required ChatGPT sign-in:
-
-- Use `getChatGPTUser()` for optional signed-in UI.
-- Use `requireChatGPTUser(returnTo)` for server-rendered pages that should send
-  anonymous visitors through Sign in with ChatGPT.
-- Use `chatGPTSignInPath(returnTo)` and `chatGPTSignOutPath(returnTo)` for
-  browser links or actions.
-- Pass a same-origin relative `returnTo` path for the destination after sign-in
-  or sign-out. The helper validates and safely encodes it.
-- Mark protected pages with `export const dynamic = "force-dynamic"` because
-  they depend on per-request identity headers.
-
-Dispatch owns `/signin-with-chatgpt`, `/signout-with-chatgpt`, `/callback`, the
-OAuth cookies, and identity header injection. Do not implement app routes for
-those reserved paths. Routes that do not import and call the helper remain
-anonymous-compatible.
-
-SIWC establishes identity only; it does not prove workspace membership. Use the
-Sites hosting platform's access policy controls for workspace-wide restrictions,
-or enforce explicit server-side membership or allowlist checks.
-
-Use SIWC for account pages, user-specific dashboards, saved records, and write
-actions tied to the current ChatGPT user. Leave public content anonymous.
-
-## Useful Commands
-
-- `npm run dev`: start local development
-- `npm run build`: verify the vinext build output
-- `npm test`: build the starter and verify its rendered loading skeleton
-- `npm run db:generate`: generate Drizzle migrations after schema changes
-
-## Learn More
-
-- [vinext Documentation](https://github.com/cloudflare/vinext)
-- [Drizzle D1 Guide](https://orm.drizzle.team/docs/get-started/d1-new)
+Known prototype gaps are listed in [`docs/deferred-assumptions.md`](./docs/deferred-assumptions.md). In particular, Stripe webhook expected amount/currency verification is deferred to `integrate-stripe-and-paypal-payments` and is not implemented by this foundation change.

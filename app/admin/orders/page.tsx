@@ -9,6 +9,7 @@ import { AdminTrackingControls } from "../AdminTrackingControls";
 import { AdminPhotoReview } from "../AdminPhotoReview";
 import { AdminDigitalDelivery } from "../AdminDigitalDelivery";
 import { AdminCleanupUploads } from "../AdminCleanupUploads";
+import { readUploadConfig } from "../../config/server";
 
 export const dynamic = "force-dynamic";
 
@@ -73,7 +74,10 @@ export default async function AdminOrdersPage({ searchParams }: AdminOrdersPageP
   if (fulfillmentFilter) ordersQuery = ordersQuery.eq("fulfillment_status", fulfillmentFilter);
   if (paymentFilter) ordersQuery = ordersQuery.eq("payment_status", paymentFilter);
   if (attentionFilter) ordersQuery = ordersQuery.in("fulfillment_status", ["awaiting_review", "quality_check", "issue"]);
-  let { data, count, error } = await ordersQuery.range((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE - 1);
+  const primaryResult = await ordersQuery.range((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE - 1);
+  let data = primaryResult.data as Order[] | null;
+  let count = primaryResult.count;
+  let error = primaryResult.error;
   if (error) {
     // Keep the operations console useful when an optional migration (logs or
     // product relations) has not been applied to the connected Supabase project.
@@ -85,7 +89,10 @@ export default async function AdminOrdersPage({ searchParams }: AdminOrdersPageP
     if (fulfillmentFilter) fallbackQuery = fallbackQuery.eq("fulfillment_status", fulfillmentFilter);
     if (paymentFilter) fallbackQuery = fallbackQuery.eq("payment_status", paymentFilter);
     if (attentionFilter) fallbackQuery = fallbackQuery.in("fulfillment_status", ["awaiting_review", "quality_check", "issue"]);
-    ({ data, count, error } = await fallbackQuery.range((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE - 1));
+    const fallbackResult = await fallbackQuery.range((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE - 1);
+    data = (fallbackResult.data ?? []).map((order) => ({ ...order, order_status_logs: [] })) as Order[];
+    count = fallbackResult.count;
+    error = fallbackResult.error;
     if (error) console.error("Core admin order query failed.", error);
   }
   const rawOrders = (data ?? []) as Order[];
@@ -100,7 +107,7 @@ export default async function AdminOrdersPage({ searchParams }: AdminOrdersPageP
     safeParams.set("page", String(totalPages));
     redirect(`/admin/orders?${safeParams.toString()}`);
   }
-  const bucket = process.env.SUPABASE_UPLOAD_BUCKET || "photogift-uploads";
+  const { bucket } = readUploadConfig();
   const orders = await Promise.all(rawOrders.map(async (order) => ({
     ...order,
     order_items: await Promise.all((order.order_items ?? []).map(async (item) => {

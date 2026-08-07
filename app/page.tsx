@@ -1,28 +1,15 @@
 "use client";
 /* eslint-disable @next/next/no-img-element -- object URLs from the local upload cannot use next/image. */
 
-import { ChangeEvent, KeyboardEvent, useEffect, useMemo, useState } from "react";
-import { categories, Category, Product, productFromDatabase, products } from "./catalog";
-import { getSupabaseBrowserClient } from "./lib/supabase-browser";
+import { ChangeEvent, useEffect, useMemo, useState } from "react";
+import { categories } from "./catalog";
+import type { CartItem } from "./domain/cart";
+import type { PhotoMetadata } from "./domain/customization";
+import { isProduct } from "./domain/product";
+import type { Category, Product } from "./domain/product";
+import type { OrderCreateResponse } from "./domain/order";
+import type { UploadResponse } from "./domain/upload";
 import { siteConfig } from "./site-config";
-
-type CartItem = Product & {
-  customization?: {
-    note?: string;
-    options?: Record<string, string>;
-    photoPath?: string;
-    photoPaths?: string[];
-    photoMeta?: {
-      originalFilename: string;
-      contentType: string;
-      fileSizeBytes: number;
-      width: number;
-      height: number;
-      quality: "good" | "low";
-    };
-    photoMetas?: CartItem["customization"]["photoMeta"][];
-  };
-};
 
 const targetUploadBytes = 3.5 * 1024 * 1024;
 
@@ -80,7 +67,8 @@ function ProductArt({ art, small = false }: { art: Product["art"]; small?: boole
 
 export default function Home() {
   const [category, setCategory] = useState<Category>("All gifts");
-  const [catalog, setCatalog] = useState<Product[]>(products);
+  const [catalog, setCatalog] = useState<Product[]>([]);
+  const [catalogState, setCatalogState] = useState<"loading" | "ready" | "unavailable">("loading");
   const [showAllProducts, setShowAllProducts] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -100,9 +88,9 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [photoPath, setPhotoPath] = useState<string | null>(null);
-  const [photoMeta, setPhotoMeta] = useState<CartItem["customization"]["photoMeta"] | null>(null);
+  const [photoMeta, setPhotoMeta] = useState<PhotoMetadata | null>(null);
   const [photoPaths, setPhotoPaths] = useState<string[]>([]);
-  const [photoMetas, setPhotoMetas] = useState<NonNullable<CartItem["customization"]>["photoMeta"][]>([]);
+  const [photoMetas, setPhotoMetas] = useState<PhotoMetadata[]>([]);
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
   const [uploadState, setUploadState] = useState<"idle" | "uploading" | "uploaded" | "error">("idle");
   const [customNote, setCustomNote] = useState("");
@@ -115,21 +103,18 @@ export default function Home() {
 
     async function loadCatalog() {
       try {
-        const supabase = getSupabaseBrowserClient();
-        const { data, error } = await supabase
-          .from("products")
-          .select("slug, name, category, description, price_cents, art_key")
-          .eq("is_published", true)
-          .order("created_at", { ascending: true });
-
-        if (error) throw error;
-        const databaseProducts = (data ?? [])
-          .map((row) => productFromDatabase(row))
-          .filter((product): product is Product => product !== null);
-
-        if (active && databaseProducts.length > 0) setCatalog(databaseProducts);
+        const response = await fetch("/api/products", { headers: { Accept: "application/json" } });
+        const result = (await response.json()) as { products?: unknown; error?: unknown };
+        if (!response.ok || !Array.isArray(result.products) || !result.products.every(isProduct)) throw new Error("CATALOG_UNAVAILABLE");
+        if (active) {
+          setCatalog(result.products);
+          setCatalogState("ready");
+        }
       } catch {
-        // Keep the replaceable local catalog available while Supabase is not configured or reachable.
+        if (active) {
+          setCatalog([]);
+          setCatalogState("unavailable");
+        }
       }
     }
 
@@ -140,12 +125,13 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    if (cartReady || catalogState !== "ready") return;
     const savedCart = window.localStorage.getItem("photogift-cart");
     let restoredCart: CartItem[] = [];
     if (savedCart) {
       try {
         const parsed = JSON.parse(savedCart) as CartItem[];
-        restoredCart = parsed.filter((item) => products.some((product) => product.id === item.id));
+        restoredCart = parsed.filter((item) => catalog.some((product) => product.id === item.id));
       } catch {
         window.localStorage.removeItem("photogift-cart");
       }
@@ -154,7 +140,7 @@ export default function Home() {
       setCart(restoredCart);
       setCartReady(true);
     });
-  }, []);
+  }, [cartReady, catalog, catalogState]);
 
   useEffect(() => {
     if (cartReady) window.localStorage.setItem("photogift-cart", JSON.stringify(cart));
@@ -270,7 +256,6 @@ export default function Home() {
     setPhotoUrl(null);
     setPhotoPath(null);
     setPhotoMeta(null);
-    setPhotoUrls([]);
     setPhotoPaths([]);
     setPhotoMetas([]);
     setSelectedOptions({});
@@ -297,7 +282,7 @@ export default function Home() {
           items: cart.map((item) => ({ slug: item.id, quantity: 1, customization: item.customization ?? {} })),
         }),
       });
-      const result = (await response.json()) as { orderNumber?: string; checkoutUrl?: string | null; error?: string };
+      const result = (await response.json()) as OrderCreateResponse;
       if (!response.ok || !result.orderNumber) throw new Error(result.error || "Order creation failed");
       if (result.checkoutUrl) {
         window.location.assign(result.checkoutUrl);
@@ -338,7 +323,7 @@ export default function Home() {
     setPhotoMeta(null);
     setUploadState("uploading");
     const nextPaths: string[] = [];
-    const nextMetas: NonNullable<CartItem["customization"]>["photoMeta"][] = [];
+    const nextMetas: PhotoMetadata[] = [];
 
     try {
       for (const file of files) {
@@ -347,11 +332,11 @@ export default function Home() {
         const quality = Math.min(dimensions.width, dimensions.height) >= 800 ? "good" : "low";
         const formData = new FormData();
         formData.append("file", uploadFile, uploadFile.name);
-        let result: { storageKey?: string; error?: string } = {};
+        let result: UploadResponse = {};
         let responseOk = false;
         for (let attempt = 0; attempt < 2; attempt += 1) {
           const response = await fetch("/api/uploads", { method: "POST", body: formData });
-          result = (await response.json()) as { storageKey?: string; error?: string };
+          result = (await response.json()) as UploadResponse;
           responseOk = response.ok && Boolean(result.storageKey);
           if (responseOk) break;
           if (attempt === 0) await new Promise((resolve) => window.setTimeout(resolve, 500));
@@ -409,8 +394,18 @@ export default function Home() {
       <section className="shop-section" id="shop">
         <div className="section-heading"><div><p className="eyebrow">The gift guide</p><h2>Made for <em>meaningful</em> moments.</h2></div><p className="section-intro">From a tiny version of your favorite person to a portrait of your best friend, start with the feeling you want to hold onto.</p></div>
         <div className="catalog-toolbar"><div className="category-tabs" role="tablist" aria-label="Gift categories">{categories.map((item, index) => <button key={item} className={category === item ? "active" : ""} onClick={() => { setCategory(item); setShowAllProducts(false); }} onKeyDown={(event) => { if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return; event.preventDefault(); const nextIndex = event.key === "ArrowRight" ? (index + 1) % categories.length : (index - 1 + categories.length) % categories.length; const nextTab = document.querySelector<HTMLButtonElement>(`[data-gift-tab="${categories[nextIndex]}"]`); nextTab?.focus(); nextTab?.click(); }} data-gift-tab={item} role="tab" aria-selected={category === item} aria-controls="gift-grid" tabIndex={category === item ? 0 : -1}>{item}</button>)}</div><label className="sort-control">Sort by<select value={sortBy} onChange={(event) => setSortBy(event.target.value as typeof sortBy)}><option value="featured">Featured</option><option value="price-low">Price: low to high</option><option value="price-high">Price: high to low</option><option value="name">Name</option></select></label></div>
-        <div id="gift-grid" role="tabpanel" aria-label={`${category} gifts`} aria-live="polite">{filteredProducts.length > 0 ? <div className="product-grid">{visibleProducts.map((product) => <article className="product-card" key={product.id}><button className="product-image" onClick={() => setSelectedProduct(product)} aria-label={`Customize ${product.name}`}><ProductArt art={product.art} /><span className="quick-add">Customize <span>↗</span></span></button><div className="product-meta"><div><p className="product-category">{product.tag && <span className="product-tag">{product.tag}</span>}<span>{product.category}</span></p><h3>{product.name}</h3><p className="product-description">{product.description}</p></div><strong className="product-price">${product.price.toFixed(2)}</strong></div></article>)}</div> : <div className="empty-catalog" role="status"><strong>No gifts match that search.</strong><span>Try a different word or browse all gifts.</span><button type="button" className="text-link" onClick={() => { setSearchQuery(""); setCategory("All gifts"); }}>Clear filters <span>↗</span></button></div>}</div>
-        <div className="shop-more"><span>{searchQuery.trim() ? `${filteredProducts.length} matching gifts` : showAllProducts ? `${filteredProducts.length} gifts in this collection` : `A considered edit of ${filteredProducts.length} gifts`}</span>{filteredProducts.length > 8 && !searchQuery.trim() && <button type="button" className="text-link" onClick={() => setShowAllProducts((visible) => !visible)}>{showAllProducts ? "Show fewer" : "View all gifts"} <span>{showAllProducts ? "↑" : "→"}</span></button>}</div>
+        <div id="gift-grid" role="tabpanel" aria-label={`${category} gifts`} aria-live="polite">
+          {catalogState === "loading" ? (
+            <div className="empty-catalog" role="status"><strong>Loading the gift collection…</strong><span>We’re gathering the latest available designs.</span></div>
+          ) : catalogState === "unavailable" ? (
+            <div className="empty-catalog" role="alert"><strong>Our gift collection is temporarily unavailable.</strong><span>Please try again shortly. No sample products have been substituted.</span></div>
+          ) : filteredProducts.length > 0 ? (
+            <div className="product-grid">{visibleProducts.map((product) => <article className="product-card" key={product.id}><button className="product-image" onClick={() => setSelectedProduct(product)} aria-label={`Customize ${product.name}`}><ProductArt art={product.art} /><span className="quick-add">Customize <span>↗</span></span></button><div className="product-meta"><div><p className="product-category">{product.tag && <span className="product-tag">{product.tag}</span>}<span>{product.category}</span></p><h3>{product.name}</h3><p className="product-description">{product.description}</p></div><strong className="product-price">${product.price.toFixed(2)}</strong></div></article>)}</div>
+          ) : (
+            <div className="empty-catalog" role="status"><strong>No gifts match that search.</strong><span>Try a different word or browse all gifts.</span><button type="button" className="text-link" onClick={() => { setSearchQuery(""); setCategory("All gifts"); }}>Clear filters <span>↗</span></button></div>
+          )}
+        </div>
+        {catalogState === "ready" && <div className="shop-more"><span>{searchQuery.trim() ? `${filteredProducts.length} matching gifts` : showAllProducts ? `${filteredProducts.length} gifts in this collection` : `A considered edit of ${filteredProducts.length} gifts`}</span>{filteredProducts.length > 8 && !searchQuery.trim() && <button type="button" className="text-link" onClick={() => setShowAllProducts((visible) => !visible)}>{showAllProducts ? "Show fewer" : "View all gifts"} <span>{showAllProducts ? "↑" : "→"}</span></button>}</div>}
       </section>
 
       <section className="how-section" id="how-it-works"><div className="how-heading"><p className="eyebrow">The PhotoGift way</p><h2>From your camera roll<br />to <em>their happy tears.</em></h2></div><div className="steps"><div className="step"><span className="step-number">01</span><div className="step-icon">⌁</div><h3>Choose your feeling</h3><p>Pick a keepsake that feels like them, whether that’s a tiny figure or a gentle portrait.</p></div><div className="step"><span className="step-number">02</span><div className="step-icon">⌑</div><h3>Send us your photo</h3><p>Upload a favorite memory and tell us the little details that make it yours.</p></div><div className="step"><span className="step-number">03</span><div className="step-icon">✦</div><h3>We make the magic</h3><p>Our makers turn your story into something real, ready to keep and give.</p></div></div></section>
