@@ -1,32 +1,142 @@
 schema: spec-driven
 
-# Project context (optional)
-# This is shown to AI when creating artifacts.
-# Add your tech stack, conventions, style guides, domain knowledge, etc.
-# Example:
-#   context: |
-#     Tech stack: TypeScript, React, Node.js
-#     We use conventional commits
-#     Domain: e-commerce platform
+context: |
+  Project: PhotoGift personalized gift ecommerce platform.
 
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always include a "Non-goals" section
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+  Requirements source of truth:
+  - 独立站构建项目需求.md
+  - This file contains the confirmed MVP product requirements.
+  - Do not silently change confirmed business rules.
+  - If implementation constraints conflict with confirmed requirements,
+    report the conflict before changing behavior.
 
-# Per-operation guidance (optional)
-# Add advisory guidance for how apply and archive work should be conducted.
-# This is separate from artifact rules above.
-# Example:
-#   operations:
-#     apply:
-#       guidance:
-#         - Keep test summaries concise
-#     archive:
-#       guidance:
-#         - Summarize the archive outcome before finishing
+  Current technical baseline:
+  - Next.js compatible App Router architecture
+  - React
+  - TypeScript
+  - vinext
+  - Cloudflare Pages / Workers
+  - Supabase PostgreSQL
+  - Supabase Auth
+  - Private object storage
+  - Stripe Checkout
+  - PayPal planned for MVP
+  - Resend planned for transactional email
+  - 17TRACK planned for shipment tracking
+  - Git for version control
+
+  Infrastructure constraints:
+  - Supabase PostgreSQL is the authoritative MVP business database.
+  - Do not migrate business persistence to D1 or Drizzle unless an approved
+    OpenSpec change explicitly justifies that decision.
+  - Existing D1 and Drizzle files must be investigated before removal.
+  - The final object-storage choice between Supabase Storage and Cloudflare R2
+    is not confirmed yet.
+  - Do not silently decide the final storage provider during implementation.
+
+  Core business flow:
+  Product
+  -> SKU / Variant
+  -> Customization
+  -> Private Photo Upload
+  -> Cart
+  -> Server-side Pricing
+  -> Checkout
+  -> Payment
+  -> Order
+  -> Photo Review
+  -> Production Preview
+  -> Production
+  -> Quality Check
+  -> Shipment
+  -> Delivery
+
+  Domain principles:
+  - Product, SKU, customization fields, pricing rules, fulfillment behavior
+    and shipping rules should be data-driven.
+  - Do not use hardcoded product data as a silent production fallback.
+  - Development and test fixtures must be clearly separated from production data.
+  - Two copies of the same product with different customization data must remain
+    separate cart and order line items.
+  - Order items must preserve the purchased product, SKU, price and customization snapshot.
+  - Customer photos, production previews and digital-delivery files must remain private.
+  - Guest checkout is a first-class MVP workflow.
+  - Customer authentication uses Supabase Auth.
+
+  Server trust boundaries:
+  - Never trust prices submitted by the browser.
+  - Never trust customization surcharges submitted by the browser.
+  - Never trust discount totals submitted by the browser.
+  - Never trust shipping totals submitted by the browser.
+  - Never trust payment status submitted by the browser.
+  - Pricing, discounts, shipping, authorization and totals must be validated server-side.
+  - Payment success must be established from verified server-side payment state.
+  - Webhook signatures must be verified.
+  - Webhook processing must be idempotent.
+  - Payment amount and currency must match the expected order amount.
+
+  Security principles:
+  - Never expose Supabase service-role credentials to the browser.
+  - Never expose payment secrets to the browser.
+  - Private uploads must not use permanent public URLs.
+  - File access must be authorized.
+  - Admin APIs must not be accessible to normal customers.
+  - Prevent cross-user order access and object-ID enumeration.
+  - Important order, payment and admin operations should be auditable.
+  - Environment secrets must remain outside source control.
+
+  Engineering principles:
+  - Preserve existing working behavior unless the current change explicitly modifies it.
+  - Prefer incremental refactoring over unnecessary rewrites.
+  - Do not replace infrastructure merely because another technology is preferred.
+  - Separate UI, domain logic, persistence and third-party integrations where practical.
+  - TypeScript errors must be fixed, not hidden.
+  - Do not use broad any, ts-ignore, disabled strictness or disabled tests
+    merely to make verification pass.
+  - Critical transaction logic should have automated tests.
+  - Every OpenSpec change must define scope and non-scope.
+  - Do not implement unrelated future features inside the current change.
+
+rules:
+  proposal:
+    - State the business or engineering problem being solved.
+    - Explain why the change is needed now.
+    - Define scope explicitly.
+    - Define non-scope explicitly.
+    - Identify affected existing behavior.
+    - Identify dependencies on earlier or later changes.
+    - Identify important risks.
+    - Do not invent new business requirements.
+
+  specs:
+    - Use concrete and testable requirements.
+    - Include happy-path scenarios.
+    - Include validation-failure scenarios.
+    - Include error and network-failure scenarios where applicable.
+    - Include authorization scenarios where applicable.
+    - Include idempotency scenarios for payments, webhooks and important mutations.
+    - Include data-integrity scenarios for customized line items.
+    - Include guest-user scenarios when checkout or orders are affected.
+    - Distinguish production behavior from development and test fixtures.
+
+  design:
+    - Describe affected modules and domain boundaries.
+    - Describe affected database entities when applicable.
+    - Describe migration implications when applicable.
+    - Describe API or server-action boundaries.
+    - Describe external-service boundaries.
+    - Describe security and authorization implications.
+    - Describe failure handling and idempotency where applicable.
+    - Describe compatibility with the existing repository.
+    - Document unresolved architecture decisions instead of silently choosing one.
+    - Do not replace runtime, database or storage architecture without explicit justification.
+
+  tasks:
+    - Break implementation into small independently verifiable tasks.
+    - Keep refactoring separate from new business functionality where practical.
+    - Include TypeScript typecheck when relevant.
+    - Include lint verification when relevant.
+    - Include production build verification when relevant.
+    - Include automated tests for critical business logic.
+    - Include security and authorization verification when applicable.
+    - Do not mark a task complete merely because code was written.
