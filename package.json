@@ -1,0 +1,19 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:pages-preview": "vite build --config preview/github-pages/vite.config.ts",
+    "test:pages-preview": "node --experimental-strip-types --test tests/github-pages-preview-foundation.test.mjs tests/github-pages-preview-batch-b.test.mjs",
+    "test:pages-preview:smoke": "PREVIEW_BASE_PATH=/figmemento-frontend-preview/ npm run build:pages-preview && PREVIEW_BASE_PATH=/figmemento-frontend-preview/ node --test tests/github-pages-preview-artifact-smoke.test.mjs"
+  },
+  "dependencies": {
+    "react": "19.2.6",
+    "react-dom": "19.2.6"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.2.1",
+    "@vitejs/plugin-react": "6.0.2",
+    "tailwindcss": "4.2.1",
+    "vite": "8.0.13"
+  }
+}

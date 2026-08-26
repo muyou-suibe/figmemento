@@ -1,0 +1,54 @@
+name: GitHub Pages Frontend Preview
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: Set repository base path
+        shell: bash
+        run: |
+          repo_name="${GITHUB_REPOSITORY#*/}"
+          if [ "$repo_name" = "${GITHUB_REPOSITORY_OWNER}.github.io" ]; then
+            echo "PREVIEW_BASE_PATH=/" >> "$GITHUB_ENV"
+          else
+            echo "PREVIEW_BASE_PATH=/${repo_name}/" >> "$GITHUB_ENV"
+          fi
+      - name: Build frontend preview artifact
+        run: npm run build:pages-preview
+      - name: Upload frontend preview artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist/github-pages-preview
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - name: Deploy frontend preview to Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
