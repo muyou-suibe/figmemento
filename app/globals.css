@@ -81,6 +81,65 @@
   --sans: var(--font-body);
   --shadow-soft: var(--shadow-md);
   --shadow-deep: var(--shadow-lg);
+
+  /* Fusion frontend extension: one global style authority for the new
+     presentation primitives. Existing --color-* tokens and aliases above
+     remain authoritative for current routes. */
+  --fusion-bg: #FDF8F2;
+  --fusion-paper: #FFFDF8;
+  --fusion-cream: #F5EDE0;
+  --fusion-ink: #3C2A1E;
+  --fusion-ink-soft: #6B5D4F;
+  --fusion-ink-mute: #8B7355;
+  --fusion-terra: #C4815A;
+  --fusion-terra-deep: #A9663F;
+  --fusion-gold: #D4B896;
+  --fusion-copper: #B8936E;
+  --fusion-honey: #FFE4A0;
+  --fusion-honey-deep: #E8B84B;
+  --fusion-pin: #E85050;
+  --fusion-rule: var(--fusion-ink);
+  --fusion-line: #E8DCCC;
+  --fusion-shadow-card: 2px 3px 10px rgba(60, 42, 30, 0.08);
+  --fusion-shadow-lift: 5px 8px 24px rgba(60, 42, 30, 0.14);
+  --fusion-focus: #7C4DFF;
+  --fusion-tap: 44px;
+  --fusion-content-pad: 40px;
+  --fusion-font-serif: "Playfair Display", "Noto Serif SC", serif;
+  --fusion-font-hand: "Lato", "Noto Sans SC", "PingFang SC", sans-serif;
+  --fusion-font-ital: "Lato", "Noto Sans SC", "PingFang SC", sans-serif;
+  --fusion-font-body: "Lato", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --fusion-space-1: 4px;
+  --fusion-space-2: 8px;
+  --fusion-space-3: 16px;
+  --fusion-space-4: 24px;
+  --fusion-space-5: 32px;
+  --fusion-space-6: 48px;
+  --fusion-space-7: 64px;
+  --fusion-radius-card: 14px;
+  --fusion-radius-control: 24px;
+  --fusion-motion-marquee: 26s;
+  --fusion-motion-page: 450ms;
+  --fusion-motion-reveal: 700ms;
+  --fusion-motion-stagger-1: 90ms;
+  --fusion-motion-stagger-2: 180ms;
+  --fusion-motion-stagger-3: 270ms;
+  --fusion-motion-stagger-4: 360ms;
+  --fusion-motion-float-1: 7s;
+  --fusion-motion-float-2: 8s;
+  --fusion-motion-float-3: 9s;
+  --fusion-motion-hover: 450ms;
+  --fusion-motion-button: 180ms;
+  --fusion-motion-search: 350ms;
+  --fusion-motion-faq: 450ms;
+  --fusion-motion-count: 1200ms;
+  --fusion-motion-cart: 700ms;
+  --fusion-motion-distance-page: 14px;
+  --fusion-motion-distance-reveal: 26px;
+  --fusion-motion-distance-polaroid: 8px;
+  --fusion-breakpoint-wide: 960px;
+  --fusion-breakpoint-compact: 720px;
+  --fusion-breakpoint-narrow: 520px;
 }
 
 @media (min-width: 640px) {
@@ -341,6 +400,23 @@ h1, h2, h3 { text-wrap: balance; }
 @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
+}
+
+/* ============================================================
+   FUSION RESPONSIVE + MOTION HARDENING — BATCH H
+   The keyframe is shared by CSS modules; page selectors remain scoped to
+   their real customer, operator, and admin surfaces in those modules.
+   ============================================================ */
+@keyframes fusionPageEntrance {
+  from { opacity: 0; transform: translateY(var(--fusion-motion-distance-page)); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee,
+  .marquee * {
+    animation: none !important;
+  }
 }
 .admin-attention-filter { align-items: center; display: flex !important; flex-direction: row; gap: 7px !important; min-height: 36px; }
 .admin-attention-filter input { accent-color: var(--coral); min-width: 14px; width: 14px; }
