@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0e1b29" />
+    <meta
+      name="description"
+      content="FigMemento full-chain demo — browser-local simulated commerce and operations state."
+    />
+    <title>FigMemento — Full-chain demo</title>
+    <link rel="stylesheet" href="./demo.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="topbar">
+        <a class="brand" href="#shop" data-nav="shop" aria-label="FigMemento home">
+          <span class="brand-mark" aria-hidden="true">F</span>
+          <span>FigMemento</span>
+        </a>
+        <div class="topbar-meta">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span>Local demo environment</span>
+          <button class="ghost-button compact" id="reset-demo" type="button">Reset demo</button>
+        </div>
+      </header>
+
+      <div class="workspace">
+        <aside class="rail" aria-label="Demo progress">
+          <div class="rail-heading">
+            <span class="eyebrow">Journey</span>
+            <span id="progress-count">0 / 9</span>
+          </div>
+          <nav class="step-nav" id="step-nav">
+            <button class="step-link active" data-nav="shop" type="button"><span>01</span>Shop<i></i></button>
+            <button class="step-link" data-nav="customize" type="button"><span>02</span>Customize<i></i></button>
+            <button class="step-link" data-nav="cart" type="button"><span>03</span>Cart<i></i></button>
+            <button class="step-link" data-nav="checkout" type="button"><span>04</span>Checkout<i></i></button>
+            <button class="step-link" data-nav="order" type="button"><span>05</span>Order<i></i></button>
+            <button class="step-link" data-nav="fulfillment" type="button"><span>06</span>Fulfillment<i></i></button>
+            <button class="step-link" data-nav="supplier" type="button"><span>07</span>Supplier<i></i></button>
+            <button class="step-link" data-nav="warehouse" type="button"><span>08</span>Warehouse<i></i></button>
+            <button class="step-link" data-nav="tracking" type="button"><span>09</span>Tracking<i></i></button>
+          </nav>
+          <div class="rail-note">
+            <span class="note-icon">↗</span>
+            <p>Every action is simulated in this browser only.</p>
+          </div>
+        </aside>
+
+        <main class="main-content">
+          <div class="demo-banner" role="note">
+            <div>
+              <strong>FIGMEMENTO — FULL-CHAIN DEMO</strong>
+              <span>DEMO ONLY</span>
+            </div>
+            <p>Browser-local simulated commerce and operations state. No real payment, upload, supplier order, shipment, or customer data is used.</p>
+          </div>
+
+          <section class="page-intro" id="shop" data-section="shop">
+            <div>
+              <span class="eyebrow">A local business chain, made visible</span>
+              <h1>From a small idea<br /><em>to a finished keepsake.</em></h1>
+              <p class="intro-copy">Walk one synthetic order through customization, production, warehouse handoff, and delivery — without leaving this page.</p>
+            </div>
+            <div class="intro-stamp" aria-label="All data is synthetic">
+              <span>LOCAL</span>
+              <strong>01</strong>
+              <small>no external services</small>
+            </div>
+          </section>
+
+          <section class="section-block" aria-labelledby="discover-title">
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">01 / Discovery</span>
+                <h2 id="discover-title">Choose a piece to make personal.</h2>
+              </div>
+              <span class="section-kicker">3 synthetic products</span>
+            </div>
+            <div class="product-grid" id="product-grid"></div>
+          </section>
+
+          <section class="section-block split-layout" id="customize" data-section="customize" aria-labelledby="customize-title">
+            <div class="section-heading vertical-heading">
+              <span class="eyebrow">02 / Customization</span>
+              <h2 id="customize-title">Shape the details.</h2>
+              <p>Pick a variant, add a note, and optionally preview a photo. The file stays on this device.</p>
+            </div>
+            <div class="panel customize-panel" id="customize-panel"></div>
+          </section>
+
+          <section class="section-block" id="cart" data-section="cart" aria-labelledby="cart-title">
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">03 / Cart</span>
+                <h2 id="cart-title">Review your one-of-one.</h2>
+              </div>
+            </div>
+            <div class="panel" id="cart-panel"></div>
+          </section>
+
+          <section class="section-block" id="checkout" data-section="checkout" aria-labelledby="checkout-title">
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">04 / Checkout</span>
+                <h2 id="checkout-title">A safe, synthetic checkout.</h2>
+              </div>
+            </div>
+            <div class="panel" id="checkout-panel"></div>
+          </section>
+
+          <section class="section-block" id="order" data-section="order" aria-labelledby="order-title">
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">05 / Order + payment</span>
+                <h2 id="order-title">The order becomes a shared reference.</h2>
+              </div>
+            </div>
+            <div class="panel" id="order-panel"></div>
+          </section>
+
+          <section class="section-block" id="fulfillment" data-section="fulfillment" aria-labelledby="fulfillment-title">
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">06 / Customer fulfillment</span>
+                <h2 id="fulfillment-title">Preview, approve, produce.</h2>
+              </div>
+              <span class="section-kicker">Customer state</span>
+            </div>
+            <div class="panel" id="fulfillment-panel"></div>
+          </section>
+
+          <section class="section-block" id="supplier" data-section="supplier" aria-labelledby="supplier-title">
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">07 / Supplier operations</span>
+                <h2 id="supplier-title">Choose who makes it.</h2>
+              </div>
+              <span class="section-kicker">Operator state</span>
+            </div>
+            <div class="panel" id="supplier-panel"></div>
+          </section>
+
+          <section class="section-block" id="warehouse" data-section="warehouse" aria-labelledby="warehouse-title">
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">08 / Warehouse</span>
+                <h2 id="warehouse-title">Receive, inspect, release.</h2>
+              </div>
+            </div>
+            <div class="panel" id="warehouse-panel"></div>
+          </section>
+
+          <section class="section-block" id="tracking" data-section="tracking" aria-labelledby="tracking-title">
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">09 / Tracking</span>
+                <h2 id="tracking-title">The last mile is explicit.</h2>
+              </div>
+            </div>
+            <div class="panel" id="tracking-panel"></div>
+          </section>
+
+          <details class="evidence-panel">
+            <summary><span>Demo Evidence</span><small>current browser-local state</small></summary>
+            <div class="evidence-grid" id="evidence-grid"></div>
+          </details>
+
+          <footer class="page-footer">
+            <div>
+              <span class="brand-footer">FigMemento</span>
+              <p>Full-chain demo / local-only rehearsal</p>
+            </div>
+            <button class="ghost-button" id="restart-demo" type="button">Restart full chain</button>
+          </footer>
+        </main>
+      </div>
+    </div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="./demo.js"></script>
+  </body>
+</html>
