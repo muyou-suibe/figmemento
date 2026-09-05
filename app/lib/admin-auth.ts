@@ -1,5 +1,5 @@
-import { createSignedAdminSession, verifySignedAdminSession } from "../application/admin-session";
-import { readAdminPassword } from "../config/server";
+import { createSignedAdminSession, verifySignedAdminSession } from "../application/admin-session.ts";
+import { readAdminPassword } from "../config/server.ts";
 
 const sessionCookie = "photogift-admin-session";
 const sessionLifetimeSeconds = 60 * 60 * 24 * 7;
