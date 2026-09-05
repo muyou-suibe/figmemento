@@ -1,0 +1,237 @@
+.editorialHeading {
+  display: grid;
+  gap: var(--fusion-space-2);
+  max-width: 42rem;
+}
+
+.editorialHeading h2 {
+  color: var(--fusion-ink);
+  font-family: var(--fusion-font-serif);
+  font-size: clamp(2rem, 5vw, 4rem);
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  margin: 0;
+  text-wrap: balance;
+}
+
+.eyebrow {
+  color: var(--fusion-terra-deep);
+  font-family: var(--fusion-font-hand);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1.4;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.paperCard {
+  background: var(--fusion-paper);
+  border: 1px solid var(--fusion-line);
+  border-radius: var(--fusion-radius-card);
+  box-shadow: var(--fusion-shadow-card);
+  color: var(--fusion-ink);
+  padding: var(--fusion-space-5);
+}
+
+.mediaFrame {
+  align-items: center;
+  background: var(--fusion-cream);
+  border: 1px solid var(--fusion-line);
+  border-radius: var(--fusion-radius-card);
+  display: flex;
+  justify-content: center;
+  min-height: 12rem;
+  overflow: hidden;
+  position: relative;
+}
+
+.mediaFrame > img,
+.mediaFrame > video {
+  display: block;
+  height: 100%;
+  max-width: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.doubleRule {
+  border-bottom: 3px double var(--fusion-rule);
+  height: 0;
+  margin-block: var(--fusion-space-4);
+  width: 100%;
+}
+
+.annotation {
+  color: var(--fusion-ink-mute);
+  font-family: var(--fusion-font-ital);
+  font-size: 0.875rem;
+  line-height: 1.65;
+  margin: 0;
+  max-width: 38rem;
+}
+
+.statusBlock {
+  background: color-mix(in srgb, var(--fusion-honey) 28%, var(--fusion-paper));
+  border: 1px solid var(--fusion-gold);
+  border-radius: var(--fusion-radius-card);
+  color: var(--fusion-ink-soft);
+  padding: var(--fusion-space-4);
+}
+
+.actionRow {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fusion-space-3);
+}
+
+.actionRow :where(button, a, input, select) {
+  min-height: var(--fusion-tap);
+}
+
+.actionRow :where(button, a, input, select):focus-visible {
+  outline: 2px solid var(--fusion-focus);
+  outline-offset: 3px;
+}
+
+.responsiveGrid {
+  display: grid;
+  gap: var(--fusion-space-4);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-inline: auto;
+  max-width: var(--grid-max);
+  padding-inline: var(--fusion-content-pad);
+}
+
+.polaroidFrame {
+  background: var(--fusion-paper);
+  border: 1px solid var(--fusion-line);
+  box-shadow: var(--fusion-shadow-card);
+  padding: var(--fusion-space-2);
+  transform: rotate(-1deg);
+  transition: box-shadow var(--fusion-motion-hover) cubic-bezier(0.34, 1.4, 0.64, 1), transform var(--fusion-motion-hover) cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+.polaroidFrame:hover {
+  box-shadow: var(--fusion-shadow-lift);
+  transform: rotate(0deg) translateY(-8px) scale(1.03);
+}
+
+.polaroidFrame > img,
+.polaroidFrame > video {
+  display: block;
+  max-width: 100%;
+  width: 100%;
+}
+
+.washiTape {
+  display: inline-block;
+  padding: 5px 22px;
+  background: var(--fusion-honey);
+  color: #8B6914;
+  font-family: var(--fusion-font-body);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  position: relative;
+  text-transform: uppercase;
+  transform: rotate(-1.5deg);
+  box-shadow: 0 1px 3px rgba(60, 42, 30, 0.12);
+}
+
+.washiTape::before,
+.washiTape::after {
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: 1px;
+  content: "";
+  height: 6px;
+  position: absolute;
+  top: 50%;
+  width: 16px;
+}
+
+.washiTape::before {
+  left: -7px;
+  transform: translateY(-50%) rotate(-12deg);
+}
+
+.washiTape::after {
+  right: -7px;
+  transform: translateY(-50%) rotate(12deg);
+}
+
+.pinAccent {
+  background: var(--fusion-pin);
+  border-radius: 50%;
+  display: inline-block;
+  height: 0.75rem;
+  width: 0.75rem;
+}
+
+.reveal {
+  opacity: 1;
+  transform: none;
+  transition: opacity var(--fusion-motion-reveal) ease, transform var(--fusion-motion-reveal) cubic-bezier(0.22, 0.8, 0.36, 1);
+}
+
+/* A future observer may opt a node into the hidden phase explicitly. The
+   default remains visible so script, hydration, or observer failure cannot
+   remove content from the reading order. */
+.reveal[data-reveal-state="pending"] {
+  opacity: 0;
+  transform: translateY(var(--fusion-motion-distance-reveal));
+}
+
+.reveal[data-reveal-state="visible"] {
+  opacity: 1;
+  transform: none;
+}
+
+@media (max-width: 960px) {
+  .responsiveGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .responsiveGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding-inline: 24px;
+  }
+}
+
+@media (max-width: 520px) {
+  .editorialHeading h2 {
+    font-size: clamp(1.8rem, 10vw, 2.5rem);
+  }
+
+  .paperCard {
+    padding: var(--fusion-space-4);
+  }
+
+  .responsiveGrid {
+    grid-template-columns: minmax(0, 1fr);
+    padding-inline: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .polaroidFrame,
+  .polaroidFrame:hover,
+  .reveal,
+  .reveal[data-reveal-state="pending"],
+  .reveal[data-reveal-state="visible"] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+@media (pointer: coarse) {
+  .polaroidFrame:hover {
+    box-shadow: var(--fusion-shadow-card);
+    transform: rotate(-1deg);
+  }
+}
