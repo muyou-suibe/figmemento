@@ -1,12 +1,12 @@
 ## 1. Approved Decisions and Supabase Baseline Gate
 
 - [x] 1.1 Record the five final approved C1 inputs in the planning artifacts: public URL/reference-only ProductAssets, the constrained fulfillment/production/supply vocabulary, separate expand and guarded-backfill migrations with full preflight, durable catalog audit persistence, and temporary exact Product-slug-to-default-Variant compatibility.
-- [ ] 1.2 Establish a read-only method for inspecting the connected Supabase project without exposing credentials, changing remote schema, or changing remote records; if reliable access is unavailable, stop before any migration file is created.
-- [ ] 1.3 Record the actual remote tables, columns, types, defaults, constraints, foreign keys, indexes, RLS state and policies, relevant grants, and available migration history in `docs/catalog-schema-baseline.md`.
-- [ ] 1.4 Record current Product and related record counts/shapes/publication states plus `orders` and `order_items` references needed to preserve identifiers and history, without publishing, unpublishing, deleting, or rewriting any remote record.
-- [ ] 1.5 Compare the recorded remote state with `supabase/schema.sql`, `seed.sql`, `coupons.sql`, and `operations.sql`; document every relevant difference and explicitly keep those files classified as legacy bootstrap inputs.
-- [ ] 1.6 Review baseline conflicts against the approved specs and design; if any conflict changes identity, data preservation, order compatibility, RLS/grants, or safe migration order, stop and report it for approval rather than silently revising C1 behavior.
-- [ ] 1.7 Mark the baseline gate complete only after all required evidence is present and reviewed; verify that no `supabase/migrations/` catalog migration was created before this point and no remote write was performed.
+- [x] 1.2 Establish a read-only method for inspecting the connected Supabase project without exposing credentials, changing remote schema, or changing remote records; if reliable access is unavailable, stop before any migration file is created.
+- [x] 1.3 Record the actual remote tables, columns, types, defaults, constraints, foreign keys, indexes, RLS state and policies, relevant grants, and available migration history in `docs/catalog-schema-baseline.md`.
+- [x] 1.4 Record current Product and related record counts/shapes/publication states plus `orders` and `order_items` references needed to preserve identifiers and history, without publishing, unpublishing, deleting, or rewriting any remote record.
+- [x] 1.5 Compare the recorded remote state with `supabase/schema.sql`, `seed.sql`, `coupons.sql`, and `operations.sql`; document every relevant difference and explicitly keep those files classified as legacy bootstrap inputs.
+- [x] 1.6 Review baseline conflicts against the approved specs and design; if any conflict changes identity, data preservation, order compatibility, RLS/grants, or safe migration order, stop and report it for approval rather than silently revising C1 behavior.
+- [x] 1.7 Mark the baseline gate complete only after all required evidence is present and reviewed; verify that no `supabase/migrations/` catalog migration was created before this point and no remote write was performed.
 
 ## 2. Catalog Domain and Validation Contracts
 
