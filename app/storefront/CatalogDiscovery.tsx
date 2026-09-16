@@ -238,17 +238,19 @@ export function CatalogPolaroid({
   const { t } = useReferenceLanguage();
   const label = presentation?.mediaLabel ?? item?.product.name ?? "Catalog preview";
   return (
-    <Link
-      className={`${styles.discoveryPolaroid} ${styles[`discoveryPolaroid${position}`]}`}
-      href={item ? `/product/${item.product.slug}` : "/shop"}
-      aria-label={item ? `${t("View")} ${item.product.name}` : t("Open the catalog")}
-    >
-      {presentation && position !== 1 ? <span className={styles.referencePolaroidPin} aria-hidden="true">📌</span> : <span className={styles.discoveryPolaroidPin} aria-hidden="true" />}
-      <div className={styles.discoveryPolaroidMedia}>
-        {presentation ? <span className={styles.referencePolaroidMedia}><ReferenceText>{presentation.mediaLabel}</ReferenceText></span> : <ProductAssetMedia asset={item?.thumbnail} label={label} />}
-      </div>
-      <p>{presentation ? <ReferenceText>{presentation.caption}</ReferenceText> : item?.product.name ?? t("Catalog preview unavailable")}</p>
-    </Link>
+    <div className={`${styles.discoveryPolaroidFrame} ${styles[`discoveryPolaroid${position}`]}`}>
+      <Link
+        className={styles.discoveryPolaroid}
+        href={item ? `/product/${item.product.slug}` : "/shop"}
+        aria-label={item ? `${t("View")} ${item.product.name}` : t("Open the catalog")}
+      >
+        {presentation && position !== 1 ? <span className={styles.referencePolaroidPin} aria-hidden="true">📌</span> : <span className={styles.discoveryPolaroidPin} aria-hidden="true" />}
+        <div className={styles.discoveryPolaroidMedia}>
+          {presentation ? <span className={styles.referencePolaroidMedia}><ReferenceText>{presentation.mediaLabel}</ReferenceText></span> : <ProductAssetMedia asset={item?.thumbnail} label={label} />}
+        </div>
+        <p>{presentation ? <ReferenceText>{presentation.caption}</ReferenceText> : item?.product.name ?? t("Catalog preview unavailable")}</p>
+      </Link>
+    </div>
   );
 }
 

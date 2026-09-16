@@ -106,13 +106,13 @@ export default async function HomePage() {
         </FusionRevealSection>
 
         <section className={styles.fusionHomeCollection} id="collection">
-          <div className={styles.discoverySectionHeading}>
+          <FusionRevealSection className={styles.discoverySectionHeading}>
             <div>
                   <p className={styles.discoveryEyebrow}>📖 <ReferenceText>CURATED</ReferenceText></p>
               <h2><ReferenceText>Selected Works</ReferenceText></h2>
             </div>
             <p><ReferenceText>four pieces our workshop is quietly proud of</ReferenceText></p>
-          </div>
+          </FusionRevealSection>
           {source.status === "found" && source.value.source === "fixture" && <FixtureCatalogNotice />}
           {catalog.status === "found" ? (
             <>

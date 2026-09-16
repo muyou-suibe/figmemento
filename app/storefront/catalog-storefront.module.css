@@ -7374,34 +7374,118 @@
   transition-timing-function: var(--v2-ease-paper);
 }
 
-.visualV2 .discoveryPolaroid {
-  box-shadow: var(--v2-paper-shadow);
-  transition: box-shadow var(--v2-motion-control) ease, transform var(--v2-motion-control) var(--v2-ease-spring);
+.visualV2 .fusionReveal[data-reveal-state="pending"] {
+  transform: translateY(var(--v2-reveal-distance));
+}
+
+.visualV2 .discoveryPolaroidFrame {
   will-change: transform;
 }
 
-.visualV2 .discoveryPolaroid1 { animation: visualV2FloatOne 6.8s ease-in-out infinite; }
-.visualV2 .discoveryPolaroid2 { animation: visualV2FloatTwo 7.6s ease-in-out infinite .35s; }
-.visualV2 .discoveryPolaroid3 { animation: visualV2FloatThree 6.2s ease-in-out infinite .7s; }
+.visualV2 .discoveryPolaroid {
+  box-shadow: var(--v2-paper-shadow);
+  display: block;
+  height: 100%;
+  inset: auto;
+  position: relative;
+  transition: box-shadow var(--v2-motion-control) ease, transform var(--v2-motion-control) var(--v2-ease-spring);
+  width: 100%;
+  will-change: transform;
+}
 
-.visualV2 .discoveryPolaroid:hover,
-.visualV2 .discoveryPolaroid:focus-visible {
+.visualV2 .discoveryPolaroid1 { animation: visualV2FloatOne 5.8s ease-in-out infinite; }
+.visualV2 .discoveryPolaroid2 { animation: visualV2FloatTwo 6.4s ease-in-out infinite .55s; }
+.visualV2 .discoveryPolaroid3 { animation: visualV2FloatThree 5.1s ease-in-out infinite 1.1s; }
+
+.visualV2 .discoveryPolaroidFrame:hover,
+.visualV2 .discoveryPolaroidFrame:focus-within {
   animation-play-state: paused;
+  z-index: 9;
+}
+
+.visualV2 .discoveryPolaroidFrame:hover .discoveryPolaroid,
+.visualV2 .discoveryPolaroidFrame:focus-within .discoveryPolaroid {
   box-shadow: var(--v2-paper-shadow-lift);
-  transform: translateY(calc(-1 * var(--v2-lift-card))) rotate(0deg);
+  transform: translateY(-10px) scale(1.02);
+}
+
+.visualV2 .discoveryPolaroid1:hover .discoveryPolaroid,
+.visualV2 .discoveryPolaroid1:focus-within .discoveryPolaroid {
+  transform: translateY(-10px) rotate(4.3deg) scale(1.02);
+}
+
+.visualV2 .discoveryPolaroid2:hover .discoveryPolaroid,
+.visualV2 .discoveryPolaroid2:focus-within .discoveryPolaroid {
+  transform: translateY(-10px) rotate(-3.3deg) scale(1.02);
+}
+
+.visualV2 .discoveryPolaroid3:hover .discoveryPolaroid,
+.visualV2 .discoveryPolaroid3:focus-within .discoveryPolaroid {
+  transform: translateY(-9px) rotate(.5deg) scale(1.018);
 }
 
 @keyframes visualV2FloatOne {
   0%, 100% { transform: translate3d(0, 0, 0) rotate(-5deg); }
-  50% { transform: translate3d(0, -7px, 0) rotate(-4.2deg); }
+  48% { transform: translate3d(5px, -13px, 0) rotate(-3.6deg); }
 }
 @keyframes visualV2FloatTwo {
-  0%, 100% { transform: translate3d(0, 0, 0) rotate(4deg); }
-  50% { transform: translate3d(0, -9px, 0) rotate(3.2deg); }
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(3deg); }
+  52% { transform: translate3d(-6px, -16px, 0) rotate(4.5deg); }
 }
 @keyframes visualV2FloatThree {
-  0%, 100% { transform: translate3d(0, 0, 0) rotate(-1deg); }
-  50% { transform: translate3d(0, -5px, 0) rotate(-.2deg); }
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(-1.5deg); }
+  45% { transform: translate3d(3px, -11px, 0) rotate(-.2deg); }
+}
+
+.visualV2 .fusionHeroSticker { animation: none; }
+.visualV2 .fusionHeroStickerOne { animation: visualV2HeartDrift 4.6s ease-in-out infinite; }
+.visualV2 .fusionHeroStickerTwo { animation: visualV2SparkDrift 5.4s ease-in-out infinite .7s; }
+
+@keyframes visualV2HeartDrift {
+  0%, 100% { opacity: .84; transform: translate3d(0, 0, 0) rotate(-6deg) scale(1); }
+  50% { opacity: 1; transform: translate3d(2px, -3px, 0) rotate(-2deg) scale(1.035); }
+}
+
+@keyframes visualV2SparkDrift {
+  0%, 100% { opacity: .82; transform: translate3d(0, 0, 0) rotate(3deg) scale(.98); }
+  50% { opacity: 1; transform: translate3d(-3px, 2px, 0) rotate(-1deg) scale(1.04); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .visualV2 .fusionHomeHero[data-reveal-state="visible"] .fusionHeroReferenceTape {
+    animation: visualV2HeroEntrance 620ms var(--v2-ease-paper) both;
+  }
+  .visualV2 .fusionHomeHero[data-reveal-state="visible"] .fusionHeroTitle {
+    animation: visualV2HeroEntrance 720ms var(--v2-ease-paper) 70ms both;
+  }
+  .visualV2 .fusionHomeHero[data-reveal-state="visible"] .fusionHeroIntro {
+    animation: visualV2HeroEntrance 680ms var(--v2-ease-paper) 140ms both;
+  }
+  .visualV2 .fusionHomeHero[data-reveal-state="visible"] .fusionHeroActions {
+    animation: visualV2HeroEntrance 640ms var(--v2-ease-paper) 210ms both;
+  }
+  .visualV2 .fusionHomeHero[data-reveal-state="visible"] .fusionHeroPolaroids {
+    animation: visualV2HeroEntrance 780ms var(--v2-ease-paper) 120ms both;
+  }
+}
+
+@keyframes visualV2HeroEntrance {
+  from { opacity: 0; transform: translate3d(0, 18px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+.visualV2 .fusionHeroPrimary:hover,
+.visualV2 .fusionHeroPrimary:focus-visible,
+.visualV2 .fusionHeroSecondary:hover,
+.visualV2 .fusionHeroSecondary:focus-visible {
+  box-shadow: 4px 6px 0 rgba(60, 42, 30, .2);
+  transform: translateY(-2px);
+}
+
+.visualV2 .fusionHeroPrimary:active,
+.visualV2 .fusionHeroSecondary:active {
+  box-shadow: 1px 2px 0 rgba(60, 42, 30, .16);
+  transform: translateY(2px);
 }
 
 .visualV2 .referenceProductCard {
@@ -7533,7 +7617,7 @@
 }
 
 @media (hover: none), (pointer: coarse) {
-  .visualV2 .discoveryPolaroid:hover,
+  .visualV2 .discoveryPolaroidFrame:hover .discoveryPolaroid,
   .visualV2 .referenceProductCard:hover,
   .visualV2 .cartLine:hover {
     box-shadow: var(--fusion-shadow-card);
@@ -7553,6 +7637,11 @@
     transition-duration: .001ms !important;
   }
   .visualV2 .fusionReveal { opacity: 1 !important; transform: none !important; }
+  .visualV2 :where(.discoveryPolaroidFrame, .discoveryPolaroid, .fusionHeroSticker, .fusionHeroReferenceTape, .fusionHeroTitle, .fusionHeroIntro, .fusionHeroActions, .fusionHeroPolaroids) {
+    animation: none !important;
+    transition-delay: 0s !important;
+  }
+  .visualV2 .discoveryPolaroid { transform: none !important; }
   .visualV2ApprovedStamp { opacity: 1; transform: rotate(-4deg); }
 }
 

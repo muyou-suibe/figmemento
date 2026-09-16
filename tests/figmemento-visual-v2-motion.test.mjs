@@ -6,6 +6,7 @@ const css = readFileSync("app/storefront/catalog-storefront.module.css", "utf8")
 const globals = readFileSync("app/globals.css", "utf8");
 const shell = readFileSync("app/storefront/CatalogShell.tsx", "utf8");
 const cards = readFileSync("app/storefront/CatalogDiscovery.tsx", "utf8");
+const home = readFileSync("app/page.tsx", "utf8");
 const pdp = readFileSync("app/storefront/ProductDetailExperience.tsx", "utf8");
 const upload = readFileSync("app/storefront/ProductCustomizationImageField.tsx", "utf8");
 const preview = readFileSync("app/storefront/LocalOrderSuccessExperience.tsx", "utf8");
@@ -21,7 +22,17 @@ test("V2 has one scoped motion vocabulary and an immediate reduced-motion projec
 });
 
 test("Home and Catalog motion stays presentational and touch-safe", () => {
-  assert.match(css, /visualV2FloatOne/);
+  for (const [name, duration] of [["visualV2FloatOne", "5.8s"], ["visualV2FloatTwo", "6.4s"], ["visualV2FloatThree", "5.1s"]]) {
+    assert.match(css, new RegExp(`animation: ${name} ${duration} ease-in-out infinite`));
+  }
+  assert.match(css, /@keyframes visualV2FloatOne[\s\S]*translate3d\(5px, -13px, 0\)[\s\S]*rotate\(-3\.6deg\)/);
+  assert.match(css, /@keyframes visualV2FloatTwo[\s\S]*translate3d\(-6px, -16px, 0\)[\s\S]*rotate\(4\.5deg\)/);
+  assert.match(css, /@keyframes visualV2FloatThree[\s\S]*translate3d\(3px, -11px, 0\)[\s\S]*rotate\(-\.2deg\)/);
+  assert.match(cards, /discoveryPolaroidFrame[\s\S]*discoveryPolaroid/);
+  assert.match(css, /discoveryPolaroidFrame:hover[\s\S]*animation-play-state: paused/);
+  assert.match(css, /translateY\(-10px\)[\s\S]*scale\(1\.02\)/);
+  assert.match(css, /visualV2HeroEntrance 620ms[\s\S]*visualV2HeroEntrance 780ms/);
+  assert.match(home, /FusionRevealSection className=\{styles\.discoverySectionHeading\}/);
   assert.match(css, /\.visualV2 \.referenceProductCard:hover[\s\S]*translateY/);
   assert.match(css, /scale\(1\.035\)/);
   assert.match(css, /@media \(hover: none\), \(pointer: coarse\)/);
@@ -56,6 +67,10 @@ test("Cart and Checkout keep their existing mutation boundaries", () => {
 
 test("V2 adds no animation dependency or customer annotation regression", () => {
   assert.doesNotMatch(pkg, /"motion"\s*:|framer-motion|@formkit\/auto-animate/);
+  assert.doesNotMatch(css, /requestAnimationFrame/);
+  const v2Keyframes = [...css.matchAll(/@keyframes visualV2[^}]+\{[\s\S]*?\n\}/g)].map(([block]) => block).join("\n");
+  assert.doesNotMatch(v2Keyframes, /(?:^|[;{]\s*)(?:top|left|width|height)\s*:/m);
+  assert.match(css, /prefers-reduced-motion: reduce[\s\S]*discoveryPolaroidFrame[\s\S]*animation: none !important/);
   assert.doesNotMatch(shell, /ReferenceAnnotation|Fusion design annotation|Fusion<\/b> 02\+07\+08\+12/);
   assert.match(css, /@media \(min-width: 981px\)/);
   assert.match(css, /@media \(max-width: 980px\)/);
