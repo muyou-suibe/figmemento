@@ -1,6 +1,9 @@
 import { getSessionCookieName, isValidAdminSession } from "../../../lib/admin-auth";
 import { getSupabaseServerClient } from "../../../lib/supabase-server";
 import { readUploadConfig } from "../../../config/server";
+import { readAdminAcceptanceConfiguration } from "../../../config/admin-acceptance-runtime.server";
+import { handleLocalPersistentDigitalPublication } from "../../../server/local-persistent-digital-publication.server";
+import { handleLocalPersistentDigitalGrantRevocation } from "../../../server/local-persistent-digital-revocation.server";
 
 const maxBytes = 15 * 1024 * 1024;
 
@@ -10,6 +13,10 @@ function cookieValue(request: Request, name: string): string | null {
 }
 
 export async function POST(request: Request) {
+  const source = readAdminAcceptanceConfiguration();
+  if (source.status === "configuration_failure") return Response.json({ status: "unavailable" }, { status: 409 });
+  if (source.source === "local_persistent") return handleLocalPersistentDigitalPublication(request);
+  if (source.source === "local_fake") return Response.json({ status: "unavailable" }, { status: 409 });
   if (!(await isValidAdminSession(cookieValue(request, getSessionCookieName())))) return Response.json({ error: "Unauthorized." }, { status: 401 });
   const form = await request.formData();
   const orderNumber = String(form.get("orderNumber") || "").trim().toUpperCase();
@@ -33,4 +40,11 @@ export async function POST(request: Request) {
   const { error: updateError } = await supabase.from("order_items").update({ customization: { ...(item.customization || {}), digitalDeliveryPath: storageKey, digitalDeliveryName: file.name } }).eq("id", orderItemId).eq("order_id", order.id);
   if (updateError) return Response.json({ error: "Could not save digital delivery." }, { status: 500 });
   return Response.json({ ok: true, fileName: file.name });
+}
+
+export async function DELETE(request: Request) {
+  const source = readAdminAcceptanceConfiguration();
+  if (source.status === "configuration_failure") return Response.json({ status: "unavailable" }, { status: 409 });
+  if (source.source === "local_persistent") return handleLocalPersistentDigitalGrantRevocation(request);
+  return Response.json({ status: "unavailable" }, { status: 409 });
 }

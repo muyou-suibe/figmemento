@@ -1,1 +1,90 @@
-.page { background: #fffdf6; color: #1f2a25; min-height: 100vh; padding: 28px clamp(22px, 7vw, 100px) 80px; }.header { align-items: center; border-bottom: 1px solid #dfe5dd; display: flex; justify-content: space-between; margin: 0 auto; max-width: 980px; padding-bottom: 22px; }.brand { color: #1f2a25; font-size: 20px; font-weight: 800; letter-spacing: -.06em; }.brand > span:first-child { color: #e88864; margin-right: 8px; }.brand > span:last-child { color: #e88864; }.back { color: #1f2a25; font-size: 11px; font-weight: 800; text-decoration: underline; text-underline-offset: 4px; }.article { margin: 0 auto; max-width: 760px; padding-top: 70px; }.article h1 { font-size: clamp(46px, 8vw, 88px); letter-spacing: -.09em; line-height: .9; margin: 12px 0 22px; max-width: 700px; }.intro { color: #64736b; font-size: 15px; line-height: 1.7; max-width: 600px; }.content { border-top: 1px solid #dfe5dd; margin-top: 50px; padding-top: 10px; }.content section { border-bottom: 1px solid #dfe5dd; padding: 25px 0; }.content h2 { font-size: 22px; letter-spacing: -.04em; margin: 0 0 12px; }.content p, .content li { color: #53625b; font-size: 13px; line-height: 1.8; }.content ul { padding-left: 20px; }.updated { color: #99a69e; font-size: 10px; margin-top: 28px; }
+.page {
+  background: var(--color-bg);
+  color: var(--color-text);
+  min-height: 100vh;
+  padding: 28px var(--grid-margin) 80px;
+}
+
+.header {
+  align-items: center;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  justify-content: space-between;
+  margin: 0 auto;
+  max-width: var(--grid-max);
+  padding-bottom: 22px;
+}
+
+.brand {
+  align-items: center;
+  color: var(--color-text);
+  display: inline-flex;
+  font-size: 1.2rem;
+  font-weight: 400;
+  gap: 9px;
+  letter-spacing: -0.03em;
+}
+
+.brand > span:first-child { color: var(--color-accent); font-family: var(--font-display); }
+.back { color: var(--color-text-light); font-size: 0.72rem; min-height: 44px; padding: 13px 0; text-decoration: underline; text-underline-offset: 4px; }
+.back:hover, .back:focus-visible { color: var(--color-accent); }
+
+.article { margin: 0 auto; max-width: 860px; padding-top: clamp(56px, 9vw, 100px); }
+.eyebrow { color: var(--color-accent); font-size: 0.68rem; letter-spacing: 0.16em; margin: 0 0 16px; text-transform: uppercase; }
+.article h1 { font-family: var(--font-display); font-size: clamp(3.4rem, 8vw, 7rem); font-weight: 400; letter-spacing: -0.08em; line-height: 0.9; margin: 0 0 24px; max-width: 760px; }
+.intro { color: var(--color-text-light); font-size: 1rem; line-height: 1.7; max-width: 620px; }
+.content { border-top: 1px solid var(--color-border); margin-top: 52px; padding-top: 12px; }
+.content section { border-bottom: 1px solid var(--color-border); padding: 26px 0; }
+.content h2 { font-family: var(--font-display); font-size: 1.65rem; font-weight: 400; letter-spacing: -0.03em; margin: 0 0 12px; }
+.content p, .content li { color: var(--color-text-light); font-size: 0.86rem; line-height: 1.8; }
+.content ul { padding-left: 20px; }
+.updated { color: var(--color-text-muted); font-size: 0.68rem; margin-top: 28px; }
+
+@media (max-width: 639px) {
+  .page { padding-inline: 20px; }
+  .header { align-items: flex-start; flex-direction: column; gap: 8px; }
+  .article { padding-top: 54px; }
+  .article h1 { font-size: clamp(3.2rem, 16vw, 5.8rem); }
+}
+
+/* Tracking keeps the shared information-page structure but adopts the
+   established Fusion paper and editorial surface treatment. */
+.trackingPage {
+  background-color: var(--fusion-paper);
+  background-image: radial-gradient(color-mix(in srgb, var(--fusion-copper) 17%, transparent) .55px, transparent .55px);
+  background-size: 14px 14px;
+}
+
+.trackingPage .article {
+  max-width: 1040px;
+  padding-top: clamp(34px, 5vw, 66px);
+}
+
+.trackingPage .back {
+  color: var(--fusion-ink-soft);
+  font-family: var(--fusion-font-hand);
+  text-decoration-color: var(--fusion-gold);
+}
+
+.trackingPage .back:hover,
+.trackingPage .back:focus-visible {
+  color: var(--fusion-terra);
+}
+
+.trackingPage .eyebrow {
+  color: var(--fusion-copper);
+  font-family: var(--fusion-font-ital);
+}
+
+.trackingPage .article h1 {
+  color: var(--fusion-ink);
+  font-family: var(--fusion-font-serif);
+  letter-spacing: -.07em;
+  max-width: 14ch;
+  text-wrap: balance;
+}
+
+.trackingPage .intro {
+  color: var(--fusion-ink-soft);
+  max-width: 62ch;
+}

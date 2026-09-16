@@ -1,0 +1,565 @@
+.main {
+  margin: 0 auto;
+  max-width: 760px;
+  min-height: 620px;
+  padding: clamp(52px, 9vw, 112px) var(--grid-margin) var(--space-9);
+}
+
+.panel {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  padding: clamp(28px, 6vw, 64px);
+}
+
+.eyebrow {
+  color: var(--color-accent);
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  margin: 0 0 var(--space-3);
+  text-transform: uppercase;
+}
+
+.title {
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: clamp(2.6rem, 8vw, 4.8rem);
+  font-weight: var(--font-weight-display-light);
+  letter-spacing: -0.05em;
+  line-height: 0.95;
+  margin: 0 0 var(--space-4);
+}
+
+.intro,
+.identity,
+.disabledNote,
+.error,
+.status {
+  color: var(--color-text-light);
+  font-size: 0.88rem;
+  line-height: 1.7;
+  margin: 0;
+}
+
+.identity {
+  color: var(--color-text);
+  font-size: 1rem;
+  margin-top: var(--space-2);
+  overflow-wrap: anywhere;
+}
+
+.disabledNote {
+  background: var(--color-tag-bg);
+  border-left: 3px solid var(--color-highlight);
+  margin-top: var(--space-4);
+  padding: var(--space-3);
+}
+
+.actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+
+.primaryLink,
+.secondaryLink,
+.submitButton,
+.signOutButton {
+  align-items: center;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  font-size: 0.78rem;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 18px;
+  transition: background-color var(--motion-normal) var(--ease-out), border-color var(--motion-normal) var(--ease-out), box-shadow var(--motion-normal) var(--ease-out), color var(--motion-normal) var(--ease-out), transform var(--motion-normal) var(--ease-out);
+}
+
+.primaryLink,
+.submitButton,
+.signOutButton {
+  background: var(--color-accent);
+  border: 1px solid var(--color-accent);
+  color: var(--color-card);
+}
+
+.primaryLink:hover,
+.primaryLink:focus-visible,
+.submitButton:hover,
+.submitButton:focus-visible,
+.signOutButton:hover,
+.signOutButton:focus-visible {
+  background: var(--color-text);
+  border-color: var(--color-text);
+  box-shadow: var(--shadow-sm);
+  color: var(--color-card);
+  transform: translateY(calc(var(--motion-distance) * -1));
+}
+
+.secondaryLink {
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.secondaryLink:hover,
+.secondaryLink:focus-visible {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.form {
+  display: grid;
+  gap: var(--space-4);
+  margin-top: var(--space-6);
+}
+
+.field {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.label {
+  color: var(--color-text);
+  font-size: 0.78rem;
+}
+
+.input {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  min-height: 44px;
+  padding: 0 12px;
+  width: 100%;
+}
+
+.input:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
+
+.input:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(160, 113, 79, 0.12);
+  outline: 0;
+}
+
+.submitButton,
+.signOutButton {
+  cursor: pointer;
+  justify-self: start;
+}
+
+.submitButton:disabled,
+.signOutButton:disabled {
+  cursor: wait;
+  opacity: 0.55;
+  transform: none;
+}
+
+.error {
+  color: #8a4e3c;
+  margin-top: var(--space-2);
+}
+
+.status {
+  color: var(--color-text-light);
+  margin-top: var(--space-2);
+}
+
+.footerNote {
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  line-height: 1.6;
+  margin: var(--space-5) 0 0;
+}
+
+.accountCards { display: grid; gap: var(--space-3); grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: var(--space-6); }
+.accountCard { background: var(--color-bg); border: 1px solid var(--color-border); border-radius: var(--radius-sm); color: var(--color-text); display: grid; gap: 4px; padding: 16px; text-decoration: none; }
+.accountCard strong { color: var(--color-accent); font-family: var(--font-display); font-size: 2rem; }
+.accountCard span, .orderCard span, .pointsBalance span { color: var(--color-text-light); font-size: .76rem; }
+.orderList { display: grid; gap: var(--space-3); margin-top: var(--space-6); }
+.orderCard { align-items: center; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: var(--radius-sm); display: flex; gap: 16px; justify-content: space-between; padding: 16px; }
+.orderCard > div { display: grid; gap: 4px; min-width: 0; }
+.orderCard strong { color: var(--color-text); overflow-wrap: anywhere; }
+.pointsBalance { align-items: baseline; display: flex; gap: 10px; margin-top: var(--space-6); }
+.pointsBalance strong { color: var(--color-accent); font-family: var(--font-display); font-size: 4rem; line-height: 1; }
+
+@media (max-width: 639px) {
+  .main { min-height: 560px; }
+  .panel { border-radius: var(--radius-lg); padding: 28px 20px; }
+  .actions { align-items: stretch; flex-direction: column; }
+  .primaryLink, .secondaryLink, .submitButton, .signOutButton { width: 100%; }
+  .accountCards { grid-template-columns: 1fr; }
+  .orderCard { align-items: flex-start; flex-direction: column; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .primaryLink, .secondaryLink, .submitButton, .signOutButton { transition: none; }
+}
+
+/* ============================================================
+   FUSION ACCOUNT — VISUAL CALIBRATION
+   Presentation-only treatment for Account, Orders, and Points. Identity,
+   order ownership, points calculation, and authentication stay unchanged.
+   ============================================================ */
+
+.main {
+  background-color: var(--fusion-paper);
+  background-image: radial-gradient(color-mix(in srgb, var(--fusion-copper) 17%, transparent) .55px, transparent .55px);
+  background-size: 14px 14px;
+  max-width: 920px;
+  padding-bottom: clamp(64px, 8vw, 104px);
+  padding-top: clamp(34px, 5vw, 66px);
+}
+
+.panel {
+  background-color: var(--fusion-paper);
+  background-image: radial-gradient(color-mix(in srgb, var(--fusion-gold) 14%, transparent) .5px, transparent .5px);
+  background-size: 15px 15px;
+  border: 1px solid var(--fusion-line);
+  border-radius: 4px;
+  box-shadow: var(--fusion-shadow-card);
+  overflow: visible;
+  padding: clamp(32px, 6vw, 68px);
+  position: relative;
+}
+
+.panel::before {
+  background: color-mix(in srgb, var(--fusion-honey) 88%, white);
+  box-shadow: 0 1px 2px rgba(60, 42, 30, .14);
+  content: "";
+  height: 12px;
+  left: 12%;
+  position: absolute;
+  top: -8px;
+  transform: rotate(-2deg);
+  width: 78px;
+}
+
+.panel::after {
+  color: var(--fusion-terra);
+  content: "✦";
+  font-size: 1.25rem;
+  position: absolute;
+  right: clamp(22px, 5vw, 52px);
+  top: clamp(22px, 5vw, 48px);
+}
+
+.eyebrow {
+  color: var(--fusion-copper);
+  font-family: var(--fusion-font-ital);
+  letter-spacing: .14em;
+}
+
+.title {
+  color: var(--fusion-ink);
+  font-family: var(--fusion-font-serif);
+  font-size: clamp(3.25rem, 8vw, 5.8rem);
+  letter-spacing: -.07em;
+  max-width: 15ch;
+  text-wrap: balance;
+}
+
+.title em {
+  color: var(--fusion-terra);
+  font-style: italic;
+}
+
+.intro,
+.disabledNote,
+.error,
+.status,
+.footerNote {
+  color: var(--fusion-ink-soft);
+}
+
+.intro {
+  max-width: 62ch;
+}
+
+.identity {
+  background: color-mix(in srgb, var(--fusion-cream) 72%, var(--fusion-paper));
+  border-left: 3px solid var(--fusion-gold);
+  color: var(--fusion-ink);
+  font-family: var(--fusion-font-hand);
+  letter-spacing: .02em;
+  margin-top: 18px;
+  padding: 13px 15px;
+}
+
+.accountCards {
+  gap: 18px;
+  margin-top: 30px;
+}
+
+.accountCard {
+  background: color-mix(in srgb, var(--fusion-cream) 74%, var(--fusion-paper));
+  border: 1px solid var(--fusion-line);
+  border-radius: 0;
+  box-shadow: var(--fusion-shadow-card);
+  padding: 22px;
+  position: relative;
+  transition: border-color var(--fusion-motion-hover) ease, box-shadow var(--fusion-motion-hover) ease, transform var(--fusion-motion-hover) ease;
+}
+
+.accountCard::before {
+  background: color-mix(in srgb, var(--fusion-honey) 86%, white);
+  content: "";
+  height: 9px;
+  position: absolute;
+  right: 22px;
+  top: -5px;
+  transform: rotate(3deg);
+  width: 48px;
+}
+
+.accountCard:nth-child(2) { transform: rotate(1deg); }
+
+.accountCard:hover,
+.accountCard:focus-visible {
+  border-color: var(--fusion-copper);
+  box-shadow: var(--fusion-shadow-lift);
+  transform: translateY(-2px) rotate(-.5deg);
+}
+
+.accountCard:nth-child(2):hover,
+.accountCard:nth-child(2):focus-visible {
+  transform: translateY(-2px) rotate(0deg);
+}
+
+.accountCard strong {
+  color: var(--fusion-terra);
+  font-family: var(--fusion-font-serif);
+  font-size: clamp(2.2rem, 5vw, 3.1rem);
+  line-height: 1;
+}
+
+.accountCard span,
+.orderCard span,
+.pointsBalance span {
+  color: var(--fusion-ink-mute);
+  font-family: var(--fusion-font-hand);
+  letter-spacing: .025em;
+}
+
+.actions {
+  border-top: 1px solid var(--fusion-line);
+  gap: 12px;
+  margin-top: 28px;
+  padding-top: 20px;
+}
+
+.primaryLink,
+.submitButton,
+.signOutButton {
+  background: var(--fusion-ink);
+  border-color: var(--fusion-ink);
+  border-radius: 3px;
+  box-shadow: 3px 4px 0 var(--fusion-gold);
+  color: var(--fusion-paper);
+  font-family: var(--fusion-font-body);
+  font-weight: 700;
+}
+
+.primaryLink:hover,
+.primaryLink:focus-visible,
+.submitButton:hover,
+.submitButton:focus-visible,
+.signOutButton:hover,
+.signOutButton:focus-visible {
+  background: var(--fusion-terra);
+  border-color: var(--fusion-terra);
+  box-shadow: 3px 4px 0 var(--fusion-copper);
+  color: var(--fusion-paper);
+}
+
+.secondaryLink {
+  border-color: var(--fusion-line);
+  border-radius: 3px;
+  color: var(--fusion-ink);
+  font-family: var(--fusion-font-hand);
+}
+
+.secondaryLink:hover,
+.secondaryLink:focus-visible {
+  background: var(--fusion-honey);
+  border-color: var(--fusion-gold);
+  color: var(--fusion-ink);
+  transform: rotate(-1deg) translateY(-1px);
+}
+
+.disabledNote,
+.status {
+  background: color-mix(in srgb, var(--fusion-honey) 34%, var(--fusion-paper));
+  border: 1px solid var(--fusion-gold);
+  border-left: 3px solid var(--fusion-terra);
+  margin-top: 24px;
+  padding: 16px;
+}
+
+.error {
+  color: var(--fusion-terra-deep);
+}
+
+.form {
+  border-top: 1px solid var(--fusion-gold);
+  gap: 18px;
+  margin-top: 34px;
+  padding-top: 26px;
+}
+
+.label {
+  color: var(--fusion-ink-soft);
+  font-family: var(--fusion-font-hand);
+}
+
+.input {
+  background: var(--fusion-cream);
+  border-color: var(--fusion-line);
+  border-radius: 3px;
+  color: var(--fusion-ink);
+  min-height: 48px;
+}
+
+.input:hover,
+.input:focus {
+  background: var(--fusion-paper);
+  border-color: var(--fusion-terra);
+}
+
+.input:focus-visible {
+  outline-color: var(--fusion-terra);
+}
+
+.footerNote {
+  border-top: 1px dotted var(--fusion-gold);
+  margin-top: 34px;
+  padding-top: 16px;
+}
+
+.orderList {
+  gap: 15px;
+  margin-top: 30px;
+}
+
+.orderCard {
+  align-items: start;
+  background: color-mix(in srgb, var(--fusion-cream) 70%, var(--fusion-paper));
+  border: 1px solid var(--fusion-line);
+  border-radius: 0;
+  box-shadow: var(--fusion-shadow-card);
+  padding: 20px 22px;
+  position: relative;
+}
+
+.orderCard:nth-child(even) { transform: rotate(.35deg); }
+
+.orderCard > div > strong {
+  color: var(--fusion-ink);
+  font-family: var(--fusion-font-serif);
+  font-size: 1rem;
+  letter-spacing: .035em;
+}
+
+.orderCard > div > span:first-of-type {
+  background: color-mix(in srgb, var(--fusion-honey) 62%, var(--fusion-paper));
+  border: 1px solid var(--fusion-gold);
+  color: var(--fusion-ink-soft);
+  display: inline-flex;
+  font-family: var(--fusion-font-body);
+  font-size: .68rem;
+  letter-spacing: .04em;
+  margin-top: 4px;
+  padding: 4px 7px;
+  width: fit-content;
+}
+
+.orderCard > div > span:last-of-type {
+  color: var(--fusion-ink-mute);
+  font-size: .7rem;
+}
+
+.orderCard > strong:last-child {
+  color: var(--fusion-terra);
+  font-family: var(--fusion-font-serif);
+  font-size: 1.22rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.pointsBalance {
+  align-items: center;
+  background-color: var(--fusion-ink);
+  background-image: radial-gradient(color-mix(in srgb, var(--fusion-paper) 12%, transparent) .6px, transparent .6px);
+  background-size: 15px 15px;
+  box-shadow: var(--fusion-shadow-lift);
+  color: var(--fusion-paper);
+  gap: 16px;
+  margin-top: 30px;
+  padding: 24px 26px;
+  position: relative;
+}
+
+.pointsBalance::after {
+  color: var(--fusion-honey);
+  content: "✦";
+  font-size: 1.25rem;
+  position: absolute;
+  right: 22px;
+  top: 18px;
+}
+
+.pointsBalance strong {
+  color: var(--fusion-honey);
+  font-family: var(--fusion-font-serif);
+  font-size: clamp(3rem, 8vw, 5rem);
+  font-variant-numeric: tabular-nums;
+}
+
+.pointsBalance span { color: color-mix(in srgb, var(--fusion-paper) 72%, transparent); }
+
+@media (max-width: 720px) {
+  .main { padding-inline: 18px; }
+  .panel { padding-inline: 22px; }
+}
+
+@media (max-width: 639px) {
+  .main {
+    padding-bottom: 58px;
+    padding-inline: 15px;
+    padding-top: 30px;
+  }
+
+  .panel { padding: 44px 18px 30px; }
+  .title { font-size: clamp(2.75rem, 14vw, 4.4rem); }
+  .accountCards { gap: 14px; }
+  .accountCard { padding: 20px 18px; }
+  .orderCard { padding: 18px 16px; }
+  .pointsBalance { align-items: baseline; padding: 20px 18px; }
+  .pointsBalance strong { font-size: clamp(3rem, 17vw, 4.4rem); }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .accountCard:hover,
+  .accountCard:focus-visible,
+  .accountCard:nth-child(2):hover,
+  .accountCard:nth-child(2):focus-visible,
+  .secondaryLink:hover,
+  .secondaryLink:focus-visible {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .accountCard,
+  .primaryLink,
+  .secondaryLink,
+  .submitButton,
+  .signOutButton {
+    transition: none;
+  }
+}

@@ -13,17 +13,17 @@ import {
   createProductionAdminSkuGraphRepositories,
 } from "../infrastructure/catalog/catalog-admin-repository-factory.ts";
 import { getSharedLocalCatalogAdminRuntime } from "../infrastructure/catalog/local-admin-catalog-runtime.server.ts";
-import { resolveAuthorizedSource } from "./admin-source-resolution.server.ts";
+import { resolveAuthorizedAdminCatalogSource } from "./admin-source-resolution.server.ts";
 
 export function createAdminCatalogReader(): CatalogAdminReadRepository {
-  return resolveAuthorizedSource(
+  return resolveAuthorizedAdminCatalogSource(
     createProductionAdminCatalogReader,
     () => getSharedLocalCatalogAdminRuntime().reader,
   );
 }
 
 export function createAdminCatalogRepositories(): PrivilegedAdminCatalogRepositories {
-  return resolveAuthorizedSource(
+  return resolveAuthorizedAdminCatalogSource(
     createProductionAdminCatalogRepositories,
     () => {
       const runtime = getSharedLocalCatalogAdminRuntime();
@@ -33,7 +33,7 @@ export function createAdminCatalogRepositories(): PrivilegedAdminCatalogReposito
 }
 
 export function createAdminSkuGraphRepositories(): PrivilegedAdminSkuGraphRepositories {
-  return resolveAuthorizedSource(
+  return resolveAuthorizedAdminCatalogSource(
     createProductionAdminSkuGraphRepositories,
     () => {
       const runtime = getSharedLocalCatalogAdminRuntime();
@@ -43,7 +43,7 @@ export function createAdminSkuGraphRepositories(): PrivilegedAdminSkuGraphReposi
 }
 
 export function createAdminProductAssetRepositories(): PrivilegedAdminProductAssetRepositories {
-  return resolveAuthorizedSource(
+  return resolveAuthorizedAdminCatalogSource(
     createProductionAdminProductAssetRepositories,
     () => {
       const runtime = getSharedLocalCatalogAdminRuntime();
@@ -53,7 +53,7 @@ export function createAdminProductAssetRepositories(): PrivilegedAdminProductAss
 }
 
 export function createAdminProductFulfillmentRepositories(): PrivilegedAdminProductFulfillmentRepositories {
-  return resolveAuthorizedSource(
+  return resolveAuthorizedAdminCatalogSource(
     createProductionAdminProductFulfillmentRepositories,
     () => {
       const runtime = getSharedLocalCatalogAdminRuntime();
@@ -63,7 +63,7 @@ export function createAdminProductFulfillmentRepositories(): PrivilegedAdminProd
 }
 
 export function createAdminCatalogLifecycleRepositories(): PrivilegedAdminCatalogLifecycleRepositories {
-  return resolveAuthorizedSource(
+  return resolveAuthorizedAdminCatalogSource(
     createProductionAdminCatalogLifecycleRepositories,
     () => ({ writer: getSharedLocalCatalogAdminRuntime().lifecycleRepository }),
   );

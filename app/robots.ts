@@ -1,7 +1,17 @@
 import type { MetadataRoute } from "next";
-import { getPublicSiteConfig } from "./config/public";
+import type { SeoPolicy } from "./config/seo-policy.ts";
+import { getSeoPolicy } from "./config/seo-policy.ts";
+
+export function buildRobots(policy: SeoPolicy): MetadataRoute.Robots {
+  if (!policy.isIndexable || !policy.canonicalOrigin) {
+    return { rules: [{ userAgent: "*", disallow: "/" }] };
+  }
+  return {
+    rules: [{ userAgent: "*", allow: "/", disallow: ["/admin/", "/api/"] }],
+    sitemap: `${policy.canonicalOrigin}/sitemap.xml`,
+  };
+}
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = getPublicSiteConfig().siteUrl;
-  return { rules: [{ userAgent: "*", allow: "/", disallow: ["/admin/", "/api/"] }], sitemap: `${baseUrl}/sitemap.xml` };
+  return buildRobots(getSeoPolicy());
 }

@@ -1,0 +1,2211 @@
+{
+  "runId": "run-68938831",
+  "projectId": "figmemento-local-commerce-test-run-68938831",
+  "checks": [
+    {
+      "name": "2.7 ledger/checksums 7/7 and planner apply=0 skip=7",
+      "status": "PASS"
+    },
+    {
+      "name": "2.7 36 RLS tables; anon/authenticated CRUD denied; service reads allowed",
+      "status": "PASS"
+    },
+    {
+      "name": "2.7 restricted RPC correct/wrong identity and permissions",
+      "status": "PASS"
+    },
+    {
+      "name": "2.7 private Storage denied anon; service upload/download/delete",
+      "status": "PASS"
+    },
+    {
+      "name": "2.7 migration effect and ledger failure roll back together",
+      "status": "PASS"
+    },
+    {
+      "name": "2.7 Order/payment/receipt transaction FK failure leaves zero rows",
+      "status": "PASS"
+    },
+    {
+      "name": "2.7/4.1 environment matrix fails closed",
+      "status": "PASS"
+    },
+    {
+      "name": "2.7 fake provider no DB client/network sentinel",
+      "status": "PASS"
+    },
+    {
+      "name": "4.1 private synthetic setup with real service-role HTTP",
+      "status": "PASS"
+    },
+    {
+      "name": "4.1 DB Catalog/SKU/options/config/fulfillment/pricing read",
+      "status": "PASS"
+    },
+    {
+      "name": "4.1 wrong marker, project and cross-project FK reject",
+      "status": "PASS"
+    },
+    {
+      "name": "4.1 handoff stale configuration rejected; fake Admin isolated",
+      "status": "PASS"
+    },
+    {
+      "name": "4.1 shipping/coupon four statuses and tax null",
+      "status": "PASS"
+    },
+    {
+      "name": "4.1 actual rule update increments version; stale version rejects",
+      "status": "PASS"
+    },
+    {
+      "name": "4.1 unavailable authority returns no fallback",
+      "status": "PASS"
+    }
+  ],
+  "http": [
+    {
+      "role": "anon",
+      "path": "/rest/v1/access_grants",
+      "method": "GET",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/access_grants",
+      "method": "POST",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/access_grants",
+      "method": "PATCH",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/access_grants",
+      "method": "DELETE",
+      "status": 401
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/access_grants",
+      "method": "GET",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/access_grants",
+      "method": "POST",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/access_grants",
+      "method": "PATCH",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/access_grants",
+      "method": "DELETE",
+      "status": 403
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/access_grants",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/cart_lines",
+      "method": "GET",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/cart_lines",
+      "method": "POST",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/cart_lines",
+      "method": "PATCH",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/cart_lines",
+      "method": "DELETE",
+      "status": 401
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/cart_lines",
+      "method": "GET",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/cart_lines",
+      "method": "POST",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/cart_lines",
+      "method": "PATCH",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/cart_lines",
+      "method": "DELETE",
+      "status": 403
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/cart_lines",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/carts",
+      "method": "GET",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/carts",
+      "method": "POST",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/carts",
+      "method": "PATCH",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/carts",
+      "method": "DELETE",
+      "status": 401
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/carts",
+      "method": "GET",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/carts",
+      "method": "POST",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/carts",
+      "method": "PATCH",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/carts",
+      "method": "DELETE",
+      "status": 403
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/carts",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/catalog_categories",
+      "method": "GET",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/catalog_categories",
+      "method": "POST",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/catalog_categories",
+      "method": "PATCH",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/catalog_categories",
+      "method": "DELETE",
+      "status": 401
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/catalog_categories",
+      "method": "GET",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/catalog_categories",
+      "method": "POST",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/catalog_categories",
+      "method": "PATCH",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/catalog_categories",
+      "method": "DELETE",
+      "status": 403
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/catalog_categories",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/catalog_configuration_snapshots",
+      "method": "GET",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/catalog_configuration_snapshots",
+      "method": "POST",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/catalog_configuration_snapshots",
+      "method": "PATCH",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/catalog_configuration_snapshots",
+      "method": "DELETE",
+      "status": 401
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/catalog_configuration_snapshots",
+      "method": "GET",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/catalog_configuration_snapshots",
+      "method": "POST",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/catalog_configuration_snapshots",
+      "method": "PATCH",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/catalog_configuration_snapshots",
+      "method": "DELETE",
+      "status": 403
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/catalog_configuration_snapshots",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/catalog_pricing_rules",
+      "method": "GET",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/catalog_pricing_rules",
+      "method": "POST",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/catalog_pricing_rules",
+      "method": "PATCH",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/catalog_pricing_rules",
+      "method": "DELETE",
+      "status": 401
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/catalog_pricing_rules",
+      "method": "GET",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/catalog_pricing_rules",
+      "method": "POST",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/catalog_pricing_rules",
+      "method": "PATCH",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/catalog_pricing_rules",
+      "method": "DELETE",
+      "status": 403
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/catalog_pricing_rules",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/catalog_products",
+      "method": "GET",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/catalog_products",
+      "method": "POST",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/catalog_products",
+      "method": "PATCH",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/catalog_products",
+      "method": "DELETE",
+      "status": 401
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/catalog_products",
+      "method": "GET",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/catalog_products",
+      "method": "POST",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/catalog_products",
+      "method": "PATCH",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/catalog_products",
+      "method": "DELETE",
+      "status": 403
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/catalog_products",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/catalog_variants",
+      "method": "GET",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/catalog_variants",
+      "method": "POST",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/catalog_variants",
+      "method": "PATCH",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/catalog_variants",
+      "method": "DELETE",
+      "status": 401
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/catalog_variants",
+      "method": "GET",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/catalog_variants",
+      "method": "POST",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/catalog_variants",
+      "method": "PATCH",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/catalog_variants",
+      "method": "DELETE",
+      "status": 403
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/catalog_variants",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/commerce_owners",
+      "method": "GET",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/commerce_owners",
+      "method": "POST",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/commerce_owners",
+      "method": "PATCH",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/commerce_owners",
+      "method": "DELETE",
+      "status": 401
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/commerce_owners",
+      "method": "GET",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/commerce_owners",
+      "method": "POST",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/commerce_owners",
+      "method": "PATCH",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/commerce_owners",
+      "method": "DELETE",
+      "status": 403
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/commerce_owners",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/configuration_drafts",
+      "method": "GET",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/configuration_drafts",
+      "method": "POST",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/configuration_drafts",
+      "method": "PATCH",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/configuration_drafts",
+      "method": "DELETE",
+      "status": 401
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/configuration_drafts",
+      "method": "GET",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/configuration_drafts",
+      "method": "POST",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/configuration_drafts",
+      "method": "PATCH",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/configuration_drafts",
+      "method": "DELETE",
+      "status": 403
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/configuration_drafts",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/customer_accounts",
+      "method": "GET",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/customer_accounts",
+      "method": "POST",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/customer_accounts",
+      "method": "PATCH",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/customer_accounts",
+      "method": "DELETE",
+      "status": 401
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/customer_accounts",
+      "method": "GET",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/customer_accounts",
+      "method": "POST",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/customer_accounts",
+      "method": "PATCH",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/customer_accounts",
+      "method": "DELETE",
+      "status": 403
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/customer_accounts",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/customer_sessions",
+      "method": "GET",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/customer_sessions",
+      "method": "POST",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/customer_sessions",
+      "method": "PATCH",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/customer_sessions",
+      "method": "DELETE",
+      "status": 401
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/customer_sessions",
+      "method": "GET",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/customer_sessions",
+      "method": "POST",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/customer_sessions",
+      "method": "PATCH",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/customer_sessions",
+      "method": "DELETE",
+      "status": 403
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/customer_sessions",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/digital_delivery_attempts",
+      "method": "GET",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/digital_delivery_attempts",
+      "method": "POST",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/digital_delivery_attempts",
+      "method": "PATCH",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/digital_delivery_attempts",
+      "method": "DELETE",
+      "status": 401
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/digital_delivery_attempts",
+      "method": "GET",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/digital_delivery_attempts",
+      "method": "POST",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/digital_delivery_attempts",
+      "method": "PATCH",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/digital_delivery_attempts",
+      "method": "DELETE",
+      "status": 403
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/digital_delivery_attempts",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/digital_grants",
+      "method": "GET",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/digital_grants",
+      "method": "POST",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/digital_grants",
+      "method": "PATCH",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/digital_grants",
+      "method": "DELETE",
+      "status": 401
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/digital_grants",
+      "method": "GET",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/digital_grants",
+      "method": "POST",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/digital_grants",
+      "method": "PATCH",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/digital_grants",
+      "method": "DELETE",
+      "status": 403
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/digital_grants",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/digital_tickets",
+      "method": "GET",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/digital_tickets",
+      "method": "POST",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/digital_tickets",
+      "method": "PATCH",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/digital_tickets",
+      "method": "DELETE",
+      "status": 401
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/digital_tickets",
+      "method": "GET",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/digital_tickets",
+      "method": "POST",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/digital_tickets",
+      "method": "PATCH",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/digital_tickets",
+      "method": "DELETE",
+      "status": 403
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/digital_tickets",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/digital_versions",
+      "method": "GET",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/digital_versions",
+      "method": "POST",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/digital_versions",
+      "method": "PATCH",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/digital_versions",
+      "method": "DELETE",
+      "status": 401
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/digital_versions",
+      "method": "GET",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/digital_versions",
+      "method": "POST",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/digital_versions",
+      "method": "PATCH",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/digital_versions",
+      "method": "DELETE",
+      "status": 403
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/digital_versions",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/draft_media_links",
+      "method": "GET",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/draft_media_links",
+      "method": "POST",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/draft_media_links",
+      "method": "PATCH",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/draft_media_links",
+      "method": "DELETE",
+      "status": 401
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/draft_media_links",
+      "method": "GET",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/draft_media_links",
+      "method": "POST",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/draft_media_links",
+      "method": "PATCH",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/draft_media_links",
+      "method": "DELETE",
+      "status": 403
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/draft_media_links",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/fulfillment_decisions",
+      "method": "GET",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/fulfillment_decisions",
+      "method": "POST",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/fulfillment_decisions",
+      "method": "PATCH",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/fulfillment_decisions",
+      "method": "DELETE",
+      "status": 401
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/fulfillment_decisions",
+      "method": "GET",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/fulfillment_decisions",
+      "method": "POST",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/fulfillment_decisions",
+      "method": "PATCH",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/fulfillment_decisions",
+      "method": "DELETE",
+      "status": 403
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/fulfillment_decisions",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/fulfillments",
+      "method": "GET",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/fulfillments",
+      "method": "POST",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/fulfillments",
+      "method": "PATCH",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/fulfillments",
+      "method": "DELETE",
+      "status": 401
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/fulfillments",
+      "method": "GET",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/fulfillments",
+      "method": "POST",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/fulfillments",
+      "method": "PATCH",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/fulfillments",
+      "method": "DELETE",
+      "status": 403
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/fulfillments",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/media_copy_bindings",
+      "method": "GET",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/media_copy_bindings",
+      "method": "POST",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/media_copy_bindings",
+      "method": "PATCH",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/media_copy_bindings",
+      "method": "DELETE",
+      "status": 401
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/media_copy_bindings",
+      "method": "GET",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/media_copy_bindings",
+      "method": "POST",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/media_copy_bindings",
+      "method": "PATCH",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/media_copy_bindings",
+      "method": "DELETE",
+      "status": 403
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/media_copy_bindings",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/media_derivatives",
+      "method": "GET",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/media_derivatives",
+      "method": "POST",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/media_derivatives",
+      "method": "PATCH",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/media_derivatives",
+      "method": "DELETE",
+      "status": 401
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/media_derivatives",
+      "method": "GET",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/media_derivatives",
+      "method": "POST",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/media_derivatives",
+      "method": "PATCH",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/media_derivatives",
+      "method": "DELETE",
+      "status": 403
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/media_derivatives",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/media_objects",
+      "method": "GET",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/media_objects",
+      "method": "POST",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/media_objects",
+      "method": "PATCH",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/media_objects",
+      "method": "DELETE",
+      "status": 401
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/media_objects",
+      "method": "GET",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/media_objects",
+      "method": "POST",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/media_objects",
+      "method": "PATCH",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/media_objects",
+      "method": "DELETE",
+      "status": 403
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/media_objects",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/media_receipts",
+      "method": "GET",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/media_receipts",
+      "method": "POST",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/media_receipts",
+      "method": "PATCH",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/media_receipts",
+      "method": "DELETE",
+      "status": 401
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/media_receipts",
+      "method": "GET",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/media_receipts",
+      "method": "POST",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/media_receipts",
+      "method": "PATCH",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/media_receipts",
+      "method": "DELETE",
+      "status": 403
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/media_receipts",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/migration_ledger",
+      "method": "GET",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/migration_ledger",
+      "method": "POST",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/migration_ledger",
+      "method": "PATCH",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/migration_ledger",
+      "method": "DELETE",
+      "status": 401
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/migration_ledger",
+      "method": "GET",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/migration_ledger",
+      "method": "POST",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/migration_ledger",
+      "method": "PATCH",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/migration_ledger",
+      "method": "DELETE",
+      "status": 403
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/migration_ledger",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/order_item_purchase_snapshots",
+      "method": "GET",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/order_item_purchase_snapshots",
+      "method": "POST",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/order_item_purchase_snapshots",
+      "method": "PATCH",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/order_item_purchase_snapshots",
+      "method": "DELETE",
+      "status": 401
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/order_item_purchase_snapshots",
+      "method": "GET",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/order_item_purchase_snapshots",
+      "method": "POST",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/order_item_purchase_snapshots",
+      "method": "PATCH",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/order_item_purchase_snapshots",
+      "method": "DELETE",
+      "status": 403
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/order_item_purchase_snapshots",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/order_item_receipt_bindings",
+      "method": "GET",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/order_item_receipt_bindings",
+      "method": "POST",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/order_item_receipt_bindings",
+      "method": "PATCH",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/order_item_receipt_bindings",
+      "method": "DELETE",
+      "status": 401
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/order_item_receipt_bindings",
+      "method": "GET",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/order_item_receipt_bindings",
+      "method": "POST",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/order_item_receipt_bindings",
+      "method": "PATCH",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/order_item_receipt_bindings",
+      "method": "DELETE",
+      "status": 403
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/order_item_receipt_bindings",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/order_items",
+      "method": "GET",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/order_items",
+      "method": "POST",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/order_items",
+      "method": "PATCH",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/order_items",
+      "method": "DELETE",
+      "status": 401
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/order_items",
+      "method": "GET",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/order_items",
+      "method": "POST",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/order_items",
+      "method": "PATCH",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/order_items",
+      "method": "DELETE",
+      "status": 403
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/order_items",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/order_purchase_snapshots",
+      "method": "GET",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/order_purchase_snapshots",
+      "method": "POST",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/order_purchase_snapshots",
+      "method": "PATCH",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/order_purchase_snapshots",
+      "method": "DELETE",
+      "status": 401
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/order_purchase_snapshots",
+      "method": "GET",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/order_purchase_snapshots",
+      "method": "POST",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/order_purchase_snapshots",
+      "method": "PATCH",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/order_purchase_snapshots",
+      "method": "DELETE",
+      "status": 403
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/order_purchase_snapshots",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/orders",
+      "method": "GET",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/orders",
+      "method": "POST",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/orders",
+      "method": "PATCH",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/orders",
+      "method": "DELETE",
+      "status": 401
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/orders",
+      "method": "GET",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/orders",
+      "method": "POST",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/orders",
+      "method": "PATCH",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/orders",
+      "method": "DELETE",
+      "status": 403
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/orders",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/payment_actions",
+      "method": "GET",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/payment_actions",
+      "method": "POST",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/payment_actions",
+      "method": "PATCH",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/payment_actions",
+      "method": "DELETE",
+      "status": 401
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/payment_actions",
+      "method": "GET",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/payment_actions",
+      "method": "POST",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/payment_actions",
+      "method": "PATCH",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/payment_actions",
+      "method": "DELETE",
+      "status": 403
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/payment_actions",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/payment_attempts",
+      "method": "GET",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/payment_attempts",
+      "method": "POST",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/payment_attempts",
+      "method": "PATCH",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/payment_attempts",
+      "method": "DELETE",
+      "status": 401
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/payment_attempts",
+      "method": "GET",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/payment_attempts",
+      "method": "POST",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/payment_attempts",
+      "method": "PATCH",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/payment_attempts",
+      "method": "DELETE",
+      "status": 403
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/payment_attempts",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/photo_reviews",
+      "method": "GET",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/photo_reviews",
+      "method": "POST",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/photo_reviews",
+      "method": "PATCH",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/photo_reviews",
+      "method": "DELETE",
+      "status": 401
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/photo_reviews",
+      "method": "GET",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/photo_reviews",
+      "method": "POST",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/photo_reviews",
+      "method": "PATCH",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/photo_reviews",
+      "method": "DELETE",
+      "status": 403
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/photo_reviews",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/preview_manifests",
+      "method": "GET",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/preview_manifests",
+      "method": "POST",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/preview_manifests",
+      "method": "PATCH",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/preview_manifests",
+      "method": "DELETE",
+      "status": 401
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/preview_manifests",
+      "method": "GET",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/preview_manifests",
+      "method": "POST",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/preview_manifests",
+      "method": "PATCH",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/preview_manifests",
+      "method": "DELETE",
+      "status": 403
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/preview_manifests",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/project_identities",
+      "method": "GET",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/project_identities",
+      "method": "POST",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/project_identities",
+      "method": "PATCH",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/project_identities",
+      "method": "DELETE",
+      "status": 401
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/project_identities",
+      "method": "GET",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/project_identities",
+      "method": "POST",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/project_identities",
+      "method": "PATCH",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/project_identities",
+      "method": "DELETE",
+      "status": 403
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/project_identities",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/shipment_events",
+      "method": "GET",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/shipment_events",
+      "method": "POST",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/shipment_events",
+      "method": "PATCH",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/shipment_events",
+      "method": "DELETE",
+      "status": 401
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/shipment_events",
+      "method": "GET",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/shipment_events",
+      "method": "POST",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/shipment_events",
+      "method": "PATCH",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/shipment_events",
+      "method": "DELETE",
+      "status": 403
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/shipment_events",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/shipments",
+      "method": "GET",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/shipments",
+      "method": "POST",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/shipments",
+      "method": "PATCH",
+      "status": 401
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/shipments",
+      "method": "DELETE",
+      "status": 401
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/shipments",
+      "method": "GET",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/shipments",
+      "method": "POST",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/shipments",
+      "method": "PATCH",
+      "status": 403
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/shipments",
+      "method": "DELETE",
+      "status": 403
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/shipments",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/rpc/verify_project_identity",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/rpc/verify_project_identity",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/rpc/verify_project_identity",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/rpc/verify_project_identity",
+      "method": "POST",
+      "status": 401
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/rpc/verify_project_identity",
+      "method": "POST",
+      "status": 403
+    },
+    {
+      "role": "anon",
+      "path": "/rest/v1/rpc/read_catalog_authority",
+      "method": "POST",
+      "status": 401
+    },
+    {
+      "role": "authenticated",
+      "path": "/rest/v1/rpc/read_catalog_authority",
+      "method": "POST",
+      "status": 403
+    },
+    {
+      "role": "anon",
+      "path": "/storage/v1/object/local-commerce-private/acceptance-69eac156-665c-4b36-bd23-817df30927b0.png",
+      "method": "POST",
+      "status": 400
+    },
+    {
+      "role": "service_role",
+      "path": "/storage/v1/object/local-commerce-private/acceptance-69eac156-665c-4b36-bd23-817df30927b0.png",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "role": "service_role",
+      "path": "/storage/v1/object/local-commerce-private/acceptance-69eac156-665c-4b36-bd23-817df30927b0.png",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "role": "service_role",
+      "path": "/storage/v1/object/local-commerce-private",
+      "method": "DELETE",
+      "status": 200
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/catalog_pricing_rules",
+      "method": "DELETE",
+      "status": 204
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/catalog_pricing_rules",
+      "method": "DELETE",
+      "status": 204
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/catalog_configuration_snapshots",
+      "method": "DELETE",
+      "status": 204
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/catalog_variants",
+      "method": "DELETE",
+      "status": 204
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/catalog_products",
+      "method": "DELETE",
+      "status": 204
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/catalog_categories",
+      "method": "DELETE",
+      "status": 204
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/catalog_categories",
+      "method": "POST",
+      "status": 201
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/catalog_products",
+      "method": "POST",
+      "status": 201
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/catalog_variants",
+      "method": "POST",
+      "status": 201
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/catalog_configuration_snapshots",
+      "method": "POST",
+      "status": 201
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/catalog_pricing_rules",
+      "method": "POST",
+      "status": 201
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/rpc/read_catalog_authority",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/catalog_variants",
+      "method": "POST",
+      "status": 409
+    },
+    {
+      "role": "service_role",
+      "path": "/rest/v1/catalog_pricing_rules",
+      "method": "PATCH",
+      "status": 204
+    }
+  ],
+  "postgres": "17.6",
+  "cli": "2.114.0",
+  "ledger": [
+    {
+      "version": 1,
+      "migrationId": "local-commerce-migration-ledger",
+      "checksum": "c1c653a53479f75c04b61a0da04a8ccc6e72b4aa26d602380d04e4948e79ac3a",
+      "projectId": "figmemento-local-commerce-test-run-68938831"
+    },
+    {
+      "version": 2,
+      "migrationId": "local-commerce-identity-catalog-cart-media",
+      "checksum": "b182f96606b1bba780c9eff00f6579df68d8dc97a78056b1f6d1714d78202ab6",
+      "projectId": "figmemento-local-commerce-test-run-68938831"
+    },
+    {
+      "version": 3,
+      "migrationId": "local-commerce-order-operations-delivery",
+      "checksum": "c9caf3d470170fe09f019e2525e3627cb6c0391d327faee0526931ef52da6a14",
+      "projectId": "figmemento-local-commerce-test-run-68938831"
+    },
+    {
+      "version": 4,
+      "migrationId": "local-commerce-security-boundary",
+      "checksum": "7f050f6028c26dbdd3e5178df3f673d80479ddd2d1988eeba6fb808ca3f7d3d8",
+      "projectId": "figmemento-local-commerce-test-run-68938831"
+    },
+    {
+      "version": 5,
+      "migrationId": "local-commerce-customer-auth",
+      "checksum": "0172494b55821c88f6f7beee58f11908afe069895b9a3607ebc4957f21822c77",
+      "projectId": "figmemento-local-commerce-test-run-68938831"
+    },
+    {
+      "version": 6,
+      "migrationId": "local-commerce-customer-session",
+      "checksum": "4dd5c930d20ed60e682f8013cb45d01708a80bd03b4defa3c2f158679afa69c1",
+      "projectId": "figmemento-local-commerce-test-run-68938831"
+    },
+    {
+      "version": 7,
+      "migrationId": "local-commerce-catalog-authority",
+      "checksum": "98017e6d5b61f37d6137656be0d6d971ee66c8efb963e81b03443c0369c4ee2f",
+      "projectId": "figmemento-local-commerce-test-run-68938831"
+    }
+  ],
+  "rlsTableCount": 36,
+  "phaseC": "PASS",
+  "phaseD": "PASS"
+}

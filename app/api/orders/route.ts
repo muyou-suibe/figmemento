@@ -1,9 +1,24 @@
 import { getSupabaseServerClient } from "../../lib/supabase-server";
+import { readLegacyOrderUploadReference } from "../../application/legacy-order-upload-reference.ts";
 import { isStripeConfigured, readStripeServerConfig } from "../../config/server";
-import { parseOrderRequestItem } from "../../domain/order";
-import type { OrderRequestItem } from "../../domain/order";
+import {
+  isNormalizedOrderRequestItem,
+  parseOrderRequestItem,
+  type OrderRequestItem,
+} from "../../domain/order-request-boundary";
+import {
+  isCatalogOrderRequestItem,
+  parseDeprecatedLegacyProductOrderItem,
+  type CatalogOrderRequestItem,
+} from "../../domain/order-catalog-compatibility";
 import type { StripeCheckoutSession } from "../../domain/payment";
-import { calculateCouponDiscount, calculateServerProductSubtotal } from "../../application/pricing";
+import { calculateCouponDiscount } from "../../application/pricing";
+import { resolveLegacyOrderItemCompatibility } from "../../application/legacy-order-compatibility";
+import {
+  calculateResolvedOrderSubtotal,
+  resolveOrderCatalogItems,
+} from "../../application/order-catalog-resolution";
+import { createServerCatalogRepository } from "../../infrastructure/catalog/server-catalog-repository";
 
 const freeShippingCents = 4900;
 const standardShippingCents = 799;
@@ -74,18 +89,32 @@ export async function POST(request: Request) {
       return Response.json({ error: "Your bag is empty or too large to check out." }, { status: 400 });
     }
 
-    const parsedItems = (body.items as unknown[]).map(parseOrderRequestItem);
+    const parsedItems = (body.items as unknown[]).map(
+      (item) => parseOrderRequestItem(item) ?? parseDeprecatedLegacyProductOrderItem(item),
+    );
     if (parsedItems.some((item) => item === null)) {
       return Response.json({ error: "One of the products in your bag is invalid." }, { status: 400 });
     }
     const requestedItems = parsedItems.filter((item): item is OrderRequestItem => item !== null);
-    const quantities = new Map<string, number>();
+    // Normalized customization requests are accepted by the structural
+    // boundary, but their production receipt/attachment dependency is not
+    // activated until Task 8.5 / Phase C. Stop the whole request before any
+    // legacy photoPath validation or order-side effect.
+    if (requestedItems.some(isNormalizedOrderRequestItem)) {
+      return Response.json(
+        { error: "Personalized checkout is temporarily unavailable." },
+        { status: 503 },
+      );
+    }
+    const catalogItems = requestedItems.filter(
+      (item): item is CatalogOrderRequestItem => isCatalogOrderRequestItem(item),
+    );
+    if (catalogItems.length !== requestedItems.length) {
+      return Response.json({ error: "Personalized checkout is temporarily unavailable." }, { status: 503 });
+    }
     for (const item of requestedItems) {
-      if (!item || typeof item.slug !== "string" || !/^[a-z0-9-]+$/.test(item.slug)) {
-        return Response.json({ error: "One of the products in your bag is invalid." }, { status: 400 });
-      }
       const customization = item.customization;
-      if (!customization || typeof customization.photoPath !== "string" || !/^drafts\/[a-f0-9-]+\.(jpg|png|webp)$/i.test(customization.photoPath)) {
+      if (!customization || !readLegacyOrderUploadReference(customization)) {
         return Response.json({ error: "Please upload and save a photo for each personalized product." }, { status: 400 });
       }
       if (customization.note !== undefined && (typeof customization.note !== "string" || customization.note.length > 500)) {
@@ -97,23 +126,34 @@ export async function POST(request: Request) {
           return Response.json({ error: "The uploaded photo metadata is invalid. Please upload the photo again." }, { status: 400 });
         }
       }
-      const quantity = Math.min(Math.max(Math.floor(item.quantity ?? 1), 1), 20);
-      quantities.set(item.slug, (quantities.get(item.slug) ?? 0) + quantity);
     }
 
-    const supabase = getSupabaseServerClient();
-    const slugs = [...quantities.keys()];
-    const { data: products, error: productsError } = await supabase
-      .from("products")
-      .select("id, slug, name, price_cents")
-      .in("slug", slugs)
-      .eq("is_published", true);
-    if (productsError) throw productsError;
-    if (!products || products.length !== slugs.length) {
+    const catalog = await createServerCatalogRepository();
+    if (catalog.status !== "found") {
       return Response.json({ error: "A product in your bag is no longer available." }, { status: 409 });
     }
+    const compatibleItems = await Promise.all(
+      catalogItems.map((item) =>
+        resolveLegacyOrderItemCompatibility(item, catalog.value.repository),
+      ),
+    );
+    if (compatibleItems.some((result) => result.status !== "resolved")) {
+      return Response.json({ error: "A product in your bag is no longer available." }, { status: 409 });
+    }
+    const nativeItems = compatibleItems.flatMap((result) =>
+      result.status === "resolved" ? [result.item] : [],
+    );
+    const catalogResolution = await resolveOrderCatalogItems(
+      nativeItems,
+      catalog.value.repository,
+    );
+    if (catalogResolution.status !== "resolved") {
+      return Response.json({ error: "A product in your bag is no longer available." }, { status: 409 });
+    }
+    const resolvedItems = catalogResolution.items;
 
-    const subtotalCents = calculateServerProductSubtotal(products, (slug) => quantities.get(slug) ?? 1);
+    const subtotalCents = calculateResolvedOrderSubtotal(resolvedItems);
+    const supabase = getSupabaseServerClient();
     let discountCents = 0;
     let coupon: Coupon | null = null;
     const couponCode = typeof body.couponCode === "string" ? body.couponCode.trim().toUpperCase() : "";
@@ -143,26 +183,24 @@ export async function POST(request: Request) {
     if (orderError || !order) throw orderError ?? new Error("Could not create order");
     createdOrderId = order.id;
 
-    const itemRows = products.map((product) => {
-      const requested = requestedItems.find((item) => item.slug === product.slug);
-      return {
-        order_id: order.id,
-        product_id: product.id,
-        product_name: product.name,
-        unit_price_cents: product.price_cents,
-        quantity: quantities.get(product.slug) ?? 1,
-        customization: { ...requested?.customization, note: requested?.customization?.note?.trim() },
-      };
-    });
+    const itemRows = resolvedItems.map((item) => ({
+      order_id: order.id,
+      product_id: item.productId,
+      product_name: item.productName,
+      unit_price_cents: item.unitBasePriceCents,
+      quantity: item.quantity,
+      customization: { ...item.customization, note: item.customization?.note?.trim() },
+    }));
     const { data: createdItems, error: itemsError } = await supabase.from("order_items").insert(itemRows).select("id, product_id, customization");
     if (itemsError || !createdItems) throw itemsError ?? new Error("Could not save order items");
     const uploadRows = createdItems.flatMap((item) => {
       const customization = item.customization as OrderRequestItem["customization"] | null;
-      if (!customization?.photoPath) return [];
-      const meta = customization.photoMeta;
+      const uploadReference = readLegacyOrderUploadReference(customization);
+      if (!uploadReference) return [];
+      const meta = customization?.photoMeta;
       return [{
         order_item_id: item.id,
-        storage_key: customization.photoPath,
+        storage_key: uploadReference.storageKey,
         original_filename: typeof meta?.originalFilename === "string" ? meta.originalFilename : null,
         content_type: typeof meta?.contentType === "string" ? meta.contentType : null,
         file_size_bytes: typeof meta?.fileSizeBytes === "number" ? meta.fileSizeBytes : null,

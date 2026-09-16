@@ -1,6 +1,6 @@
-# PhotoGift
+# FigMemento
 
-PhotoGift is a personalized-gift ecommerce MVP built with a Next.js-compatible App Router, React, TypeScript, vinext/Vite, Cloudflare Workers, Supabase PostgreSQL, private object storage, and Stripe Checkout.
+FigMemento is a personalized-gift ecommerce MVP built with a Next.js-compatible App Router, React, TypeScript, vinext/Vite, Cloudflare Workers, Supabase PostgreSQL, private object storage, and Stripe Checkout.
 
 The confirmed product baseline is [`独立站构建项目需求.md`](./独立站构建项目需求.md). OpenSpec changes under `openspec/changes/` control implementation scope.
 
@@ -11,7 +11,7 @@ The confirmed product baseline is [`独立站构建项目需求.md`](./独立站
 - `app/infrastructure/` contains Supabase and explicit fixture adapters.
 - `app/config/` separates browser-safe configuration from server-only secrets and validates integrations when they are used.
 - `app/api/` contains the current product, upload, coupon, order, Stripe webhook, order-lookup, and admin transport routes.
-- Supabase PostgreSQL is the authoritative MVP business database. PhotoGift business persistence does not use D1 or Drizzle.
+- Supabase PostgreSQL is the authoritative MVP business database. FigMemento business persistence does not use D1 or Drizzle.
 - vinext/Vite builds the application for the Cloudflare Worker entry in `worker/index.ts`.
 
 This foundation does not add the future Product/SKU schema, customer authentication, PayPal, production preview, shipping rules, or new Stripe validation behavior.
@@ -44,12 +44,25 @@ PHOTOGIFT_PRODUCT_SOURCE=fixture
 
 Fixture selection is rejected when `NODE_ENV=production`. Tests inject fixture repositories directly and do not read a developer's `.env.local`.
 
-## Environment boundaries
+## Public deployment configuration
 
-Browser-safe values:
+The public identity is fixed by the application configuration:
 
-- `NEXT_PUBLIC_SITE_URL`
-- `NEXT_PUBLIC_BRAND_NAME`
+- brand: `FigMemento`
+- production origin: `https://figmemento.com`
+- canonical hostname: `figmemento.com`
+- staging hostname: `staging.figmemento.com`
+
+The following non-secret values may be supplied for deployment context:
+
+- `APP_DEPLOYMENT_ENV` (`production`, `staging`, `preview`, `development`, or `test`)
+- `NEXT_PUBLIC_DEPLOYMENT_ORIGIN` (an absolute HTTP(S) origin for preview or local rendering)
+- `NEXT_PUBLIC_SUPPORT_EMAIL` (optional; no address is fabricated when absent)
+
+Production uses only the approved canonical origin. Invalid production origins fail closed. The old `NEXT_PUBLIC_SITE_URL` and `NEXT_PUBLIC_BRAND_NAME` variables are no longer authoritative and should not be added to new environments.
+
+Other browser-safe values:
+
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 - `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` (reserved for the current checkout UI boundary)
@@ -61,7 +74,7 @@ Server-only values:
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
 - `ADMIN_PASSWORD`
-- `PHOTOGIFT_PRODUCT_SOURCE`
+- `PHOTOGIFT_PRODUCT_SOURCE` (preserved technical identifier; fixture mode remains non-production only)
 
 Additional R2, Resend, and tracking variables in `.env.example` are placeholders for later approved changes; C0 does not integrate them.
 
@@ -89,7 +102,7 @@ The existing `supabase/schema.sql`, `seed.sql`, `coupons.sql`, and `operations.s
 
 The Cloudflare runtime support in `vite.config.ts`, `worker/index.ts`, `build/sites-vite-plugin.ts`, and `.openai/hosting.json` remains active. The optional D1 branch in `vite.config.ts` is retained but currently has no configured binding.
 
-Root D1/Drizzle template files are retained as inactive material and excluded from PhotoGift compilation, linting, package scripts, dependencies, and deployment output. `examples/d1/` is explicitly example-only and is not part of PhotoGift's business architecture. See [`docs/d1-drizzle-inventory.md`](./docs/d1-drizzle-inventory.md).
+Root D1/Drizzle template files are retained as inactive material and excluded from FigMemento compilation, linting, package scripts, dependencies, and deployment output. `examples/d1/` is explicitly example-only and is not part of FigMemento's business architecture. See [`docs/d1-drizzle-inventory.md`](./docs/d1-drizzle-inventory.md).
 
 ## Storage status
 

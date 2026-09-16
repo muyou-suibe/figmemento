@@ -1,7 +1,7 @@
 import type { RuntimeEnvironment } from "./server.ts";
 
 export type AdminAcceptanceRuntimeMode = "development" | "test" | "production" | "unknown";
-export type AdminAcceptanceSource = "production" | "local_fake";
+export type AdminAcceptanceSource = "production" | "local_fake" | "local_persistent";
 
 export type AdminAcceptanceConfiguration =
   | {
@@ -12,6 +12,11 @@ export type AdminAcceptanceConfiguration =
   | {
       readonly status: "local_fake";
       readonly source: "local_fake";
+      readonly runtimeMode: "development" | "test";
+    }
+  | {
+      readonly status: "local_persistent";
+      readonly source: "local_persistent";
       readonly runtimeMode: "development" | "test";
     }
   | {
@@ -40,6 +45,7 @@ export type AdminAcceptanceSourceResult<T> =
 export interface AdminAcceptanceSourceFactories<T> {
   readonly production: () => T;
   readonly localFake: () => T;
+  readonly localPersistent?: () => T;
 }
 
 /** A bounded internal marker used to map invalid server configuration safely. */
@@ -93,7 +99,7 @@ export function readAdminAcceptanceConfiguration(
     };
   }
 
-  if (selectedSource !== "local_fake") {
+  if (selectedSource !== "local_fake" && selectedSource !== "local_persistent") {
     return {
       status: "configuration_failure",
       key: "ADMIN_ACCEPTANCE_SOURCE",
@@ -111,11 +117,9 @@ export function readAdminAcceptanceConfiguration(
     };
   }
 
-  return {
-    status: "local_fake",
-    source: "local_fake",
-    runtimeMode: normalizedRuntimeMode,
-  };
+  return selectedSource === "local_persistent"
+    ? { status: "local_persistent", source: "local_persistent", runtimeMode: normalizedRuntimeMode }
+    : { status: "local_fake", source: "local_fake", runtimeMode: normalizedRuntimeMode };
 }
 
 /**
@@ -146,7 +150,11 @@ export function resolveAdminAcceptanceSource<T>(
     return {
       status: "resolved",
       source,
-      value: source === "local_fake" ? factories.localFake() : factories.production(),
+      value: source === "local_fake"
+        ? factories.localFake()
+        : source === "local_persistent"
+          ? (factories.localPersistent ? factories.localPersistent() : (() => { throw new Error("Persistent Admin source is unavailable."); })())
+          : factories.production(),
     };
   } catch {
     return { status: "source_failure", source };

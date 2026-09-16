@@ -1,0 +1,771 @@
+{
+  "run": "run-5576dfd8",
+  "project": "figmemento-local-commerce-test-run-5576dfd8",
+  "ledger": 22,
+  "results": [
+    "v1 approval / zero revisions / restart replay / changed CAS conflict",
+    "real private v2/v3 helper/readback + revision/restart/publication replay + no third revision/no v4",
+    "guest forged/foreign/expired + member missing/wrong/revoked fresh-session gates precede replay"
+  ],
+  "races": [
+    {
+      "kind": "two-approvals",
+      "pids": [
+        37745,
+        37594
+      ],
+      "statuses": [
+        200,
+        409
+      ]
+    },
+    {
+      "kind": "approval-vs-revision",
+      "pids": [
+        37745,
+        37594
+      ],
+      "statuses": [
+        409,
+        200
+      ]
+    },
+    {
+      "kind": "same-key",
+      "pids": [
+        37745,
+        37594
+      ],
+      "statuses": [
+        200,
+        200
+      ]
+    },
+    {
+      "kind": "last-revision",
+      "pids": [
+        37745,
+        37594
+      ],
+      "statuses": [
+        200,
+        409
+      ]
+    },
+    {
+      "kind": "v2 publication vs stale v1",
+      "pids": [
+        37745,
+        37594
+      ],
+      "statuses": [
+        200,
+        409
+      ]
+    },
+    {
+      "kind": "v3 publication vs stale v2",
+      "pids": [
+        37745,
+        37594
+      ],
+      "statuses": [
+        200,
+        409
+      ]
+    }
+  ],
+  "restarts": [
+    [
+      37592,
+      37617
+    ],
+    [
+      37617,
+      37660
+    ],
+    [
+      37660,
+      37673
+    ],
+    [
+      37673,
+      37730
+    ],
+    [
+      37730,
+      37745
+    ]
+  ],
+  "workerPids": [
+    37745,
+    37594
+  ],
+  "privateMediaFaults": [
+    {
+      "version": 2,
+      "fault": "preview-helper-failure",
+      "pid": 38046,
+      "noFalseReady": true,
+      "noPublication": true
+    },
+    {
+      "version": 2,
+      "fault": "preview-storage-failure",
+      "pid": 38060,
+      "noFalseReady": true,
+      "noPublication": true
+    },
+    {
+      "version": 2,
+      "fault": "preview-readback-failure",
+      "pid": 38076,
+      "noFalseReady": true,
+      "noPublication": true
+    },
+    {
+      "version": 2,
+      "fault": "preview-readback-mismatch",
+      "pid": 38089,
+      "noFalseReady": true,
+      "noPublication": true
+    },
+    {
+      "version": 3,
+      "fault": "preview-helper-failure",
+      "pid": 38132,
+      "noFalseReady": true,
+      "noPublication": true
+    },
+    {
+      "version": 3,
+      "fault": "preview-storage-failure",
+      "pid": 38145,
+      "noFalseReady": true,
+      "noPublication": true
+    },
+    {
+      "version": 3,
+      "fault": "preview-readback-failure",
+      "pid": 38185,
+      "noFalseReady": true,
+      "noPublication": true
+    },
+    {
+      "version": 3,
+      "fault": "preview-readback-mismatch",
+      "pid": 38203,
+      "noFalseReady": true,
+      "noPublication": true
+    }
+  ],
+  "upstreamDigests": [
+    {
+      "reference": "FM-LOCAL-9DCF18A48BE546A8",
+      "digests": [
+        {
+          "domain": "cart_lines",
+          "count": 1,
+          "digest": "a37e74f24f46206faecb215cde17f6df"
+        },
+        {
+          "domain": "carts",
+          "count": 1,
+          "digest": "525dbcc7a17397ba6752ea8e382cd526"
+        },
+        {
+          "domain": "catalog_configuration_snapshots",
+          "count": 2,
+          "digest": "aa2d2f486e6590eb17cdee27ba6334fa"
+        },
+        {
+          "domain": "catalog_products",
+          "count": 2,
+          "digest": "35c98ce3932e55a79dfd6ed20c28f4ec"
+        },
+        {
+          "domain": "catalog_variants",
+          "count": 2,
+          "digest": "afa5262b8e0cd4a6d0acdbfb0e5845c3"
+        },
+        {
+          "domain": "order_item_purchase_snapshots",
+          "count": 1,
+          "digest": "a3a002d8ec46b196c713f3763a6ef4dc"
+        },
+        {
+          "domain": "order_item_receipt_bindings",
+          "count": 0,
+          "digest": "d41d8cd98f00b204e9800998ecf8427e"
+        },
+        {
+          "domain": "order_purchase_snapshots",
+          "count": 1,
+          "digest": "2c079217a498e57fb234eb376e4de88f"
+        },
+        {
+          "domain": "payment_actions",
+          "count": 1,
+          "digest": "23b306fd6a6033c28b8ef5c83f36a998"
+        },
+        {
+          "domain": "payment_attempts",
+          "count": 1,
+          "digest": "b81e474668864ab672b612dcef56faa1"
+        }
+      ]
+    },
+    {
+      "reference": "FM-LOCAL-F7D7F2528C024A4F",
+      "digests": [
+        {
+          "domain": "cart_lines",
+          "count": 1,
+          "digest": "36f20ca887b77319f5ab5b20bc87c513"
+        },
+        {
+          "domain": "carts",
+          "count": 1,
+          "digest": "2d51d7aa03d65545c30df165925859ce"
+        },
+        {
+          "domain": "catalog_configuration_snapshots",
+          "count": 2,
+          "digest": "aa2d2f486e6590eb17cdee27ba6334fa"
+        },
+        {
+          "domain": "catalog_products",
+          "count": 2,
+          "digest": "35c98ce3932e55a79dfd6ed20c28f4ec"
+        },
+        {
+          "domain": "catalog_variants",
+          "count": 2,
+          "digest": "afa5262b8e0cd4a6d0acdbfb0e5845c3"
+        },
+        {
+          "domain": "order_item_purchase_snapshots",
+          "count": 1,
+          "digest": "32fd2e72fbe86c88394574623e7703f8"
+        },
+        {
+          "domain": "order_item_receipt_bindings",
+          "count": 0,
+          "digest": "d41d8cd98f00b204e9800998ecf8427e"
+        },
+        {
+          "domain": "order_purchase_snapshots",
+          "count": 1,
+          "digest": "db6b6c70adcb76aecb9011efe0c447a1"
+        },
+        {
+          "domain": "payment_actions",
+          "count": 1,
+          "digest": "b51171b1cf8438433e27d2a0550a8277"
+        },
+        {
+          "domain": "payment_attempts",
+          "count": 1,
+          "digest": "51dd66e60ef086f0d89c2342b1caf8ad"
+        }
+      ]
+    },
+    {
+      "reference": "FM-LOCAL-BEAC56647F6245A5",
+      "digests": [
+        {
+          "domain": "cart_lines",
+          "count": 1,
+          "digest": "08b9b308edaa02fcd58ae585559f2e98"
+        },
+        {
+          "domain": "carts",
+          "count": 1,
+          "digest": "e01dad0d3744df3b8166a1bc63d466e9"
+        },
+        {
+          "domain": "catalog_configuration_snapshots",
+          "count": 2,
+          "digest": "aa2d2f486e6590eb17cdee27ba6334fa"
+        },
+        {
+          "domain": "catalog_products",
+          "count": 2,
+          "digest": "35c98ce3932e55a79dfd6ed20c28f4ec"
+        },
+        {
+          "domain": "catalog_variants",
+          "count": 2,
+          "digest": "afa5262b8e0cd4a6d0acdbfb0e5845c3"
+        },
+        {
+          "domain": "order_item_purchase_snapshots",
+          "count": 1,
+          "digest": "1117c76f8e2594dd2d02964e7c2070c3"
+        },
+        {
+          "domain": "order_item_receipt_bindings",
+          "count": 0,
+          "digest": "d41d8cd98f00b204e9800998ecf8427e"
+        },
+        {
+          "domain": "order_purchase_snapshots",
+          "count": 1,
+          "digest": "e4221f7875d1ea8bb19e676e83459113"
+        },
+        {
+          "domain": "payment_actions",
+          "count": 1,
+          "digest": "d3ddd610d533635d4258e6d847a71303"
+        },
+        {
+          "domain": "payment_attempts",
+          "count": 1,
+          "digest": "2afcbbca248ad6ce2079d4e66847ab89"
+        }
+      ]
+    },
+    {
+      "reference": "FM-LOCAL-5338F76A316E484F",
+      "digests": [
+        {
+          "domain": "cart_lines",
+          "count": 1,
+          "digest": "9c9bde55e32c679d0c31143e74bb6211"
+        },
+        {
+          "domain": "carts",
+          "count": 1,
+          "digest": "d0ac183833c21b47bcba6369f26c1150"
+        },
+        {
+          "domain": "catalog_configuration_snapshots",
+          "count": 2,
+          "digest": "aa2d2f486e6590eb17cdee27ba6334fa"
+        },
+        {
+          "domain": "catalog_products",
+          "count": 2,
+          "digest": "35c98ce3932e55a79dfd6ed20c28f4ec"
+        },
+        {
+          "domain": "catalog_variants",
+          "count": 2,
+          "digest": "afa5262b8e0cd4a6d0acdbfb0e5845c3"
+        },
+        {
+          "domain": "order_item_purchase_snapshots",
+          "count": 1,
+          "digest": "3017bdc7b7d5c706934404b4a6761820"
+        },
+        {
+          "domain": "order_item_receipt_bindings",
+          "count": 0,
+          "digest": "d41d8cd98f00b204e9800998ecf8427e"
+        },
+        {
+          "domain": "order_purchase_snapshots",
+          "count": 1,
+          "digest": "0a18b9579a2b5552337f8bcc5bf7efa8"
+        },
+        {
+          "domain": "payment_actions",
+          "count": 1,
+          "digest": "da5880962467c464ea38042abef74053"
+        },
+        {
+          "domain": "payment_attempts",
+          "count": 1,
+          "digest": "af41bf0e33ed3ae6732c94cff3475493"
+        }
+      ]
+    },
+    {
+      "reference": "FM-LOCAL-2714A75518AF4BE3",
+      "digests": [
+        {
+          "domain": "cart_lines",
+          "count": 1,
+          "digest": "3ea66db9b4d47a4e7db5195d412f0237"
+        },
+        {
+          "domain": "carts",
+          "count": 1,
+          "digest": "d9d7cd43b15704ec9d6fc6c60fb28817"
+        },
+        {
+          "domain": "catalog_configuration_snapshots",
+          "count": 2,
+          "digest": "aa2d2f486e6590eb17cdee27ba6334fa"
+        },
+        {
+          "domain": "catalog_products",
+          "count": 2,
+          "digest": "35c98ce3932e55a79dfd6ed20c28f4ec"
+        },
+        {
+          "domain": "catalog_variants",
+          "count": 2,
+          "digest": "afa5262b8e0cd4a6d0acdbfb0e5845c3"
+        },
+        {
+          "domain": "order_item_purchase_snapshots",
+          "count": 1,
+          "digest": "436cc39a37e873e3e706f027e4147e44"
+        },
+        {
+          "domain": "order_item_receipt_bindings",
+          "count": 0,
+          "digest": "d41d8cd98f00b204e9800998ecf8427e"
+        },
+        {
+          "domain": "order_purchase_snapshots",
+          "count": 1,
+          "digest": "a56299676266ce6da9375439e1ef3479"
+        },
+        {
+          "domain": "payment_actions",
+          "count": 1,
+          "digest": "05be21c246ce798e06b6dfc3b7b70a35"
+        },
+        {
+          "domain": "payment_attempts",
+          "count": 1,
+          "digest": "0cb0055cfe01103515bd027b680ccede"
+        }
+      ]
+    },
+    {
+      "reference": "FM-LOCAL-B4A55760CB8443A8",
+      "digests": [
+        {
+          "domain": "cart_lines",
+          "count": 1,
+          "digest": "1c90aa5406586b50cc760cf641c0ba08"
+        },
+        {
+          "domain": "carts",
+          "count": 1,
+          "digest": "53bbfcce333fb992e431ce61bf913486"
+        },
+        {
+          "domain": "catalog_configuration_snapshots",
+          "count": 2,
+          "digest": "aa2d2f486e6590eb17cdee27ba6334fa"
+        },
+        {
+          "domain": "catalog_products",
+          "count": 2,
+          "digest": "35c98ce3932e55a79dfd6ed20c28f4ec"
+        },
+        {
+          "domain": "catalog_variants",
+          "count": 2,
+          "digest": "afa5262b8e0cd4a6d0acdbfb0e5845c3"
+        },
+        {
+          "domain": "order_item_purchase_snapshots",
+          "count": 1,
+          "digest": "e04f6d879f18bb225c2530f3ad2adb95"
+        },
+        {
+          "domain": "order_item_receipt_bindings",
+          "count": 0,
+          "digest": "d41d8cd98f00b204e9800998ecf8427e"
+        },
+        {
+          "domain": "order_purchase_snapshots",
+          "count": 1,
+          "digest": "d81ab0675aeb19431828adab0d1eba4f"
+        },
+        {
+          "domain": "payment_actions",
+          "count": 1,
+          "digest": "fb446eb33924ddec31c7f829cce9625d"
+        },
+        {
+          "domain": "payment_attempts",
+          "count": 1,
+          "digest": "c0bb8e141997d1632fb420de048880dd"
+        }
+      ]
+    },
+    {
+      "reference": "FM-LOCAL-EE9A5717F499489C",
+      "digests": [
+        {
+          "domain": "cart_lines",
+          "count": 1,
+          "digest": "a494f01ebf67dcee8291cae6eca70268"
+        },
+        {
+          "domain": "carts",
+          "count": 1,
+          "digest": "dc2d79fa594b490c0a0249e7284fa703"
+        },
+        {
+          "domain": "catalog_configuration_snapshots",
+          "count": 2,
+          "digest": "aa2d2f486e6590eb17cdee27ba6334fa"
+        },
+        {
+          "domain": "catalog_products",
+          "count": 2,
+          "digest": "35c98ce3932e55a79dfd6ed20c28f4ec"
+        },
+        {
+          "domain": "catalog_variants",
+          "count": 2,
+          "digest": "afa5262b8e0cd4a6d0acdbfb0e5845c3"
+        },
+        {
+          "domain": "order_item_purchase_snapshots",
+          "count": 1,
+          "digest": "829f19832d7a0496ff4f6a1d5169ca2c"
+        },
+        {
+          "domain": "order_item_receipt_bindings",
+          "count": 0,
+          "digest": "d41d8cd98f00b204e9800998ecf8427e"
+        },
+        {
+          "domain": "order_purchase_snapshots",
+          "count": 1,
+          "digest": "7b18c55aa5025ddace465f6dd91b0867"
+        },
+        {
+          "domain": "payment_actions",
+          "count": 1,
+          "digest": "99543c0a0aac6a2d419e3e680a60dd6d"
+        },
+        {
+          "domain": "payment_attempts",
+          "count": 1,
+          "digest": "937839d7d476665339e3296f18ab2049"
+        }
+      ]
+    },
+    {
+      "reference": "FM-LOCAL-C7A3D28732A241E9",
+      "digests": [
+        {
+          "domain": "cart_lines",
+          "count": 1,
+          "digest": "8334fa3aad028278b1f7b3b43ce5f7fd"
+        },
+        {
+          "domain": "carts",
+          "count": 1,
+          "digest": "0c7cc9c3c57277464c3b4c49e4a2893d"
+        },
+        {
+          "domain": "catalog_configuration_snapshots",
+          "count": 2,
+          "digest": "aa2d2f486e6590eb17cdee27ba6334fa"
+        },
+        {
+          "domain": "catalog_products",
+          "count": 2,
+          "digest": "35c98ce3932e55a79dfd6ed20c28f4ec"
+        },
+        {
+          "domain": "catalog_variants",
+          "count": 2,
+          "digest": "afa5262b8e0cd4a6d0acdbfb0e5845c3"
+        },
+        {
+          "domain": "order_item_purchase_snapshots",
+          "count": 1,
+          "digest": "49771feddc492a4a335160a0845133c7"
+        },
+        {
+          "domain": "order_item_receipt_bindings",
+          "count": 0,
+          "digest": "d41d8cd98f00b204e9800998ecf8427e"
+        },
+        {
+          "domain": "order_purchase_snapshots",
+          "count": 1,
+          "digest": "36d49d86f26a8f68ede73c5023595192"
+        },
+        {
+          "domain": "payment_actions",
+          "count": 1,
+          "digest": "a42288025bde079bcacff37d0302a4db"
+        },
+        {
+          "domain": "payment_attempts",
+          "count": 1,
+          "digest": "f2023b69e61340520e8d04a7711fccfc"
+        }
+      ]
+    },
+    {
+      "reference": "FM-LOCAL-46148CF5B9174A4F",
+      "digests": [
+        {
+          "domain": "cart_lines",
+          "count": 1,
+          "digest": "294536470995ca47189c43a70f9b938a"
+        },
+        {
+          "domain": "carts",
+          "count": 1,
+          "digest": "351792502949caef939fa8117a8a5269"
+        },
+        {
+          "domain": "catalog_configuration_snapshots",
+          "count": 2,
+          "digest": "aa2d2f486e6590eb17cdee27ba6334fa"
+        },
+        {
+          "domain": "catalog_products",
+          "count": 2,
+          "digest": "35c98ce3932e55a79dfd6ed20c28f4ec"
+        },
+        {
+          "domain": "catalog_variants",
+          "count": 2,
+          "digest": "afa5262b8e0cd4a6d0acdbfb0e5845c3"
+        },
+        {
+          "domain": "order_item_purchase_snapshots",
+          "count": 1,
+          "digest": "d3c8609d5ab2d2a59d138b770374dfc2"
+        },
+        {
+          "domain": "order_item_receipt_bindings",
+          "count": 0,
+          "digest": "d41d8cd98f00b204e9800998ecf8427e"
+        },
+        {
+          "domain": "order_purchase_snapshots",
+          "count": 1,
+          "digest": "fe0f8adce5fb4b5b41f1a7177c380313"
+        },
+        {
+          "domain": "payment_actions",
+          "count": 1,
+          "digest": "43c7c91826d1cb5c642234d1434e0fc6"
+        },
+        {
+          "domain": "payment_attempts",
+          "count": 1,
+          "digest": "d39b8011b3c1ed9f370c4e3b77fd2658"
+        }
+      ]
+    },
+    {
+      "reference": "FM-LOCAL-DDB01B2A7F7348BB",
+      "digests": [
+        {
+          "domain": "cart_lines",
+          "count": 1,
+          "digest": "0d0d7ef7e332baa46dd3bc9af752fe80"
+        },
+        {
+          "domain": "carts",
+          "count": 1,
+          "digest": "3e60673b5fdb66299f12a275a2e41cb7"
+        },
+        {
+          "domain": "catalog_configuration_snapshots",
+          "count": 2,
+          "digest": "aa2d2f486e6590eb17cdee27ba6334fa"
+        },
+        {
+          "domain": "catalog_products",
+          "count": 2,
+          "digest": "35c98ce3932e55a79dfd6ed20c28f4ec"
+        },
+        {
+          "domain": "catalog_variants",
+          "count": 2,
+          "digest": "afa5262b8e0cd4a6d0acdbfb0e5845c3"
+        },
+        {
+          "domain": "order_item_purchase_snapshots",
+          "count": 1,
+          "digest": "3b6fe9b77cbbd3cb1f5e0ab641af46d6"
+        },
+        {
+          "domain": "order_item_receipt_bindings",
+          "count": 0,
+          "digest": "d41d8cd98f00b204e9800998ecf8427e"
+        },
+        {
+          "domain": "order_purchase_snapshots",
+          "count": 1,
+          "digest": "b53d84344e1f4198baa1b4ff76292a84"
+        },
+        {
+          "domain": "payment_actions",
+          "count": 1,
+          "digest": "3e6bc8d513fe092f0de9f4cef73d68f0"
+        },
+        {
+          "domain": "payment_attempts",
+          "count": 1,
+          "digest": "a6870e6226398116e120a1fa1944c838"
+        }
+      ]
+    },
+    {
+      "reference": "FM-LOCAL-D24B5F6CAA164943",
+      "digests": [
+        {
+          "domain": "cart_lines",
+          "count": 1,
+          "digest": "e85a9ee5b1ae943bfe2775b2125f3089"
+        },
+        {
+          "domain": "carts",
+          "count": 1,
+          "digest": "ba8d2dfdd8d7964d19390312d3f098e1"
+        },
+        {
+          "domain": "catalog_configuration_snapshots",
+          "count": 2,
+          "digest": "aa2d2f486e6590eb17cdee27ba6334fa"
+        },
+        {
+          "domain": "catalog_products",
+          "count": 2,
+          "digest": "35c98ce3932e55a79dfd6ed20c28f4ec"
+        },
+        {
+          "domain": "catalog_variants",
+          "count": 2,
+          "digest": "afa5262b8e0cd4a6d0acdbfb0e5845c3"
+        },
+        {
+          "domain": "order_item_purchase_snapshots",
+          "count": 1,
+          "digest": "d6a63524765270a4ce63a3d8c1fa3213"
+        },
+        {
+          "domain": "order_item_receipt_bindings",
+          "count": 0,
+          "digest": "d41d8cd98f00b204e9800998ecf8427e"
+        },
+        {
+          "domain": "order_purchase_snapshots",
+          "count": 1,
+          "digest": "fb26c1b666df5789000e7baa36247f39"
+        },
+        {
+          "domain": "payment_actions",
+          "count": 1,
+          "digest": "87f3cb3694d2877e7d0deed05071827b"
+        },
+        {
+          "domain": "payment_attempts",
+          "count": 1,
+          "digest": "df3be7fdf56f1c57fd0238e7447e1e39"
+        }
+      ]
+    }
+  ],
+  "status": "PASS",
+  "classification": "LOCAL DEVELOPMENT / TEST PERSISTENCE ACCEPTANCE"
+}

@@ -1,0 +1,304 @@
+{
+  "format": "figmemento-local-commerce-migration-manifest/v1",
+  "schema": "local_commerce",
+  "projectId": "figmemento-local-commerce",
+  "schemaVersion": 37,
+  "migrations": [
+    {
+      "version": 1,
+      "migrationId": "local-commerce-migration-ledger",
+      "filename": "0001_local-commerce-migration-ledger.sql",
+      "checksum": "c1c653a53479f75c04b61a0da04a8ccc6e72b4aa26d602380d04e4948e79ac3a",
+      "rollback": "For a disposable project only, stop the stack, preserve the evidence, and explicitly recreate that disposable project; never reset the retained development project.",
+      "forwardFix": "Do not edit an applied SQL file. Add the next ordered migration with a new checksum and record the reviewed forward-fix path in the ledger."
+    },
+    {
+      "version": 2,
+      "migrationId": "local-commerce-identity-catalog-cart-media",
+      "filename": "0002_local-commerce-identity-catalog-cart-media.sql",
+      "checksum": "b182f96606b1bba780c9eff00f6579df68d8dc97a78056b1f6d1714d78202ab6",
+      "rollback": "For a disposable project only, stop and recreate the exact disposable target after preserving the ledger evidence; never reset the retained development project or roll back the root Supabase project.",
+      "forwardFix": "Do not edit this migration after application. Add a new ordered migration for reviewed constraint or schema corrections and retain existing identity, owner, receipt, and version values."
+    },
+    {
+      "version": 3,
+      "migrationId": "local-commerce-order-operations-delivery",
+      "filename": "0003_local-commerce-order-operations-delivery.sql",
+      "checksum": "c9caf3d470170fe09f019e2525e3627cb6c0391d327faee0526931ef52da6a14",
+      "rollback": "For a disposable project only, stop and recreate the exact disposable target after preserving purchase and lifecycle evidence; never reset retained development data or the root Supabase project.",
+      "forwardFix": "Do not edit this migration after application. Add a later ordered migration for reviewed constraints while preserving immutable purchase snapshots and existing action keys."
+    },
+    {
+      "version": 4,
+      "migrationId": "local-commerce-security-boundary",
+      "filename": "0004_local-commerce-security-boundary.sql",
+      "checksum": "7f050f6028c26dbdd3e5178df3f673d80479ddd2d1988eeba6fb808ca3f7d3d8",
+      "rollback": "For a disposable project only, stop and recreate the exact disposable target after preserving security evidence; never reset retained development data or the root Supabase project.",
+      "forwardFix": "Do not edit this migration after application. Add a later ordered migration for reviewed RLS, private Storage, or RPC corrections without widening browser privileges."
+    },
+    {
+      "version": 5,
+      "migrationId": "local-commerce-customer-auth",
+      "filename": "0005_local-commerce-customer-auth.sql",
+      "checksum": "0172494b55821c88f6f7beee58f11908afe069895b9a3607ebc4957f21822c77",
+      "rollback": "For a disposable project only, stop and recreate the exact disposable target after preserving account evidence; never reset retained development data or the root Supabase project.",
+      "forwardFix": "Do not edit this migration after application. Add a later ordered migration for reviewed account constraints or RPC corrections and retain existing customer identities and credential hashes."
+    },
+    {
+      "version": 6,
+      "migrationId": "local-commerce-customer-session",
+      "filename": "0006_local-commerce-customer-session.sql",
+      "checksum": "4dd5c930d20ed60e682f8013cb45d01708a80bd03b4defa3c2f158679afa69c1",
+      "rollback": "For a disposable project only, stop and recreate the exact disposable target after preserving session evidence; never reset retained development data or the root Supabase project.",
+      "forwardFix": "Do not edit this migration after application. Add a later ordered migration for reviewed session constraints or RPC corrections and retain existing opaque session hashes and lifecycle timestamps."
+    },
+    {
+      "version": 7,
+      "migrationId": "local-commerce-catalog-authority",
+      "filename": "0007_local-commerce-catalog-authority.sql",
+      "checksum": "98017e6d5b61f37d6137656be0d6d971ee66c8efb963e81b03443c0369c4ee2f",
+      "rollback": "Preserve evidence and reconstruct only an explicitly authorized current disposable project; never reset retained development or root projects.",
+      "forwardFix": "Add the next ordered migration; preserve explicit Catalog identities and historical snapshots. Do not edit applied 0001-0007 or infer missing category, variant or configuration facts."
+    },
+    {
+      "version": 8,
+      "migrationId": "local-commerce-cart-persistence",
+      "filename": "0008_local-commerce-cart-persistence.sql",
+      "checksum": "efa071f458c4135a1ca8543751de34e04d671c92caba1590c3dd29e6ee979eda",
+      "rollback": "Preserve evidence; reconstruct only the newly authorized disposable project. Never reset run-68938831, retained development or root projects.",
+      "forwardFix": "Add a later ordered migration preserving Cart identities, accepted snapshots and owner bindings. Do not edit applied 0001-0008."
+    },
+    {
+      "version": 9,
+      "migrationId": "local-commerce-cart-atomicity",
+      "filename": "0009_local-commerce-cart-atomicity.sql",
+      "checksum": "b4e3be060b5d046b71a4e25fd4d0d864087977a7e587fbf8b43b97d1c02a9527",
+      "rollback": "Preserve evidence; recreate only the explicitly authorized new disposable project. Never reset run-68938831, run-904ee92e, retained development or root projects.",
+      "forwardFix": "Add a later ordered migration. Preserve Cart identity, owner bindings, versions and committed command results. Never edit applied 0001-0009."
+    },
+    {
+      "version": 10,
+      "migrationId": "local-commerce-draft-authority",
+      "filename": "0010_local-commerce-draft-authority.sql",
+      "checksum": "8104759a5740c6cd1fcc8ce544c510e3aa6ef3048d6d05d195bb8a214e05dc5d",
+      "rollback": "Preserve evidence; only reconstruct the explicitly authorized current disposable project. Never reset old evidence runs or retained development projects.",
+      "forwardFix": "Add the next ordered migration; preserve stable draft/link identities and confirmed revisions. Never edit applied migrations."
+    },
+    {
+      "version": 11,
+      "migrationId": "local-commerce-media-operations",
+      "filename": "0011_local-commerce-media-operations.sql",
+      "checksum": "ecde24cfde31b03e67fa784ec5c1021829fe0ada894b656ceb6afd00ed48b4b3",
+      "rollback": "Preserve evidence and exact operation object inventory. Reconstruct only a newly authorized disposable project; never reset prior runs or retained data.",
+      "forwardFix": "Add the next ordered migration. Preserve original objects, receipts, generation lineage and confirmed Draft identity; never edit an applied migration."
+    },
+    {
+      "version": 12,
+      "migrationId": "local-commerce-media-cleanup",
+      "filename": "0012_local-commerce-media-cleanup.sql",
+      "checksum": "fa64a7b2c3b2ece25d7469aef9be1e9d24c31315a323303db2fdfea394c55867",
+      "rollback": "Preserve bytes and lease evidence; never reset historical stacks. Only reconstruct a separately authorized disposable project.",
+      "forwardFix": "Add a later ordered migration preserving retired locators, retention bindings and lease fencing. Future attach/copy must acquire lock_media_project before any binding."
+    },
+    {
+      "version": 13,
+      "migrationId": "local-commerce-upload-command-binding",
+      "filename": "0013_local-commerce-upload-command-binding.sql",
+      "checksum": "84672f02203adcf056231de466b24e95089d363576a58e94ff2d356fad06aff1",
+      "rollback": "Disable the affected source and preserve existing data and binding evidence. No reset or rollback of accepted runs is authorized.",
+      "forwardFix": "Use the next ordered migration after application; preserve immutable key digests, fingerprints, operation identities and receipts. Never edit 0001-0013 once applied."
+    },
+    {
+      "version": 14,
+      "migrationId": "local-commerce-order-commit",
+      "filename": "0014_local-commerce-order-commit.sql",
+      "checksum": "3eaad88245a297889c7683a16556594896490a626403b73377f89b0f7cdd8a43",
+      "rollback": "Disable the affected persistent source and preserve Order, receipt, capability-digest and ledger evidence. Do not reset or recreate accepted or historical runs.",
+      "forwardFix": "After application use 0015 or later only. Preserve immutable purchase facts, Cart contents, original owner and capability grant boundaries. Never edit applied 0001-0014."
+    },
+    {
+      "version": 15,
+      "migrationId": "local-commerce-explicit-media-copy",
+      "filename": "0015_local-commerce-explicit-media-copy.sql",
+      "checksum": "8200426f25f7ac0c97215ad00a6915d7fdcf97d161eabdb38af60caaed5b6aad",
+      "rollback": "Disable the affected source and preserve all existing database and private Storage evidence. No reset, reseed, recreation or object deletion is authorized.",
+      "forwardFix": "After application use 0016 or later only. Preserve same-owner copy provenance, independent receipt authorization, Draft CAS and immutable original bytes. Never edit applied 0001-0015."
+    },
+    {
+      "version": 16,
+      "migrationId": "local-commerce-order-history",
+      "filename": "0016_local-commerce-order-history.sql",
+      "checksum": "8b11496906434353e3d16ba67ab450a4e2ca27db0bd3e005fc2b88f686666909",
+      "rollback": "Disable the affected persistent source and preserve all Order snapshots, capabilities, private Storage and ledger evidence. Do not reset, backfill or rewrite purchases.",
+      "forwardFix": "After application use 0017 or later only. Retain explicit purchased preview policies and fail closed for incomplete historical items; never edit applied 0001-0016."
+    },
+    {
+      "version": 17,
+      "migrationId": "local-commerce-history-context",
+      "filename": "0017_local-commerce-history-context.sql",
+      "checksum": "2339a17b5cbd4c86341bf7dbed345a99f0c308205f17e1aff04ffd9f68628b4d",
+      "rollback": "Disable affected reads and preserve all canonical purchase, authorization and ledger evidence. No reset or snapshot rewrite.",
+      "forwardFix": "After application use 0018 or later; preserve existing authorizations and historical facts. Read projections do not authorize workflow mutations."
+    },
+    {
+      "version": 18,
+      "migrationId": "local-commerce-payment-command",
+      "filename": "0018_local-commerce-payment-command.sql",
+      "checksum": "f053bb2e731f78325684840a1ecb1c27c54228b07fe7176c1e25763dea45ff1e",
+      "rollback": "Disable persistent Payment and preserve all Orders, attempts, action audit, Storage and ledger. No reset, reseed, compensation or retained purchase rewrite.",
+      "forwardFix": "After permanent application use 0019+ only for authorized payment-only fixes on run-5576dfd8. Never edit applied 0001-0018 or activate downstream fulfillment/providers."
+    },
+    {
+      "version": 19,
+      "migrationId": "local-commerce-fulfillment-admission",
+      "filename": "0019_local-commerce-fulfillment-admission.sql",
+      "checksum": "fa2503b466fef22cbea70d6e47b0b587c372c39e1956151c56190740af8e4d29",
+      "rollback": "Disable persistent Fulfillment and preserve all purchase/payment/review/action records, private Storage and ledger. No reset, reseed, snapshot rewrite or deletion.",
+      "forwardFix": "After permanent application use 0020+ only under Task 7 authorization on run-5576dfd8. Never edit applied 0001-0019. No Task 8 or provider activation."
+    },
+    {
+      "version": 20,
+      "migrationId": "local-commerce-private-preview-manifest",
+      "filename": "0020_local-commerce-private-preview-manifest.sql",
+      "checksum": "63a4d18a984ee95511743d333072a9d56bd15421eaac6e2ed51e11647ce818e9",
+      "rollback": "Disable persistent preview publication and preserve reservations, ready media, private Storage, manifests, entries, actions and ledger. No reset, reseed, deletion or purchase rewrite.",
+      "forwardFix": "After permanent application use 0021+ only under authorized Task 7 scope on run-5576dfd8. Never edit applied 0001-0020. No Task 8, Supplier persistence or provider activation."
+    },
+    {
+      "version": 21,
+      "migrationId": "local-commerce-preview-deferred-authority",
+      "filename": "0021_local-commerce-preview-deferred-authority.sql",
+      "checksum": "43ac7a4bd81512ab0b94d149357f02db2fc98ef4927cb79b8555a35ee5a892ef",
+      "rollback": "Disable preview publication and preserve all private media, manifests, purchase facts and ledger. Do not reset, delete or rewrite accepted data.",
+      "forwardFix": "Use 0022+ after application. Keep the deferred integrity trigger fixed-search-path and inaccessible to direct callers. Never edit applied 0001-0021."
+    },
+    {
+      "version": 22,
+      "migrationId": "local-commerce-customer-preview-decisions",
+      "filename": "0022_local-commerce-customer-preview-decisions.sql",
+      "checksum": "deffc036ad6527244fed58ed6dbf4ed4aabd46aa942ab3930a2aa8466c4d0126",
+      "rollback": "Disable persistent customer preview actions and preserve all Orders, private media, manifests, decisions and ledger. No reset, reseed, deletion or purchase rewrite.",
+      "forwardFix": "After permanent application use 0023+ only on authorized run-5576dfd8. Never edit applied 0001-0022. No Task 8 or provider activation."
+    },
+    {
+      "version": 23,
+      "migrationId": "local-commerce-preview-read-lock",
+      "filename": "0023_local-commerce-preview-read-lock.sql",
+      "checksum": "2294dd8b65fd36aef1ecc856b2d820989657008b82976e26ea0632c3eab43b7b",
+      "rollback": "Disable persistent customer preview actions and preserve all Orders, private media, manifests, decisions and ledger. No reset, reseed, deletion or purchase rewrite.",
+      "forwardFix": "After permanent application use 0024+ only on authorized run-5576dfd8. Never edit applied 0001-0023. No Task 8 or provider activation."
+    },
+    {
+      "version": 24,
+      "migrationId": "local-commerce-production-quality",
+      "filename": "0024_local-commerce-production-quality.sql",
+      "checksum": "5005580f697ca818713b412d6cba244047f2d35efbcd48a27a758ee0bb0ea737",
+      "rollback": "Disable persistent production/quality commands and preserve all Orders, private media, manifests, decisions and ledger. No reset, reseed, deletion or purchase rewrite.",
+      "forwardFix": "After permanent application use 0025+ only on authorized run-5576dfd8. Never edit applied 0001-0024. No Task 8 or provider activation."
+    },
+    {
+      "version": 25,
+      "migrationId": "local-commerce-admin-timeout",
+      "filename": "0025_local-commerce-admin-timeout.sql",
+      "checksum": "4828906d9ee765566bbd63547db3a2bdb83e76a42c8592ff9e643da82519cc93",
+      "rollback": "Disable persistent production/quality commands and preserve all Orders, private media, manifests, decisions and ledger. No reset, reseed, deletion or purchase rewrite.",
+      "forwardFix": "After permanent application use 0026+ only on authorized run-5576dfd8. Never edit applied 0001-0025. No Task 8 or provider activation."
+    },
+    {
+      "version": 26,
+      "migrationId": "local-commerce-photo-review-decisions",
+      "filename": "0026_local-commerce-photo-review-decisions.sql",
+      "checksum": "1605742515578fd0d433041fb0c603d65aa3d5b07a45be3e1c5c758a840c2b85",
+      "rollback": "Disable the persistent photo-review decision command while preserving all canonical reviews, Orders, purchased media, Fulfillment decisions and ledger. No reset, deletion, reseed or purchase rewrite.",
+      "forwardFix": "After permanent application use 0027+ only on authorized run-5576dfd8. Never edit applied 0001-0026. No Task 8 or provider activation."
+    },
+    {
+      "version": 27,
+      "migrationId": "local-commerce-admin-orders-read",
+      "filename": "0027_local-commerce-admin-orders-read.sql",
+      "checksum": "0a4360ca4d9d9b7c2f2c48bc1ab3a8321f262a6f81c41bf6b94e7cc9b54b74b8",
+      "rollback": "Disable the persistent Admin Orders read source and preserve all Orders, immutable snapshots, workflow records, private media and ledger evidence. No reset, deletion, reseed or purchase rewrite.",
+      "forwardFix": "After permanent application use 0028+ only on authorized run-5576dfd8. Never edit applied 0001-0027. Preserve the signed Admin boundary and canonical commerce commands."
+    },
+    {
+      "version": 28,
+      "migrationId": "local-commerce-shipment-create",
+      "filename": "0028_local-commerce-shipment-create.sql",
+      "checksum": "312aa42c7ddf3088dc7d37167a47b0093d323239c2a8d8bd3ab3d6320ed701b2",
+      "rollback": "Disable persistent Shipment commands and preserve Orders, Fulfillments, immutable purchase facts, Shipment evidence and the ledger. No reset, deletion, reseed or purchase rewrite.",
+      "forwardFix": "After permanent application use 0029+ only on authorized run-5576dfd8. Never edit applied 0001-0028. Preserve one Shipment per Fulfillment and server-owned carrier/tracking authority."
+    },
+    {
+      "version": 29,
+      "migrationId": "local-commerce-shipment-lifecycle",
+      "filename": "0029_local-commerce-shipment-lifecycle.sql",
+      "checksum": "88950bd53c08ad6e23033327e3df9ecaac5a32943cc4d778951df3183f1f1b8a",
+      "rollback": "Disable persistent Shipment lifecycle commands and preserve every Shipment, event, action, immutable purchase fact and ledger row. No reset, deletion, reseed or upstream rewrite.",
+      "forwardFix": "After permanent application use 0030+ only on authorized run-5576dfd8. Never edit applied 0001-0029. Preserve ordered events, terminal delivery and exact action replay."
+    },
+    {
+      "version": 30,
+      "migrationId": "local-commerce-customer-tracking-read",
+      "filename": "0030_local-commerce-customer-tracking-read.sql",
+      "checksum": "b2e9d18e938fd0dae5dffe4c28b9c8f241273885b1e20daf3797a64c2e434ed7",
+      "rollback": "Disable persistent customer Tracking reads and preserve every Shipment, event, Order authorization, immutable purchase fact and ledger row. No reset, deletion, reseed or upstream rewrite.",
+      "forwardFix": "After permanent application use 0031+ only on authorized run-5576dfd8. Never edit applied 0001-0030. Preserve canonical Order authorization and side-effect-free safe Tracking projection."
+    },
+    {
+      "version": 31,
+      "migrationId": "local-commerce-digital-publication",
+      "filename": "0031_local-commerce-digital-publication.sql",
+      "checksum": "04bdb0f84e13014b0f05f2d969df2498a566b680f28949b0ea4e18e958022f62",
+      "rollback": "Disable persistent digital publication and preserve private objects, immutable versions, Orders, review/preview facts, and ledger evidence. Do not activate grants or tickets.",
+      "forwardFix": "After permanent application use 0032+ only on authorized run-5576dfd8. Never edit applied 0001-0031. Preserve immutable private versions, exact-item gates, and replay-first Admin authority."
+    },
+    {
+      "version": 32,
+      "migrationId": "local-commerce-digital-publication-schema-cache",
+      "filename": "0032_local-commerce-digital-publication-schema-cache.sql",
+      "checksum": "5e238f66f5b093571222e42978725e6fc72533736c4342db628a99e1602b346e",
+      "rollback": "No data rollback is required. Keep the restricted 0031 functions and refresh PostgREST schema cache when the local stack is available.",
+      "forwardFix": "After permanent application use 0033+ only on authorized run-5576dfd8. Never edit applied 0001-0032. Preserve the restricted digital publication RPCs and immutable version facts."
+    },
+    {
+      "version": 33,
+      "migrationId": "local-commerce-digital-grant",
+      "filename": "0033_local-commerce-digital-grant.sql",
+      "checksum": "d0a692f6ab1f93b691cb84b2e03d964fa1f48da78a9abc2ba5dae6aeae51e759",
+      "rollback": "Disable customer digital-grant activation while preserving canonical grants, immutable versions, Orders, private objects, and ledger evidence. Do not create tickets or reset policy counters.",
+      "forwardFix": "After permanent application use 0034+ only on authorized run-5576dfd8. Never edit applied 0001-0033. Preserve one canonical owner/item grant, fixed 30-day/five-claim policy, and existing Order authorization."
+    },
+    {
+      "version": 34,
+      "migrationId": "local-commerce-digital-ticket",
+      "filename": "0034_local-commerce-digital-ticket.sql",
+      "checksum": "32d673df0088e439145e953b21d4991d3925e7076ce15ad426b518867055b822",
+      "rollback": "Disable customer digital-ticket issuance while preserving grants, tickets, immutable versions, Orders, private objects, and ledger evidence. Do not refund or claim allowance.",
+      "forwardFix": "After permanent application use 0035+ only on authorized run-5576dfd8. Never edit applied 0001-0034. Preserve opaque hash-only tickets, 600-second maximum, and zero issuance consumption."
+    },
+    {
+      "version": 35,
+      "migrationId": "local-commerce-digital-download-claim",
+      "filename": "0035_local-commerce-digital-download-claim.sql",
+      "checksum": "249ae71d7307bd65ed3bc649e986398a3794387af259a19e652bdbc09b982bc0",
+      "rollback": "Disable customer digital download GET while preserving tickets, grants, immutable versions, private objects, claim attempts, and ledger evidence. Never refund a committed claim.",
+      "forwardFix": "After permanent application use 0036+ only on authorized run-5576dfd8. Never edit applied 0001-0035. Preserve open-before-claim, atomic single-use quota, and stream-after-commit ordering."
+    },
+    {
+      "version": 36,
+      "migrationId": "local-commerce-digital-grant-revocation",
+      "filename": "0036_local-commerce-digital-grant-revocation.sql",
+      "checksum": "2a5e51719275e5a1f6732b7b7768548ca971002dbe9b5a49812cee2867840943",
+      "rollback": "Disable signed-Admin digital grant revocation while preserving canonical grants, quota, immutable versions, tickets, claims, Orders, private objects and ledger evidence. Never reactivate or refund a revoked grant.",
+      "forwardFix": "After permanent application use 0037+ only on authorized run-5576dfd8. Never edit applied 0001-0036. Preserve canonical grant identity/policy/quota and claim/replacement/revocation serialization."
+    },
+    {
+      "version": 37,
+      "migrationId": "local-commerce-digital-stream-result",
+      "filename": "0037_local-commerce-digital-stream-result.sql",
+      "checksum": "1f6774c75f0a3da43ff4f55a358c44a3ad81f800a3b4015d0b1496c4f2f91319",
+      "rollback": "Disable stream-result recording while preserving committed claims, consumed tickets, grant quota, unknown/recorded attempts, immutable digital versions, Orders, and ledger evidence. Never refund a claim.",
+      "forwardFix": "After permanent application use 0038+ only on authorized run-5576dfd8. Never edit applied 0001-0037. Preserve claim-before-stream ordering, no-refund quota, and unknown crash semantics."
+    }
+  ]
+}

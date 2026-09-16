@@ -1,0 +1,90 @@
+{
+  "status": "PASS",
+  "classification": "TASK 10.8 CROSS-GROUP DEPENDENCY SLICE ONLY",
+  "run": "run-5576dfd8",
+  "projectId": "figmemento-local-commerce-test-run-5576dfd8",
+  "ledger": "37/37",
+  "pending": 0,
+  "processA": {
+    "pid": 17675,
+    "port": 63092,
+    "command": "node tests/database/local-commerce-test-worker.mjs run-5576dfd8 --confirm-disposable 63092",
+    "cwd": "/Users/youmu/Documents/个性化礼品定制独立站"
+  },
+  "processATermination": {
+    "requested": "SIGTERM",
+    "exitCode": 0,
+    "absent": true,
+    "portClosed": true
+  },
+  "processB": {
+    "pid": 17748,
+    "port": 63093,
+    "command": "node tests/database/local-commerce-test-worker.mjs run-5576dfd8 --confirm-disposable 63093",
+    "cwd": "/Users/youmu/Documents/个性化礼品定制独立站"
+  },
+  "sameSigningConfiguration": true,
+  "originalBrowserAuthority": {
+    "sameCookieValues": true,
+    "cookieNames": [
+      "photogift-guest-draft-owner",
+      "photogift-local-draft-41000000-0000-4000-8000-000000000002"
+    ],
+    "httpOnly": true,
+    "sameSite": "Lax"
+  },
+  "draft": {
+    "draftId": "8ed04d5c-f02d-46e1-9f20-8b57750defeb",
+    "productId": "41000000-0000-4000-8000-000000000002",
+    "version": 3,
+    "confirmedRevision": 3,
+    "slots": [
+      {
+        "slotId": "694ba119-70bf-442d-b28c-463af2494b09",
+        "receiptReference": "af93da5b-fe6a-4bb7-b5a3-b23f7d1cc1e0",
+        "position": 0,
+        "crop": { "x": 0.1, "y": 0.15, "width": 0.7, "height": 0.65 },
+        "privatePreview": {
+          "contentType": "image/png",
+          "byteLength": 195,
+          "sha256": "83db4ede6215203c6d029e89863ccf2e9c0744acb06322ab358b8740db0bdb9f"
+        }
+      },
+      {
+        "slotId": "bca9ffa8-9445-47ee-9b35-cc4b49bcc69b",
+        "receiptReference": "e5820871-1e5d-4aba-82c6-7449e78122a0",
+        "position": 1,
+        "crop": { "x": 0.05, "y": 0.1, "width": 0.8, "height": 0.75 },
+        "privatePreview": {
+          "contentType": "image/png",
+          "byteLength": 198,
+          "sha256": "295c93de75dad40b76a43280095a6339982962f3f3522600bd119f06576bb93a"
+        }
+      }
+    ]
+  },
+  "exactRecovery": {
+    "draft": true,
+    "version": true,
+    "confirmedRevision": true,
+    "slotIdsAndOrder": true,
+    "receiptReferences": true,
+    "crops": true,
+    "privatePreviewBytesAndDigests": true,
+    "originalAndDerivedObjectCount": 4
+  },
+  "foreignOwner": {
+    "draftStatus": 200,
+    "draftProjection": "not_found",
+    "previewStatus": 404
+  },
+  "excluded": {
+    "relogin": true,
+    "fixtureReplay": true,
+    "databaseReset": true,
+    "storageReset": true,
+    "migration": true,
+    "localStorageAuthority": true,
+    "task11_1CompletionClaim": true
+  }
+}

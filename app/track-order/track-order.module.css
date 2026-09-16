@@ -1,7 +1,245 @@
-.form { border-top: 1px solid #dfe5dd; display: grid; gap: 18px; margin-top: 44px; padding-top: 26px; max-width: 560px; }.form label { color: #53625b; display: grid; font-size: 11px; font-weight: 800; gap: 8px; }.form input { background: #fffdf9; border: 1px solid #cbd6ce; color: #1f2a25; font: inherit; font-size: 14px; padding: 13px 14px; }.form button { background: #1f2a25; border: 0; color: #fffdf6; cursor: pointer; font: inherit; font-size: 12px; font-weight: 800; padding: 14px; }.form button:disabled { cursor: wait; opacity: .6; }.error { color: #a44934; font-size: 12px; margin: 0; }.result { background: #f1f5ed; display: grid; gap: 0; margin-top: 32px; max-width: 560px; }.result div { border-bottom: 1px solid #dfe5dd; display: flex; justify-content: space-between; gap: 20px; padding: 15px 16px; }.result div:last-child { border-bottom: 0; }.result span { color: #64736b; font-size: 11px; }.result strong { font-size: 12px; text-align: right; }
-.timeline { display: block !important; }.timelineTitle { display: block; margin-bottom: 13px; }.timeline > div { display: grid; gap: 10px; grid-template-columns: repeat(5, 1fr); }.timelineStep { align-items: center; color: #8b9991 !important; display: flex; flex-direction: column; font-size: 9px !important; gap: 6px; text-align: center; }.timelineStep i { background: #cbd6ce; border-radius: 50%; display: block; height: 9px; width: 9px; }.timelineStepActive { color: #1f2a25 !important; font-weight: 800; }.timelineStepActive i { background: #e88868; box-shadow: 0 0 0 3px #e8886830; }
-.issue { background: #f3dfc9; display: flex !important; }.issue strong { color: #7d4936; font-size: 11px; max-width: 70%; }
+.form { border-top: 1px solid var(--color-border); display: grid; gap: 18px; margin-top: 44px; max-width: 560px; padding-top: 26px; }
+.form label { color: var(--color-text-light); display: grid; font-size: 0.72rem; font-weight: 400; gap: 8px; }
+.form input { background: var(--color-card); border: 1px solid var(--color-border); border-radius: var(--radius-sm); color: var(--color-text); font: inherit; font-size: 0.9rem; min-height: 44px; padding: 11px 12px; }
+.form button { background: var(--color-accent); border: 1px solid var(--color-accent); border-radius: var(--radius-sm); color: var(--color-card); cursor: pointer; font: inherit; font-size: 0.76rem; font-weight: 400; min-height: 44px; padding: 0 16px; transition: background-color var(--motion-normal) var(--ease-out), transform var(--motion-normal) var(--ease-out); }
+.form button:hover, .form button:focus-visible { background: var(--color-text); border-color: var(--color-text); transform: translateY(calc(var(--motion-distance) * -1)); }
+.form button:disabled { cursor: wait; opacity: .6; }
+.error { color: var(--color-accent); font-size: 0.78rem; margin: 0; }
+.result { background: var(--color-card); border: 1px solid var(--color-border); display: grid; gap: 0; margin-top: 32px; max-width: 560px; }
+.result div { border-bottom: 1px solid var(--color-border); display: flex; justify-content: space-between; gap: 20px; padding: 15px 16px; }
+.result div:last-child { border-bottom: 0; }
+.result span { color: var(--color-text-muted); font-size: 0.72rem; }
+.result strong { font-size: 0.76rem; text-align: right; }
+.timeline { display: block !important; }
+.timelineTitle { display: block; margin-bottom: 13px; }
+.timeline > div { display: grid; gap: 10px; grid-template-columns: repeat(5, 1fr); }
+.timelineStep { align-items: center; color: var(--color-text-muted) !important; display: flex; flex-direction: column; font-size: 0.62rem !important; gap: 6px; text-align: center; }
+.timelineStep i { background: var(--color-border); border-radius: 50%; display: block; height: 9px; width: 9px; }
+.timelineStepActive { color: var(--color-text) !important; font-weight: 400; }
+.timelineStepActive i { background: var(--color-accent); box-shadow: 0 0 0 3px rgba(160, 113, 79, 0.12); }
+.issue { background: var(--color-tag-bg); display: flex !important; }
+.issue strong { color: var(--color-text); font-size: 0.72rem; max-width: 70%; }
 .trackingValue { align-items: flex-end; display: flex; flex-direction: column; gap: 7px; }
-.copyButton { background: transparent; border: 1px solid #b8c8bd; color: #53625b; cursor: pointer; font-size: 9px; font-weight: 800; padding: 5px 7px; }
-.copyButton:hover { background: #dfe9db; }
-@media (max-width: 520px) { .timeline > div { gap: 4px; }.timelineStep { font-size: 8px !important; }.result div { gap: 12px; padding: 13px; } }
+.copyButton { background: transparent; border: 1px solid var(--color-border); border-radius: var(--radius-sm); color: var(--color-text-light); cursor: pointer; font-size: 0.62rem; font-weight: 400; min-height: 32px; padding: 5px 8px; }
+.copyButton:hover, .copyButton:focus-visible { background: var(--color-tag-bg); border-color: var(--color-accent); }
+
+@media (max-width: 520px) {
+  .timeline > div { gap: 4px; }
+  .timelineStep { font-size: 0.56rem !important; }
+  .result div { gap: 12px; padding: 13px; }
+}
+
+/* ============================================================
+   FUSION TRACK ORDER — VISUAL CALIBRATION
+   Presentation-only treatment. Lookup, privacy, and Tracking state
+   semantics remain owned by the existing server boundary.
+   ============================================================ */
+
+.form {
+  background-color: color-mix(in srgb, var(--fusion-paper) 94%, var(--fusion-cream));
+  background-image: radial-gradient(color-mix(in srgb, var(--fusion-gold) 16%, transparent) .5px, transparent .5px);
+  background-size: 15px 15px;
+  border: 1px solid var(--fusion-line);
+  border-top: 3px double var(--fusion-rule);
+  box-shadow: var(--fusion-shadow-card);
+  gap: 16px;
+  margin-top: 40px;
+  max-width: 680px;
+  padding: 28px clamp(20px, 4vw, 34px) 30px;
+  position: relative;
+}
+
+.form::before {
+  background: color-mix(in srgb, var(--fusion-honey) 88%, white);
+  content: "";
+  height: 11px;
+  left: 18%;
+  position: absolute;
+  top: -7px;
+  transform: rotate(2deg);
+  width: 68px;
+}
+
+.form label {
+  color: var(--fusion-ink-soft);
+  font-family: var(--fusion-font-hand);
+  font-size: .8rem;
+  letter-spacing: .025em;
+}
+
+.form input {
+  background: var(--fusion-cream);
+  border-color: var(--fusion-line);
+  border-radius: 3px;
+  color: var(--fusion-ink);
+  min-height: 48px;
+  padding-inline: 13px;
+}
+
+.form input:hover,
+.form input:focus {
+  background: var(--fusion-paper);
+  border-color: var(--fusion-terra);
+}
+
+.form input:focus-visible {
+  outline: 2px solid var(--fusion-terra);
+  outline-offset: 2px;
+}
+
+.form button {
+  background: var(--fusion-ink);
+  border-color: var(--fusion-ink);
+  border-radius: 3px;
+  box-shadow: 3px 4px 0 var(--fusion-gold);
+  color: var(--fusion-paper);
+  font-family: var(--fusion-font-body);
+  font-weight: 700;
+  min-height: 48px;
+  width: fit-content;
+}
+
+.form button:hover,
+.form button:focus-visible {
+  background: var(--fusion-terra);
+  border-color: var(--fusion-terra);
+  box-shadow: 3px 4px 0 var(--fusion-copper);
+}
+
+.error {
+  background: color-mix(in srgb, var(--fusion-honey) 38%, var(--fusion-paper));
+  border-left: 3px solid var(--fusion-terra);
+  color: var(--fusion-terra-deep);
+  line-height: 1.55;
+  padding: 12px 14px;
+}
+
+.result {
+  background-color: color-mix(in srgb, var(--fusion-paper) 93%, var(--fusion-cream));
+  background-image: radial-gradient(color-mix(in srgb, var(--fusion-copper) 14%, transparent) .5px, transparent .5px);
+  background-size: 14px 14px;
+  border: 1px solid var(--fusion-line);
+  box-shadow: var(--fusion-shadow-card);
+  margin-top: 34px;
+  max-width: 840px;
+  overflow: visible;
+  position: relative;
+}
+
+.result::before {
+  background: color-mix(in srgb, var(--fusion-honey) 86%, white);
+  content: "";
+  height: 10px;
+  position: absolute;
+  right: 18%;
+  top: -6px;
+  transform: rotate(-3deg);
+  width: 62px;
+}
+
+.result div {
+  border-bottom-color: var(--fusion-line);
+  gap: 24px;
+  padding: 17px 20px;
+}
+
+.result div:nth-last-child(1),
+.result .timeline {
+  background: color-mix(in srgb, var(--fusion-cream) 72%, transparent);
+}
+
+.result span {
+  color: var(--fusion-ink-mute);
+  font-family: var(--fusion-font-hand);
+}
+
+.result strong {
+  color: var(--fusion-ink);
+  font-family: var(--fusion-font-serif);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.trackingValue {
+  align-items: flex-end;
+  color: var(--fusion-terra);
+  gap: 8px;
+}
+
+.copyButton {
+  background: var(--fusion-paper);
+  border-color: var(--fusion-gold);
+  border-radius: 3px;
+  color: var(--fusion-ink-soft);
+  min-height: 34px;
+}
+
+.copyButton:hover,
+.copyButton:focus-visible {
+  background: var(--fusion-honey);
+  border-color: var(--fusion-terra);
+  color: var(--fusion-ink);
+}
+
+.issue {
+  background: color-mix(in srgb, var(--fusion-honey) 42%, var(--fusion-paper));
+  border-left: 3px solid var(--fusion-terra);
+}
+
+.issue strong { color: var(--fusion-ink); }
+
+.timeline {
+  border-top: 1px solid var(--fusion-gold);
+  padding-top: 18px !important;
+}
+
+.timelineTitle {
+  color: var(--fusion-copper) !important;
+  font-family: var(--fusion-font-ital) !important;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.timeline > div { gap: 12px; }
+
+.timelineStep {
+  color: var(--fusion-ink-mute) !important;
+  font-family: var(--fusion-font-body);
+  line-height: 1.35;
+}
+
+.timelineStep i {
+  background: var(--fusion-line);
+  border: 2px solid var(--fusion-paper);
+  box-shadow: 0 0 0 1px var(--fusion-gold);
+}
+
+.timelineStepActive { color: var(--fusion-ink) !important; }
+
+.timelineStepActive i {
+  background: var(--fusion-terra);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--fusion-gold) 48%, transparent);
+}
+
+@media (max-width: 720px) {
+  .form,
+  .result { max-width: 100%; }
+}
+
+@media (max-width: 520px) {
+  .form {
+    margin-top: 32px;
+    padding: 24px 16px 26px;
+  }
+
+  .form button { width: 100%; }
+  .result div { padding: 14px 15px; }
+  .timeline > div { gap: 5px; }
+  .timelineStep { font-size: .56rem !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .form button,
+  .form input,
+  .copyButton { transition: none; }
+}

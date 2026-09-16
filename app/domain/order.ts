@@ -1,11 +1,24 @@
-import { parseCustomization } from "./customization";
-import type { Customization } from "./customization";
-
-export type OrderRequestItem = {
-  slug: string;
-  quantity?: number;
-  customization?: Customization;
-};
+export {
+  isLegacyProductOrderRequestItem,
+  isNormalizedCustomizationOrderRequestItem,
+  isNormalizedOrderRequestItem,
+  normalizedOrderRequestItemToConfiguredItemHandoff,
+  parseOrderRequestItem,
+} from "./order-request-boundary.ts";
+export type {
+  CatalogOrderRequestItem,
+  LegacyProductOrderRequestItem,
+  NormalizedCustomizationOrderRequestItem,
+  OrderRequestItem,
+} from "./order-request-boundary.ts";
+export {
+  parseDeprecatedLegacyProductOrderItem,
+} from "./order-catalog-compatibility.ts";
+export type {
+  LegacyProductOrderItemIdentity,
+  NativeCatalogOrderItemIdentity,
+  NativeCatalogOrderRequestItem,
+} from "./order-catalog-compatibility.ts";
 
 export type OrderCreateResponse = {
   orderNumber?: string;
@@ -13,22 +26,6 @@ export type OrderCreateResponse = {
   checkoutUrl?: string | null;
   error?: string;
 };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-export function parseOrderRequestItem(value: unknown): OrderRequestItem | null {
-  if (!isRecord(value) || typeof value.slug !== "string") return null;
-  if (value.quantity !== undefined && typeof value.quantity !== "number") return null;
-  const customization = value.customization === undefined ? undefined : parseCustomization(value.customization);
-  if (value.customization !== undefined && !customization) return null;
-  return {
-    slug: value.slug,
-    quantity: value.quantity,
-    customization: customization ?? undefined,
-  };
-}
 
 export type OrderLookupItem = {
   product_name: string;

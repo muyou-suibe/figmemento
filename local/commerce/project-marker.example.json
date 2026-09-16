@@ -1,0 +1,10 @@
+{
+  "format": "figmemento-local-commerce-marker/v1",
+  "projectId": "figmemento-local-commerce",
+  "environment": "development",
+  "projectKind": "retained_development",
+  "runId": "retained-development",
+  "schema": "local_commerce",
+  "postgresMajorVersion": 17,
+  "createdAt": "<SET WHEN NEW PROJECT IS CONFIRMED>"
+}

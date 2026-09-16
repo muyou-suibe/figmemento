@@ -1,52 +1,30 @@
-import { getSupabaseServerClient } from "../../lib/supabase-server";
-import { readUploadConfig } from "../../config/server";
-import { allowedUploadTypes, maximumUploadBytes, validateUploadCandidate } from "../../application/upload-validation";
-
-const extensionByType: Record<string, string> = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-};
+import { readCustomerUploadConfig } from "../../config/server.ts";
+import { getSharedLocalCustomerUploadRuntime } from "../../infrastructure/customer-upload/local-customer-upload-runtime.server.ts";
+import { createConfiguredGuestDraftOwnerService } from "../../lib/guest-draft-owner.ts";
+import { createCustomerInputSafeObservability } from "../../server/customer-input-safe-failure.server.ts";
+import { createServerCustomerUploadFieldResolver } from "../../server/customer-upload-field-resolution.server.ts";
+import { createCustomerUploadHttpHandler } from "../../server/customer-upload-http-handler.server.ts";
+import { persistentMediaHttp } from "../../server/local-persistent-media-http.server.ts";
 
 export async function POST(request: Request) {
+  const observability = createCustomerInputSafeObservability();
   try {
-    const formData = await request.formData();
-    const file = formData.get("file");
-
-    if (!(file instanceof File)) {
-      return Response.json({ error: "Please choose an image file." }, { status: 400 });
+    if (process.env.CUSTOMER_UPLOAD_SOURCE?.trim() === "local_persistent") return await persistentMediaHttp(request, "upload");
+    const configuration = readCustomerUploadConfig(process.env, process.env.NODE_ENV);
+    if (configuration.source !== "local_fake") {
+      observability.record("upload", "temporary_failure");
+      return Response.json({ error: "Customer upload is temporarily unavailable." }, { status: 503 });
     }
-    const validation = validateUploadCandidate(file);
-    if (!validation.valid) return Response.json({ error: validation.error }, { status: validation.status });
-
-    const { bucket } = readUploadConfig();
-    const storageKey = `drafts/${crypto.randomUUID()}.${extensionByType[file.type]}`;
-    const supabase = getSupabaseServerClient();
-
-    // Create the private bucket on first use. An existing bucket is safe to reuse.
-    const { error: bucketError } = await supabase.storage.createBucket(bucket, {
-      public: false,
-      fileSizeLimit: `${maximumUploadBytes}B`,
-      allowedMimeTypes: [...allowedUploadTypes],
-    });
-    if (bucketError && !bucketError.message.toLowerCase().includes("already exists")) {
-      throw bucketError;
-    }
-
-    const { error: uploadError } = await supabase.storage
-      .from(bucket)
-      .upload(storageKey, file, { contentType: file.type, upsert: false });
-
-    if (uploadError) throw uploadError;
-    return Response.json({
-      bucket,
-      storageKey,
-      originalFilename: file.name,
-      contentType: file.type,
-      fileSizeBytes: file.size,
-    });
-  } catch (error) {
-    console.error("Photo upload failed", error);
-    return Response.json({ error: "We could not save that photo. Please try again." }, { status: 500 });
+    const runtime = getSharedLocalCustomerUploadRuntime();
+    return await createCustomerUploadHttpHandler({
+      ownerService: createConfiguredGuestDraftOwnerService(),
+      resolveFieldConstraints: createServerCustomerUploadFieldResolver(process.env, configuration.runtimeMode),
+      createAcceptanceDependencies: () => runtime.acceptanceDependencies,
+      runtimeMode: configuration.runtimeMode,
+      observability,
+    })(request);
+  } catch {
+    observability.record("upload", "temporary_failure");
+    return Response.json({ error: "Customer upload is temporarily unavailable." }, { status: 503 });
   }
 }

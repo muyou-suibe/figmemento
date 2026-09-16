@@ -1,0 +1,47 @@
+# Isolated Batch 1 local commerce project. Do not copy the repository-root
+# Supabase configuration or run this workdir against the root project.
+project_id = "figmemento-local-commerce"
+
+[api]
+enabled = true
+port = 55421
+# The local namespace is reachable only by the server adapter. Migration 0004
+# revokes browser-role schema/table privileges and keeps Storage private.
+schemas = ["public", "graphql_public", "local_commerce"]
+extra_search_path = ["public", "extensions", "local_commerce"]
+max_rows = 1000
+
+[db]
+port = 55422
+shadow_port = 55420
+health_timeout = "2m"
+major_version = 17
+
+[db.migrations]
+enabled = true
+schema_paths = ["./migrations/*.sql"]
+
+[db.seed]
+enabled = false
+sql_paths = []
+
+[studio]
+enabled = true
+port = 55423
+api_url = "http://127.0.0.1:55421"
+
+[local_smtp]
+enabled = true
+port = 55424
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:3000"
+additional_redirect_urls = ["http://127.0.0.1:3000"]
+enable_refresh_token_rotation = true
+enable_signup = true
+enable_anonymous_sign_ins = false

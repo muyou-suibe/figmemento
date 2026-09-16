@@ -45,8 +45,9 @@ export type CatalogOrderRequestItem =
 
 /**
  * Parse only the native Catalog identity and the temporary legacy slug shape.
- * Normalized customization requests are intentionally owned by order.ts and
- * are not accepted by this Catalog compatibility boundary.
+ * Normalized customization requests are intentionally owned by the shared
+ * order-request boundary and are not accepted by this Catalog compatibility
+ * boundary.
  */
 export function parseCatalogOrderRequestItem(
   value: unknown,

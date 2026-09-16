@@ -1,0 +1,95 @@
+{
+  "status": "PASS",
+  "classification": "LOCAL DEVELOPMENT / TEST PERSISTENCE ACCEPTANCE",
+  "run": "run-5576dfd8",
+  "projectId": "figmemento-local-commerce-test-run-5576dfd8",
+  "postgresMajorVersion": 17,
+  "ledger": "37/37",
+  "pendingMigrations": 0,
+  "process": {
+    "A": { "pid": 23746, "port": 51321 },
+    "termination": { "signal": "SIGTERM", "exitCode": 0, "pidAbsent": true, "portClosed": true },
+    "B": { "pid": 24096, "port": 51322, "startedAfterAAbsent": true }
+  },
+  "credentialContinuity": {
+    "sameGuestCookies": true,
+    "sameMemberSessionCookie": true,
+    "sameSigningConfiguration": true,
+    "relogin": false,
+    "replacementGuestAuthority": false,
+    "rawValuesRecorded": false,
+    "realChromeProfiles": true
+  },
+  "stableDigests": {
+    "cartBefore": "b524570a482a92bf407486ed274966493c08c06965d07ebe41ca51d5cde1b4e6",
+    "cartAfter": "b524570a482a92bf407486ed274966493c08c06965d07ebe41ca51d5cde1b4e6",
+    "draftBefore": "eeb2008523aef414ea05331a85ee1394a9bacc405fa015a48b4f0a4734c6a2dd",
+    "draftAfter": "eeb2008523aef414ea05331a85ee1394a9bacc405fa015a48b4f0a4734c6a2dd",
+    "trackingBefore": "8feb7c46357acd27778dd3ada2d3a8de208b89b321fdfc6067a33de1a02d450a",
+    "trackingAfter": "8feb7c46357acd27778dd3ada2d3a8de208b89b321fdfc6067a33de1a02d450a"
+  },
+  "privateMedia": [
+    { "kind": "original", "sha256": "7f771efc51da7ff6af6b2335ddb496278d26d4eda210a15697edb34a1c26389f", "bytes": 203, "contentType": "image/png" },
+    { "kind": "derivative", "sha256": "586b6edc47733e97378c160466555ba0fb784857d5487622a4550d6aad29f07a", "bytes": 171, "contentType": "image/png" },
+    { "kind": "original", "sha256": "097ad2cfe226c21078dfe15fdf0778f0b71965bf38904995921e1787394178ee", "bytes": 248, "contentType": "image/png" },
+    { "kind": "derivative", "sha256": "b4603702f62b97b2b49a967b6c76f8e145b3d187796fc25fd242d4ae8c980a5b", "bytes": 220, "contentType": "image/png" }
+  ],
+  "orders": [
+    { "reference": "FM-LOCAL-363633B70F9D4988", "ownerKind": "guest", "items": 2, "digest": "08d43122268e8887832428fd29e40286e54c9889c874d3e1e63b5bbeaace6f85" },
+    { "reference": "FM-LOCAL-6672FB9E2D27452E", "ownerKind": "guest", "items": 1, "digest": "c4cde9912f714dde2cba9a1c36afb4f7a78c3d6138392c386c83eb585cc19313" },
+    { "reference": "FM-LOCAL-6CD065B2940B45A6", "ownerKind": "guest", "items": 1, "digest": "686b1babdb647f0caed8ef585506657fd9a3999c0caeba7e5688e4809e762ef2" },
+    { "reference": "FM-LOCAL-EB3C69551B534BD4", "ownerKind": "customer", "items": 1, "digest": "904c29ede171fcc316d2fed28308644780845fee2ab59f35fba1cb8cdcebdc6a" }
+  ],
+  "memberSession": {
+    "sameCustomerId": true,
+    "sameOwnerId": true,
+    "authenticatedAfterRestart": true
+  },
+  "paymentHistory": {
+    "mainOrderOutcomes": ["failed", "succeeded"],
+    "committedReplayAfterB": true
+  },
+  "fulfillment": {
+    "photoReviews": ["approved"],
+    "manifestVersions": [1, 2],
+    "revisionRequestsUsed": 1,
+    "state": "quality_check",
+    "timeoutDecisionCount": 1
+  },
+  "shipment": {
+    "count": 1,
+    "state": "delivered",
+    "events": ["shipment_created", "shipped", "in_transit", "delivered"],
+    "committedReplayAfterB": true
+  },
+  "digital": {
+    "versions": 1,
+    "grants": 1,
+    "maxDownloads": 5,
+    "consumedBeforeRestart": 1,
+    "consumedAfterSecondPostRestartDownload": 2,
+    "spentTicketRejectedAfterB": true,
+    "newTicketUsesSameGrant": true,
+    "privateBytesMatched": true
+  },
+  "negativeMatrix": {
+    "foreignGuest": "bounded rejection",
+    "foreignMember": "bounded rejection",
+    "forgedGuestCookie": "bounded rejection",
+    "forgedOrderCapability": "bounded rejection",
+    "forgedMemberSession": "bounded rejection",
+    "publicReferenceOnly": "bounded rejection",
+    "trackingReferenceOnly": "bounded rejection"
+  },
+  "excluded": {
+    "reset": false,
+    "reseed": false,
+    "fixtureReplayBetweenProcesses": false,
+    "rowCopy": false,
+    "migration": false,
+    "remoteAccess": false,
+    "supplierPersistence": false,
+    "realPaymentProvider": false,
+    "realCarrier": false
+  }
+}

@@ -14,5 +14,6 @@ export function createProductRepository(
 } {
   const source = readProductSource(createCatalogRuntimeEnvironment(environment, runtimeMode));
   if (source === "fixture") return { repository: new FixtureProductRepository(), source };
+  if (source === "local_persistent") throw new Error("Persistent Catalog requires the canonical Catalog read boundary.");
   return { repository: new SupabaseProductRepository(getSupabaseServerClient()), source };
 }

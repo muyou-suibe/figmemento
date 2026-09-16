@@ -1,3 +1,4 @@
+/** @deprecated Compatibility-only shape for the replaced prototype browser route. */
 export type UploadReceipt = {
   bucket: string;
   storageKey: string;

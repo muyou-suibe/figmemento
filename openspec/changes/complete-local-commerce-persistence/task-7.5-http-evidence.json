@@ -1,0 +1,335 @@
+{
+  "run": "run-5576dfd8",
+  "project": "figmemento-local-commerce-test-run-5576dfd8",
+  "ledger": 24,
+  "results": [
+    "disabled production replay after quality",
+    "disabled quality replay",
+    "required production replay after quality",
+    "required quality replay",
+    "mixed production replay after quality",
+    "mixed quality replay"
+  ],
+  "races": [
+    {
+      "mode": "disabled",
+      "pids": [
+        44956,
+        44982
+      ],
+      "statuses": [
+        200,
+        409
+      ],
+      "counts": [
+        {
+          "kind": "enter_photo_review",
+          "count": 1,
+          "audits": 1,
+          "keys": 1
+        },
+        {
+          "kind": "mark_quality_check",
+          "count": 1,
+          "audits": 1,
+          "keys": 1
+        },
+        {
+          "kind": "start_production",
+          "count": 1,
+          "audits": 1,
+          "keys": 1
+        }
+      ],
+      "upstream": [
+        {
+          "domain": "cart_lines",
+          "count": 1,
+          "digest": "ca9a069aa0afae29e856fed3fb768994"
+        },
+        {
+          "domain": "carts",
+          "count": 1,
+          "digest": "7429fc3ebfaa883efd774d88769f9012"
+        },
+        {
+          "domain": "catalog_configuration_snapshots",
+          "count": 2,
+          "digest": "e1d5ed8487cdf2b23489a3dc146c1240"
+        },
+        {
+          "domain": "catalog_products",
+          "count": 2,
+          "digest": "c7192793931316beb64c840e8a43ba3e"
+        },
+        {
+          "domain": "catalog_variants",
+          "count": 2,
+          "digest": "dbde2325956d8d02425457a69b1fe4b4"
+        },
+        {
+          "domain": "order_item_purchase_snapshots",
+          "count": 1,
+          "digest": "65b8a451509262783d6baf2e24b6ebf7"
+        },
+        {
+          "domain": "order_item_receipt_bindings",
+          "count": 0,
+          "digest": "d41d8cd98f00b204e9800998ecf8427e"
+        },
+        {
+          "domain": "order_purchase_snapshots",
+          "count": 1,
+          "digest": "72c5cf702796f05bf01fef1659bb8d89"
+        },
+        {
+          "domain": "payment_actions",
+          "count": 1,
+          "digest": "b4799d477cbad2bd5a9866650f4c264e"
+        },
+        {
+          "domain": "payment_attempts",
+          "count": 1,
+          "digest": "2d4a973880486178f3bea4b067d04cbd"
+        }
+      ]
+    },
+    {
+      "mode": "required",
+      "pids": [
+        45147,
+        45191
+      ],
+      "statuses": [
+        200,
+        409
+      ],
+      "counts": [
+        {
+          "kind": "customer_approve",
+          "count": 1,
+          "audits": 1,
+          "keys": 1
+        },
+        {
+          "kind": "enter_photo_review",
+          "count": 1,
+          "audits": 1,
+          "keys": 1
+        },
+        {
+          "kind": "mark_quality_check",
+          "count": 1,
+          "audits": 1,
+          "keys": 1
+        },
+        {
+          "kind": "preview_publish",
+          "count": 1,
+          "audits": 1,
+          "keys": 1
+        },
+        {
+          "kind": "preview_ready",
+          "count": 1,
+          "audits": 1,
+          "keys": 1
+        },
+        {
+          "kind": "preview_reserve",
+          "count": 1,
+          "audits": 1,
+          "keys": 1
+        },
+        {
+          "kind": "start_production",
+          "count": 1,
+          "audits": 1,
+          "keys": 1
+        }
+      ],
+      "upstream": [
+        {
+          "domain": "cart_lines",
+          "count": 1,
+          "digest": "4effb9f6e96d560b721be2807f171c90"
+        },
+        {
+          "domain": "carts",
+          "count": 1,
+          "digest": "6f78dc3196c7921f99ac07ae0d98be91"
+        },
+        {
+          "domain": "catalog_configuration_snapshots",
+          "count": 2,
+          "digest": "e1d5ed8487cdf2b23489a3dc146c1240"
+        },
+        {
+          "domain": "catalog_products",
+          "count": 2,
+          "digest": "c7192793931316beb64c840e8a43ba3e"
+        },
+        {
+          "domain": "catalog_variants",
+          "count": 2,
+          "digest": "dbde2325956d8d02425457a69b1fe4b4"
+        },
+        {
+          "domain": "order_item_purchase_snapshots",
+          "count": 1,
+          "digest": "ae5850a6d7e24e530e6273c23e788f31"
+        },
+        {
+          "domain": "order_item_receipt_bindings",
+          "count": 0,
+          "digest": "d41d8cd98f00b204e9800998ecf8427e"
+        },
+        {
+          "domain": "order_purchase_snapshots",
+          "count": 1,
+          "digest": "2f6f01303f9b7a3fe69ebf075db41c9b"
+        },
+        {
+          "domain": "payment_actions",
+          "count": 1,
+          "digest": "b4435e4193c51601ed06250d4d20b2c2"
+        },
+        {
+          "domain": "payment_attempts",
+          "count": 1,
+          "digest": "227007af013eebcab3246db709cc8193"
+        }
+      ]
+    },
+    {
+      "mode": "mixed",
+      "pids": [
+        45299,
+        45321
+      ],
+      "statuses": [
+        200,
+        409
+      ],
+      "counts": [
+        {
+          "kind": "customer_approve",
+          "count": 1,
+          "audits": 1,
+          "keys": 1
+        },
+        {
+          "kind": "enter_photo_review",
+          "count": 1,
+          "audits": 1,
+          "keys": 1
+        },
+        {
+          "kind": "mark_quality_check",
+          "count": 1,
+          "audits": 1,
+          "keys": 1
+        },
+        {
+          "kind": "preview_publish",
+          "count": 1,
+          "audits": 1,
+          "keys": 1
+        },
+        {
+          "kind": "preview_ready",
+          "count": 1,
+          "audits": 1,
+          "keys": 1
+        },
+        {
+          "kind": "preview_reserve",
+          "count": 1,
+          "audits": 1,
+          "keys": 1
+        },
+        {
+          "kind": "start_production",
+          "count": 1,
+          "audits": 1,
+          "keys": 1
+        }
+      ],
+      "upstream": [
+        {
+          "domain": "cart_lines",
+          "count": 2,
+          "digest": "6c8d0ea5500b7cd6f93ba0fb61b67273"
+        },
+        {
+          "domain": "carts",
+          "count": 1,
+          "digest": "4f0af5fd870a755b70b6d0867c6d3b50"
+        },
+        {
+          "domain": "catalog_configuration_snapshots",
+          "count": 2,
+          "digest": "e1d5ed8487cdf2b23489a3dc146c1240"
+        },
+        {
+          "domain": "catalog_products",
+          "count": 2,
+          "digest": "c7192793931316beb64c840e8a43ba3e"
+        },
+        {
+          "domain": "catalog_variants",
+          "count": 2,
+          "digest": "dbde2325956d8d02425457a69b1fe4b4"
+        },
+        {
+          "domain": "order_item_purchase_snapshots",
+          "count": 2,
+          "digest": "d7c8d12e951766912963d15a285b21a7"
+        },
+        {
+          "domain": "order_item_receipt_bindings",
+          "count": 0,
+          "digest": "d41d8cd98f00b204e9800998ecf8427e"
+        },
+        {
+          "domain": "order_purchase_snapshots",
+          "count": 1,
+          "digest": "738646bce19a24a9a6beffefd2d4bd20"
+        },
+        {
+          "domain": "payment_actions",
+          "count": 1,
+          "digest": "b13d7bc6c3dd94b492f662d73799af96"
+        },
+        {
+          "domain": "payment_attempts",
+          "count": 1,
+          "digest": "2b3aaee6628c3c2c3688ce75b443009c"
+        }
+      ]
+    }
+  ],
+  "restarts": [
+    {
+      "label": "disabled production/quality",
+      "old": 44956,
+      "new": 45147,
+      "classification": "committed response discarded, then process restart replay"
+    },
+    {
+      "label": "required production/quality",
+      "old": 45147,
+      "new": 45299,
+      "classification": "committed response discarded, then process restart replay"
+    },
+    {
+      "label": "mixed production/quality",
+      "old": 45299,
+      "new": 45350,
+      "classification": "committed response discarded, then process restart replay"
+    }
+  ],
+  "status": "PASS",
+  "task": "7.5",
+  "classification": "LOCAL DEVELOPMENT / TEST PERSISTENCE ACCEPTANCE"
+}

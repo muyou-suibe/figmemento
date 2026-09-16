@@ -1,0 +1,27 @@
+import type {
+  CustomizationFieldAdminReadRepository,
+  PrivilegedAdminCustomizationFieldRepositories,
+} from "../application/admin-customization-field-boundary.ts";
+import {
+  createProductionAdminCustomizationFieldReader,
+  createProductionAdminCustomizationFieldRepositories,
+} from "../infrastructure/customization/customization-field-repository-factory.ts";
+import { getSharedLocalAdminCatalogRuntime } from "../infrastructure/catalog/local-admin-catalog-repository.server.ts";
+import { resolveAuthorizedAdminCatalogSource } from "./admin-source-resolution.server.ts";
+
+export function createAdminCustomizationFieldReader(): CustomizationFieldAdminReadRepository {
+  return resolveAuthorizedAdminCatalogSource(
+    createProductionAdminCustomizationFieldReader,
+    () => getSharedLocalAdminCatalogRuntime().customizationRepository,
+  );
+}
+
+export function createAdminCustomizationFieldRepositories(): PrivilegedAdminCustomizationFieldRepositories {
+  return resolveAuthorizedAdminCatalogSource(
+    createProductionAdminCustomizationFieldRepositories,
+    () => {
+      const runtime = getSharedLocalAdminCatalogRuntime();
+      return { reader: runtime.customizationRepository, writer: runtime.customizationRepository };
+    },
+  );
+}

@@ -6,6 +6,7 @@ export function AdminDigitalDelivery({ orderNumber, orderItemId, initialName }: 
   const [file, setFile] = useState<File | null>(null);
   const [message, setMessage] = useState(initialName ? `Delivered file: ${initialName}` : "");
   const [saving, setSaving] = useState(false);
+  const [publicationActionId, setPublicationActionId] = useState(() => crypto.randomUUID());
 
   async function upload() {
     if (!file) return;
@@ -14,13 +15,15 @@ export function AdminDigitalDelivery({ orderNumber, orderItemId, initialName }: 
     const form = new FormData();
     form.set("orderNumber", orderNumber);
     form.set("orderItemId", orderItemId);
+    form.set("publicationActionId", publicationActionId);
     form.set("file", file);
     try {
       const response = await fetch("/api/admin/digital-delivery", { method: "POST", body: form });
-      const result = await response.json() as { error?: string; fileName?: string };
+      const result = await response.json() as { error?: string; fileName?: string; publication?: { fileName?: string } };
       if (!response.ok) throw new Error(result.error || "Upload failed.");
-      setMessage(`Saved: ${result.fileName || file.name}`);
+      setMessage(`Saved: ${result.publication?.fileName || result.fileName || file.name}`);
       setFile(null);
+      setPublicationActionId(crypto.randomUUID());
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Upload failed.");
     } finally {

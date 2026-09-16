@@ -1,6 +1,6 @@
 # Supabase database migration policy
 
-Supabase PostgreSQL is PhotoGift's authoritative MVP business database. D1 and Drizzle are not the business migration system.
+Supabase PostgreSQL is FigMemento's authoritative MVP business database. D1 and Drizzle are not the business migration system.
 
 ## Canonical workflow for later schema changes
 

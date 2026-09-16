@@ -1,13 +1,178 @@
 @import "tailwindcss";
 
-:root { --ink: #1f2a25; --muted: #69736d; --cream: #f8f5ef; --paper: #fffdf9; --line: #dedfd9; --sage: #dbe8d8; --coral: #e88868; --yellow: #f2c86e; --serif: Georgia, "Times New Roman", serif; --sans: "Avenir Next", "Helvetica Neue", Arial, sans-serif; --shadow-soft: 0 18px 45px #30433418; --shadow-deep: 0 28px 80px #3043342b; }
+:root {
+  --color-bg: #FDF8F2;
+  --color-card: #FFFDF8;
+  --color-text: #3C2A1E;
+  --color-text-light: #6B5D4F;
+  --color-text-muted: #8B7355;
+  --color-accent: #C4815A;
+  --color-highlight: #D4B896;
+  --color-border: #E8DCCC;
+  --color-border-light: #F5EDE0;
+  --color-tag-bg: #F5EDE0;
+  --color-success: #7B9E6C;
+
+  --font-display: "Playfair Display", "Noto Serif SC", "Iowan Old Style", Baskerville, "Times New Roman", serif;
+  --font-body: "Lato", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", ui-sans-serif, system-ui, sans-serif;
+  --font-size-display: 64px;
+  --font-size-h1: 48px;
+  --font-size-h2: 36px;
+  --font-size-h3: 26px;
+  --font-size-body-large: 17px;
+  --font-size-body: 14px;
+  --font-size-caption: 12px;
+  --font-weight-display-light: 300;
+  --font-weight-display-medium: 500;
+  --font-weight-body-light: 300;
+  --font-weight-body-regular: 400;
+
+  --grid-max: 1280px;
+  --grid-columns: 4;
+  --grid-gutter: 16px;
+  --grid-margin: 20px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 32px;
+  --space-6: 48px;
+  --space-7: 64px;
+  --space-8: 96px;
+  --space-9: 128px;
+
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-pill: 999px;
+  --shadow-xs: 0 1px 2px rgba(30, 26, 21, 0.04);
+  --shadow-sm: 0 2px 8px rgba(30, 26, 21, 0.06);
+  --shadow-md: 0 4px 16px rgba(30, 26, 21, 0.08);
+  --shadow-lg: 0 8px 24px rgba(30, 26, 21, 0.10);
+  --z-base: 0;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-overlay: 300;
+  --z-modal: 400;
+  --z-toast: 500;
+  --motion-fast: 150ms;
+  --motion-normal: 250ms;
+  --motion-slow: 400ms;
+  --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
+  --ease-sharp: cubic-bezier(0.4, 0, 0.6, 1);
+  --motion-distance: 4px;
+  --motion-scale: 1.05;
+  --motion-card: 300ms;
+  --motion-card-scale: 1.03;
+
+  /* Compatibility aliases for existing presentation selectors. */
+  --ink: var(--color-text);
+  --muted: var(--color-text-muted);
+  --cream: var(--color-bg);
+  --paper: var(--color-card);
+  --line: var(--color-border);
+  --sage: var(--color-tag-bg);
+  --coral: var(--color-accent);
+  --yellow: var(--color-highlight);
+  --serif: var(--font-display);
+  --sans: var(--font-body);
+  --shadow-soft: var(--shadow-md);
+  --shadow-deep: var(--shadow-lg);
+
+  /* Fusion frontend extension: one global style authority for the new
+     presentation primitives. Existing --color-* tokens and aliases above
+     remain authoritative for current routes. */
+  --fusion-bg: #FDF8F2;
+  --fusion-paper: #FFFDF8;
+  --fusion-cream: #F5EDE0;
+  --fusion-ink: #3C2A1E;
+  --fusion-ink-soft: #6B5D4F;
+  --fusion-ink-mute: #8B7355;
+  --fusion-terra: #C4815A;
+  --fusion-terra-deep: #A9663F;
+  --fusion-gold: #D4B896;
+  --fusion-copper: #B8936E;
+  --fusion-honey: #FFE4A0;
+  --fusion-honey-deep: #E8B84B;
+  --fusion-pin: #E85050;
+  --fusion-rule: var(--fusion-ink);
+  --fusion-line: #E8DCCC;
+  --fusion-shadow-card: 2px 3px 10px rgba(60, 42, 30, 0.08);
+  --fusion-shadow-lift: 5px 8px 24px rgba(60, 42, 30, 0.14);
+  --fusion-focus: #7C4DFF;
+  --fusion-tap: 44px;
+  --fusion-content-pad: 40px;
+  --fusion-font-serif: "Playfair Display", "Noto Serif SC", serif;
+  --fusion-font-hand: "Lato", "Noto Sans SC", "PingFang SC", sans-serif;
+  --fusion-font-ital: "Lato", "Noto Sans SC", "PingFang SC", sans-serif;
+  --fusion-font-body: "Lato", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --fusion-space-1: 4px;
+  --fusion-space-2: 8px;
+  --fusion-space-3: 16px;
+  --fusion-space-4: 24px;
+  --fusion-space-5: 32px;
+  --fusion-space-6: 48px;
+  --fusion-space-7: 64px;
+  --fusion-radius-card: 14px;
+  --fusion-radius-control: 24px;
+  --fusion-motion-marquee: 26s;
+  --fusion-motion-page: 450ms;
+  --fusion-motion-reveal: 700ms;
+  --fusion-motion-stagger-1: 90ms;
+  --fusion-motion-stagger-2: 180ms;
+  --fusion-motion-stagger-3: 270ms;
+  --fusion-motion-stagger-4: 360ms;
+  --fusion-motion-float-1: 7s;
+  --fusion-motion-float-2: 8s;
+  --fusion-motion-float-3: 9s;
+  --fusion-motion-hover: 450ms;
+  --fusion-motion-button: 180ms;
+  --fusion-motion-search: 350ms;
+  --fusion-motion-faq: 450ms;
+  --fusion-motion-count: 1200ms;
+  --fusion-motion-cart: 700ms;
+  --fusion-motion-distance-page: 14px;
+  --fusion-motion-distance-reveal: 26px;
+  --fusion-motion-distance-polaroid: 8px;
+  --fusion-breakpoint-wide: 960px;
+  --fusion-breakpoint-compact: 720px;
+  --fusion-breakpoint-narrow: 520px;
+}
+
+@media (min-width: 640px) {
+  :root { --grid-columns: 8; --grid-gutter: 20px; --grid-margin: 24px; }
+}
+
+@media (min-width: 1024px) {
+  :root { --grid-columns: 12; --grid-gutter: 24px; --grid-margin: 32px; }
+}
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
-body { margin: 0; background: var(--cream); color: var(--ink); font-family: var(--sans); }
+body { margin: 0; background: var(--color-bg); color: var(--color-text); font-family: var(--font-body); font-size: var(--font-size-body); }
 button, a, input, textarea { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 a { color: inherit; text-decoration: none; }
 button { border: 0; cursor: pointer; }
+:where(button, a, input, textarea, select):focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 3px rgba(160, 113, 79, 0.12);
+}
+:where(input, textarea, select) { min-height: 44px; }
+:where(input, textarea, select):focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(160, 113, 79, 0.12);
+  outline: 0;
+}
+:where(button, .button, .button-dark) { min-height: 44px; border-radius: var(--radius-sm); }
+:where(button, a, input, textarea, select):disabled { cursor: not-allowed; opacity: 0.55; }
+.button, .button-dark { transition: background-color var(--motion-normal) var(--ease-out), box-shadow var(--motion-normal) var(--ease-out), color var(--motion-normal) var(--ease-out), transform var(--motion-normal) var(--ease-out); }
+.button-dark { background: var(--color-accent); color: var(--color-card); }
+.button-dark:hover { background: var(--color-text-light); box-shadow: var(--shadow-sm); transform: translateY(calc(var(--motion-distance) * -1)); }
+.visual-grid { display: grid; gap: var(--grid-gutter); grid-template-columns: repeat(var(--grid-columns), minmax(0, 1fr)); margin-inline: auto; max-width: var(--grid-max); padding-inline: var(--grid-margin); }
 .skip-link { background: var(--ink); color: var(--paper); font-size: 11px; font-weight: 800; left: 16px; padding: 10px 14px; position: fixed; top: 10px; transform: translateY(-180%); transition: transform .2s; z-index: 100; }
 .skip-link:focus-visible { transform: translateY(0); }
 .site-shell { isolation: isolate; overflow: hidden; position: relative; }
@@ -87,7 +252,8 @@ h1 em, h2 em { color: var(--coral); font-family: var(--serif); font-weight: 400;
 .admin-filter-reset { color: var(--muted); font-size: 10px; font-weight: 800; padding: 12px 4px; text-decoration: underline; text-underline-offset: 3px; }
 
 /* Interaction and responsive polish */
-body { font-family: "Avenir Next", "Helvetica Neue", Arial, sans-serif; }
+/* Internal legacy/admin selectors remain available; public storefront pages use the token authority above. */
+body { font-family: var(--font-body); }
 :where(button, a, input, textarea, select):focus-visible { outline: 2px solid var(--coral); outline-offset: 3px; }
 button:active, .button:active { transform: translateY(1px) scale(.98); }
 .button, .text-link, .bag-button, .icon-button, .menu-button, .product-image, .remove-item, .category-tabs button, .admin-tracking-control button, .admin-photo-review button, .admin-cleanup button { transition: color .2s, background-color .2s, border-color .2s, opacity .2s, transform .2s; }
@@ -234,6 +400,23 @@ h1, h2, h3 { text-wrap: balance; }
 @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
+}
+
+/* ============================================================
+   FUSION RESPONSIVE + MOTION HARDENING — BATCH H
+   The keyframe is shared by CSS modules; page selectors remain scoped to
+   their real customer, operator, and admin surfaces in those modules.
+   ============================================================ */
+@keyframes fusionPageEntrance {
+  from { opacity: 0; transform: translateY(var(--fusion-motion-distance-page)); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee,
+  .marquee * {
+    animation: none !important;
+  }
 }
 .admin-attention-filter { align-items: center; display: flex !important; flex-direction: row; gap: 7px !important; min-height: 36px; }
 .admin-attention-filter input { accent-color: var(--coral); min-width: 14px; width: 14px; }

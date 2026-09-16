@@ -53,6 +53,11 @@ export default defineConfig(async () => {
       cloudflare({
         viteEnvironment: { name: "rsc", childEnvironments: ["ssr"] },
         config: localBindingConfig,
+        // Multi-Worker local-commerce acceptance owns no debugging surface.
+        // Ordinary dev/build behavior is unchanged when this test-only flag is absent.
+        inspectorPort: process.env.LOCAL_COMMERCE_ACCEPTANCE_DISABLE_INSPECTOR === "true"
+          ? false
+          : undefined,
       }),
     ],
   };

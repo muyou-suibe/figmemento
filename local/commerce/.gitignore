@@ -1,0 +1,9 @@
+.env
+.env.local
+.env.*
+!example.env
+runtime/
+.supabase/
+.branches/
+.temp/
+volumes/

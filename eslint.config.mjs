@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Generated local Supabase runtime artifacts are not application source.
+    "local/commerce/runtime/**",
     // Retained D1/Drizzle example and template material is not part of the
     // active PhotoGift Supabase application.
     "db/**",
