@@ -7379,6 +7379,7 @@
 }
 
 .visualV2 .discoveryPolaroidFrame {
+  position: absolute;
   will-change: transform;
 }
 
@@ -7486,6 +7487,58 @@
 .visualV2 .fusionHeroSecondary:active {
   box-shadow: 1px 2px 0 rgba(60, 42, 30, .16);
   transform: translateY(2px);
+}
+
+@media (min-width: 721px) and (max-width: 960px) {
+  .visualV2.homeReferenceShell .fusionHomeHero {
+    gap: 18px;
+    padding-bottom: 28px;
+    padding-top: 32px;
+  }
+
+  .visualV2.homeReferenceShell .fusionHeroTitle {
+    font-size: clamp(40px, 5.1vw, 46px);
+    line-height: 1.08;
+    margin-block: 12px 10px;
+  }
+
+  .visualV2.homeReferenceShell .fusionHeroTitle em {
+    font-size: clamp(44px, 5.5vw, 50px);
+  }
+
+  .visualV2.homeReferenceShell .fusionHeroIntro {
+    margin-bottom: 16px;
+  }
+
+  .visualV2.homeReferenceShell .fusionHeroNote {
+    margin-top: 12px;
+  }
+
+  .visualV2.homeReferenceShell .fusionHeroPolaroids {
+    height: 340px;
+    margin-top: -8px !important;
+  }
+
+  .visualV2.homeReferenceShell .discoveryPolaroid1 {
+    height: 282px;
+    left: 5%;
+    top: 18px;
+    width: 236px;
+  }
+
+  .visualV2.homeReferenceShell .discoveryPolaroid2 {
+    height: 296px;
+    right: 5%;
+    top: 28px;
+    width: 248px;
+  }
+
+  .visualV2.homeReferenceShell .discoveryPolaroid3 {
+    bottom: 0;
+    height: 232px;
+    left: 34%;
+    width: 192px;
+  }
 }
 
 .visualV2 .referenceProductCard {

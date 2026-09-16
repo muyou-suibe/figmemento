@@ -47,6 +47,27 @@ At 1024×768, Selected Works began below the viewport as `pending`, `opacity: 0`
 
 The continuous hero budget is five animations: three polaroid paths and two small decorative drifts. Entrance animations are finite and do not delay interaction. Reduced-motion and coarse-pointer behavior remain covered by the focused contract because the browser automation surface does not override those media features.
 
+## Mid-width Hero composition pass
+
+The pre-change measurement reproduced the owner's report. At 900px viewport height, the old 960–768px stacked layout exposed only polaroid 1 as identifiable; polaroid 2 was either absent or a narrow edge and polaroid 3 was below the fold. At 768px viewport height the cluster itself was only 37.5–39.4% above the fold. The cause was structural: after the motion pass introduced a nested outer frame, absolute card positioning remained on the inner link while the three outer frames flowed vertically.
+
+The final strategy restores absolute positioning to the outer motion frame and adds a dedicated `721–960px` stacked editorial composition. It trims only intermediate spacing/title rhythm, uses a 340px overlapping cluster, and preserves all three cards, links, captions, pins and independent motion paths. Widths from 961px upward retain the established two-column composition.
+
+| Viewport | Layout | Hero height | Copy height | Cluster top | Cluster above fold | Visible polaroids | Document width | Overflow |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| 1280×900 | two-column | 510.0 | 412.6 | 232.2 | 100% | 3 | 1280 | no |
+| 1024×768 | two-column | 510.0 | 412.6 | 229.7 | 100% | 3 | 1024 | no |
+| 980×900 | two-column | 510.0 | 412.6 | 222.4 | 100% | 3 | 980 | no |
+| 960×900 | intermediate stacked | 753.3 | 343.3 | 562.9 | 99.2% | 3 | 960 | no |
+| 900×900 | intermediate stacked | 752.6 | 342.6 | 562.2 | 99.4% | 3 | 900 | no |
+| 840×900 | intermediate stacked | 745.8 | 335.8 | 555.4 | 100% | 3 | 840 | no |
+| 768×900 | intermediate stacked | 740.3 | 330.3 | 557.9 | 100% | 3 | 768 | no |
+| 375×812 | narrow mobile stacked | 1095.7 | 601.7 | 859.0 | 0% | 0 initially; cluster starts 47px below fold | 375 | no |
+
+At 960/900/840/768×768, EN showed all three cards with total cluster visibility of 59.8%, 58.8%, 61.2% and 61.2%; the third card remained 39.8–43.3% visible. ZH showed all three cards with total cluster visibility of 80.3%, 66.9%, 68.2% and 68.7%. At 900×900, the ES shell showed all three cards and 96.1% of the cluster with no overflow.
+
+No Catalog facts changed: the Hero still renders exactly three `CatalogPolaroid` instances from the first three authoritative catalog products. The existing 5.8s, 6.4s and 5.1s motion paths, nested inspection layer, reduced-motion behavior and 981/980 shell breakpoint remain intact.
+
 ## Authority notes
 
 - The development fixture is presentation evidence only and remains visibly labelled development/test-only.

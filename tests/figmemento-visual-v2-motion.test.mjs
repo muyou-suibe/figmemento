@@ -29,9 +29,13 @@ test("Home and Catalog motion stays presentational and touch-safe", () => {
   assert.match(css, /@keyframes visualV2FloatTwo[\s\S]*translate3d\(-6px, -16px, 0\)[\s\S]*rotate\(4\.5deg\)/);
   assert.match(css, /@keyframes visualV2FloatThree[\s\S]*translate3d\(3px, -11px, 0\)[\s\S]*rotate\(-\.2deg\)/);
   assert.match(cards, /discoveryPolaroidFrame[\s\S]*discoveryPolaroid/);
+  assert.equal((home.match(/<CatalogPolaroid/g) ?? []).length, 3);
   assert.match(css, /discoveryPolaroidFrame:hover[\s\S]*animation-play-state: paused/);
   assert.match(css, /translateY\(-10px\)[\s\S]*scale\(1\.02\)/);
   assert.match(css, /visualV2HeroEntrance 620ms[\s\S]*visualV2HeroEntrance 780ms/);
+  const intermediateRule = css.match(/@media \(min-width: 721px\) and \(max-width: 960px\) \{[\s\S]*?\n\}/)?.[0] ?? "";
+  assert.match(intermediateRule, /fusionHomeHero[\s\S]*fusionHeroPolaroids/);
+  assert.doesNotMatch(intermediateRule, /discoveryPolaroid[123][^{]*\{[^}]*display:\s*none/);
   assert.match(home, /FusionRevealSection className=\{styles\.discoverySectionHeading\}/);
   assert.match(css, /\.visualV2 \.referenceProductCard:hover[\s\S]*translateY/);
   assert.match(css, /scale\(1\.035\)/);
