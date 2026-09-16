@@ -17,6 +17,7 @@ import {
 import { catalogTestEnvironment, offlineCatalogClient } from "./fixtures/local-persistent-catalog.mjs";
 
 const navigation = readFileSync("app/storefront/CatalogShellNavigation.tsx", "utf8");
+const shell = readFileSync("app/storefront/CatalogShell.tsx", "utf8");
 const styles = readFileSync("app/storefront/catalog-storefront.module.css", "utf8");
 const translations = readFileSync("app/storefront/ReferenceLanguageProvider.tsx", "utf8");
 const marker = {
@@ -47,11 +48,20 @@ test("English and Spanish navigation retain the shared translated navigation", (
 });
 
 test("compact navigation replaces the desktop controls before translated labels compete", () => {
-  assert.match(styles, /@media \(max-width: 1100px\)[\s\S]*\.referenceShell\.referenceShell \.headerControls \{ display: none !important; \}/);
+  assert.match(styles, /@media \(min-width: 981px\)[\s\S]*width: clamp\(140px, 16vw, 216px\);/);
+  assert.match(styles, /@media \(max-width: 980px\)[\s\S]*\.referenceShell\.referenceShell \.headerControls \{ display: none !important; \}/);
   assert.match(styles, /\.referenceShell\.referenceShell \.menuButton \{ display: inline-flex !important; \}/);
   assert.match(styles, /\.referenceShell\.referenceShell \.shellCategoryPills \{[\s\S]*overflow-x: auto;/);
   assert.match(navigation, /aria-controls="catalog-mobile-menu"/);
   assert.match(navigation, /className=\{styles\.mobileSearch\}[\s\S]*role="search"/);
+});
+
+test("customer shell omits internal Fusion annotation while retaining customer footer links", () => {
+  assert.doesNotMatch(shell, /ReferenceAnnotation|Fusion design annotation|Fusion<\/b> 02\+07\+08\+12/);
+  assert.doesNotMatch(shell, /#FDF8F2|#3C2A1E|#C4815A|#D4B896|#FFE4A0/);
+  for (const path of ["/shop", "/journal", "/about", "/contact", "/privacy", "/terms", "/shipping-returns"]) {
+    assert.match(shell, new RegExp(`href="${path.replaceAll("/", "\\/")}"`));
+  }
 });
 
 test("demo setup rejects production, non-loopback, wrong project, and incomplete ledgers", () => {

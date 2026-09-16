@@ -41,3 +41,16 @@ test("rendered unavailable catalog keeps the existing safe state and no fixture 
   assert.match(html, /catalog unavailable|shop is taking a quiet moment/i);
   assert.doesNotMatch(html, /Custom Couple Figure|No sample products have been substituted/i);
 });
+
+test("rendered customer routes omit internal design annotation and retain customer footer navigation", async () => {
+  for (const path of ["/", "/shop", "/category/3d-figures", "/journal", "/about", "/contact"]) {
+    const response = await render(path);
+    assert.equal(response.status, 200, `${path} returned ${response.status}`);
+    const html = await response.text();
+    assert.doesNotMatch(html, /Fusion design annotation|Fusion<\/b>\s*02\+07\+08\+12/);
+    assert.doesNotMatch(html, /<b>BG<\/b>\s*#FDF8F2|<b>Motion<\/b>\s*reveal/);
+    for (const href of ["/shop", "/journal", "/about", "/contact", "/privacy", "/terms", "/shipping-returns"]) {
+      assert.match(html, new RegExp(`href="${href.replaceAll("/", "\\/")}"`));
+    }
+  }
+});

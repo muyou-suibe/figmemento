@@ -40,7 +40,10 @@ The following matrix was measured for EN, ES and ZH at each width. Every row had
 | ---: | --- | --- | --- | --- |
 | 1440 | EN / ES / ZH | visible; every label one line | hidden | PASS |
 | 1280 | EN / ES / ZH | visible; every label one line | hidden | PASS |
-| 1024 | EN / ES / ZH | hidden | visible | PASS |
+| 1180 | EN / ES / ZH | visible; every label one line | hidden | PASS |
+| 1100 | EN / ES / ZH | visible; every label one line | hidden | PASS |
+| 1024 | EN / ES / ZH | visible; every label one line | hidden | PASS |
+| 960 | EN / ES / ZH | hidden | visible | PASS |
 | 768 | EN / ES / ZH | hidden | visible | PASS |
 | 375 | EN / ES / ZH | hidden | visible | PASS |
 
@@ -50,11 +53,17 @@ At 1440 and 1280, computed navigation styles were `white-space: nowrap` and `wor
 - ES: Tienda, Diario, Nosotros, Contacto;
 - ZH: 商店, 工坊手记, 关于我们, 联系我们.
 
-At 1024 and 375, opening the compact menu produced `aria-expanded="true"`. The menu included one-line Home, Shop, Journal, About, Contact, Cart, Account and Track order links in all three languages. Search remained present with localized accessible names:
+At 960 and 375, opening the compact menu produced `aria-expanded="true"`. The menu included one-line Home, Shop, Journal, About, Contact, Cart, Account and Track order links in all three languages. Focus moved to the first menu link on open, and Escape closed the menu. Search remained present with localized accessible names:
 
 - EN: `Search a memory`;
 - ES: `Buscar un recuerdo`;
 - ZH: `搜索一段记忆`.
+
+## Final shell pass
+
+The final customer-shell pass moved the compact transition to `980px`: full navigation remains visible from `981px` upward, and the compact menu is used at `980px` and below. At 1024, EN, ES and ZH all retained the full navigation with no overlap or horizontal overflow. At 960, all three languages used the complete compact menu. A dedicated 1280 ZH check also retained the full one-line navigation.
+
+The browser matrix additionally verified that normal customer HTML no longer displays the internal Fusion handoff annotation (`Fusion 02+07+08+12`, palette/font notes or motion metadata). Customer footer navigation remained present at every measured width. The design-system metadata remains preserved in `docs/design-reference/figmemento-fusion-design-v2.html`; only its storefront runtime rendering was removed.
 
 ## Customer surfaces
 

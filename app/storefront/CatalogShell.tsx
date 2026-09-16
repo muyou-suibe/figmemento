@@ -24,7 +24,6 @@ function CatalogShellContent({ children, categoryLinks, page }: { children: Reac
   const { t } = useReferenceLanguage();
   const isHomeReference = page === "home-reference";
   const isShopReference = page === "shop-reference";
-  const isReferencePage = page !== "default";
   const isReferenceFooter = isHomeReference || page === "category-reference" || page === "editorial-reference";
 
   return (
@@ -108,25 +107,6 @@ function CatalogShellContent({ children, categoryLinks, page }: { children: Reac
           </>
         )}
       </footer>
-      {isReferencePage && <ReferenceAnnotation />}
-    </div>
-  );
-}
-
-function ReferenceAnnotation() {
-  return (
-    <div className={styles.referenceAnnotation} aria-label="Fusion design annotation">
-      <span><b>Fusion</b> 02+07+08+12</span>
-      <span><b>Pages</b> Home · Shop · 5 collections · Journal · About · Contact</span>
-      <span><span className={`${styles.annotationSwatch} ${styles.annotationBg}`} /><b>BG</b> #FDF8F2</span>
-      <span><span className={`${styles.annotationSwatch} ${styles.annotationInk}`} /><b>Ink</b> #3C2A1E</span>
-      <span><span className={`${styles.annotationSwatch} ${styles.annotationTerra}`} /><b>Terracotta</b> #C4815A</span>
-      <span><span className={`${styles.annotationSwatch} ${styles.annotationGold}`} /><b>Gold</b> #D4B896</span>
-      <span><span className={`${styles.annotationSwatch} ${styles.annotationHoney}`} /><b>Washi</b> #FFE4A0</span>
-      <span><b>Title</b> Playfair Display 700</span>
-      <span><b>Body</b> Lato</span>
-      <span><b>Logo</b> Caveat FM monogram</span>
-      <span><b>Motion</b> reveal · float · marquee · pin-wiggle · straighten-on-hover · accordion · count-up · style-card tilt</span>
     </div>
   );
 }
