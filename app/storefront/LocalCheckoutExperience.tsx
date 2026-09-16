@@ -13,6 +13,7 @@ import styles from "./catalog-storefront.module.css";
 import { trackLocalAnalyticsEvent } from "../client/local-analytics.ts";
 import { useReferenceLanguage } from "./ReferenceLanguageProvider";
 import { submitLocalOrderWithEstablishment } from "../client/local-order-submit.ts";
+import { loadPublicShoppingCart } from "./public-shopping-cart-response.ts";
 
 type FormState = {
   email: string;
@@ -48,6 +49,10 @@ function initialCart(): ShoppingCart {
   return { status: "empty", lines: [] };
 }
 
+function unavailableCart(): ShoppingCart {
+  return { status: "failure", lines: [] };
+}
+
 function isAccepted(result: LocalCheckoutPublicProjection | null): result is LocalCheckoutPublicAccepted {
   return result?.status === "accepted";
 }
@@ -80,16 +85,16 @@ export function LocalCheckoutExperience({ localOrderEnabled = false }: { readonl
 
   const refreshCart = useCallback(async () => {
     setLoading(true);
-    try {
-      const response = await fetch("/api/cart", { credentials: "same-origin", cache: "no-store" });
-      const next = await response.json() as ShoppingCart;
-      setCart(next);
-      setLoadMessage(response.ok ? null : "Your local Cart is temporarily unavailable.");
-    } catch {
+    const result = await loadPublicShoppingCart(() => fetch("/api/cart", { credentials: "same-origin", cache: "no-store" }));
+    if (result.status === "unavailable") {
+      setCart(unavailableCart());
       setLoadMessage("Your local Cart is temporarily unavailable.");
-    } finally {
       setLoading(false);
+      return;
     }
+    setCart(result.cart);
+    setLoadMessage(null);
+    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -182,6 +187,18 @@ export function LocalCheckoutExperience({ localOrderEnabled = false }: { readonl
       }));
 
   if (loading) return <div className={styles.fusionCheckout}><p className={styles.status} role="status">{t("Loading your local Cart…")}</p></div>;
+  if (cart.status === "unavailable_source" || cart.status === "failure") {
+    return (
+      <div className={styles.fusionCheckout}>
+        <section className={styles.status} role="status">
+          <p className={styles.eyebrow}>{t("Local checkout")}</p>
+          <h1>{t("Checkout is temporarily unavailable")}</h1>
+          <p>{t("Your local Cart is temporarily unavailable.")}</p>
+          <Link className={styles.secondaryLink} href="/shop">{t("Return to the shop")}</Link>
+        </section>
+      </div>
+    );
+  }
   if (cart.lines.length === 0) {
     return (
       <div className={styles.fusionCheckout}>

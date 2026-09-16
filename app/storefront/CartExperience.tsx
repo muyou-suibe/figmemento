@@ -9,8 +9,10 @@ import { notifyCartChanged } from "./cart-presentation";
 import styles from "./catalog-storefront.module.css";
 import { useReferenceLanguage } from "./ReferenceLanguageProvider";
 import { trackLocalAnalyticsEvent } from "../client/local-analytics.ts";
+import { loadPublicShoppingCart } from "./public-shopping-cart-response.ts";
 
 function initialCart(): ShoppingCart { return { status: "empty", lines: [] }; }
+function unavailableCart(): ShoppingCart { return { status: "failure", lines: [] }; }
 
 function readinessStateLabel(state: CheckoutReadinessReport["state"], t: (value: string) => string): string {
   return t(state === "ready" ? "Ready" : state === "blocked" ? "Blocked" : "Unavailable");
@@ -39,19 +41,20 @@ export function CartExperience() {
 
   const refresh = useCallback(async () => {
     setLoading(true);
-    try {
-      const response = await fetch("/api/cart", { credentials: "same-origin", cache: "no-store" });
-      const next = await response.json() as ShoppingCart;
-      setCart(next);
-      trackLocalAnalyticsEvent({ eventName: "view_cart", metadata: { lineCount: String(next.lines.length) } });
-      setMessage(response.ok ? null : "Your local cart is temporarily unavailable.");
-      if (response.ok && next.lines.length > 0) void refreshReadiness();
-      else setReadiness(null);
-    } catch {
-    setMessage("Your local cart is temporarily unavailable.");
-    } finally {
+    const result = await loadPublicShoppingCart(() => fetch("/api/cart", { credentials: "same-origin", cache: "no-store" }));
+    if (result.status === "unavailable") {
+      setCart(unavailableCart());
+      setMessage("Your local cart is temporarily unavailable.");
+      setReadiness(null);
       setLoading(false);
+      return;
     }
+    setCart(result.cart);
+    trackLocalAnalyticsEvent({ eventName: "view_cart", metadata: { lineCount: String(result.cart.lines.length) } });
+    setMessage(null);
+    if (result.cart.lines.length > 0) void refreshReadiness();
+    else setReadiness(null);
+    setLoading(false);
   }, [refreshReadiness]);
 
   useEffect(() => {
@@ -61,20 +64,16 @@ export function CartExperience() {
 
   async function mutate(url: string, init?: RequestInit) {
     setMessage(null);
-    try {
-      const response = await fetch(url, { ...init, credentials: "same-origin", headers: { ...(init?.headers ?? {}), accept: "application/json" } });
-      const next = await response.json() as ShoppingCart | { status: string; message?: string };
-      if (!response.ok || !("lines" in next)) {
-        setMessage("We could not update that cart line.");
-        return;
-      }
-      setCart(next);
-      notifyCartChanged();
-      if (next.lines.length > 0) void refreshReadiness();
-      else setReadiness(null);
-    } catch {
-    setMessage("We could not update that cart line.");
+    const result = await loadPublicShoppingCart(() => fetch(url, { ...init, credentials: "same-origin", headers: { ...(init?.headers ?? {}), accept: "application/json" } }));
+    if (result.status === "unavailable") {
+      setMessage("We could not update that cart line.");
+      return;
     }
+    const next = result.cart;
+    setCart(next);
+    notifyCartChanged();
+    if (next.lines.length > 0) void refreshReadiness();
+    else setReadiness(null);
   }
 
   if (loading) return <div className={styles.fusionCart}><p className={styles.status} role="status">{t("Loading your local cart…")}</p></div>;
