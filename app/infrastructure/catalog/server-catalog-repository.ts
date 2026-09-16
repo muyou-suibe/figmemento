@@ -4,6 +4,10 @@ import { createCatalogRuntimeEnvironment } from "../../config/catalog-runtime-en
 import { readProductSource, type RuntimeEnvironment } from "../../config/server.ts";
 import { createProductionCatalogRepository } from "./catalog-repository-factory.ts";
 import { LocalCatalogAuthority } from "../local-commerce/local-catalog-authority.server.ts";
+import {
+  LocalCustomerDemoPresentationRepository,
+  shouldUseLocalCustomerDemoPresentation,
+} from "./local-customer-demo-presentation.server.ts";
 
 export type ServerCatalogRepository = {
   repository: CatalogReadRepository;
@@ -18,10 +22,14 @@ export async function createServerCatalogRepository(
     const runtimeEnvironment = createCatalogRuntimeEnvironment(environment, runtimeMode);
     const source = readProductSource(runtimeEnvironment);
     if (source === "local_persistent") {
-      const authority = new LocalCatalogAuthority({ ...(environment ?? process.env), ...runtimeEnvironment });
+      const effectiveEnvironment = { ...(environment ?? process.env), ...runtimeEnvironment };
+      const authority = new LocalCatalogAuthority(effectiveEnvironment);
       const checked = await authority.readSnapshot();
       if (checked.status !== "found") return { status: "source_failure", operation: "catalog.configure" };
-      return { status: "found", value: { repository: authority.repository, source } };
+      const repository = shouldUseLocalCustomerDemoPresentation(effectiveEnvironment)
+        ? new LocalCustomerDemoPresentationRepository(authority.repository)
+        : authority.repository;
+      return { status: "found", value: { repository, source } };
     }
     if (source === "fixture") {
       const { createDevelopmentCatalogRepository } = await import(

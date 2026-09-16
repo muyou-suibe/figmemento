@@ -244,6 +244,18 @@ export function CatalogShellNavigation() {
       </div>
       {menuOpen ? (
         <nav className={styles.mobileNav} id="catalog-mobile-menu" aria-label={t("Mobile navigation")}>
+          <form className={styles.mobileSearch} role="search" action="/shop" method="get">
+            <label className={styles.searchLabel} htmlFor="catalog-mobile-search">{t("Search the journal and catalog")}</label>
+            <input
+              className={styles.headerSearchInput}
+              id="catalog-mobile-search"
+              name="q"
+              type="search"
+              placeholder={t("search a memory...")}
+              aria-label={t("Search a memory")}
+            />
+            <button className={styles.searchButton} type="submit" aria-label={t("Search")}>⌕</button>
+          </form>
           <Link ref={firstMobileLinkRef} className={pathname === "/" ? styles.activeNav : ""} href="/" aria-current={pathname === "/" ? "page" : undefined} onClick={closeMenu}>{t("Home")}</Link>
           <Link className={isActivePath(pathname, "/shop") ? styles.activeNav : ""} href="/shop" aria-current={isActivePath(pathname, "/shop") ? "page" : undefined} onClick={closeMenu}>{t("Shop")}</Link>
           <Link className={isActivePath(pathname, "/journal") ? styles.activeNav : ""} href="/journal" aria-current={isActivePath(pathname, "/journal") ? "page" : undefined} onClick={closeMenu}>{t("Journal")}</Link>
