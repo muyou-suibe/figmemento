@@ -44,4 +44,20 @@ NONE.
 
 ## Owner decision
 
-UNDECIDED — READY FOR SIDE-BY-SIDE VISUAL REVIEW
+ADOPTED BY OWNER — INTEGRATION VALIDATED
+
+## Local persistent integration — 2026-09-16
+
+- Adopted source: `9722183f11559c67a19f765d63bfe4f9c46e23d2`.
+- Integration branch: `adopt/visual-v2-integration`.
+- Runtime authority: retained-development `local_persistent` Catalog, customer auth, Cart, upload/media, Checkout, Order, Payment simulation, Fulfillment, Tracking and Admin commerce composition. Supplier remains the accepted `local_fake` boundary.
+- Retained database safety: project `figmemento-local-commerce`, PostgreSQL 17, schema version 37, ledger 37/37, pending migrations 0 and no `0038`. No migration, reset or reseed was executed.
+- Real customer journey: Home → Shop → Couple Anniversary Figurine PDP → authoritative variant/SKU selection → one real PNG upload → durable receipt and Draft → persisted 90% crop → Add to Cart → quantity 1→2 → exact-line delete → restored Draft/media/crop → re-add → Checkout server review → local Order → successful local Payment simulation.
+- Runtime result: upload `201`; Cart add/update/delete `200`; Checkout `200`; Order creation `200` after the documented idempotency probe; Payment simulation `200`. The created safe public reference was `FM-LOCAL-24AF26D9E0CF45DD`; no real money or provider was used.
+- Total integrity: subtotal `$69.90`, local shipping fixture `$5.00`, discount `$0.00`, tax `not_activated`/`null`, local demo total `$74.90`.
+- Failure projection: a stale pre-existing Cart cookie produced the bounded unavailable state with no React overlay or undefined collection crash; a fresh private context completed the journey.
+- Broader surfaces: Account entry, Track Order input boundary, signed Admin login and persistent Admin Orders read all responded through their existing authorities. The new paid Order truthfully remained awaiting operator Photo Review. Preview publication/approval, production, shipment/tracking mutation and digital grant/download were not advanced or fabricated in this integration run; their existing focused and full regression contracts remain separate evidence.
+- Language/runtime presentation: the retained Catalog rendered the adopted Home in EN, ES and ZH; the existing recorded 1280/1024/980/960/900/840/768/375 evidence, three independent Hero motion paths and zero-overflow checks remain unchanged.
+- Business diff audit: the V2 range changes presentation, state-derived data attributes, accessibility, tests and documentation only. Pricing, Catalog authority, Cart/Checkout/Order/Payment semantics, ownership, Fulfillment/Tracking/Digital authority, RLS/RPC and Storage authorization are unchanged.
+
+Business contract change: **NONE**.
