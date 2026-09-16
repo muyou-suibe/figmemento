@@ -7341,6 +7341,222 @@
 }
 
 /* ============================================================
+   FIGMEMENTO VISUAL V2 — isolated experiment
+   Motion is scoped to the V2 shell and communicates existing state only.
+   No selector below owns Catalog, Cart, Checkout, upload, or Fulfillment facts.
+   ============================================================ */
+.visualV2 {
+  --v2-paper-shadow: 4px 7px 18px rgba(80, 53, 34, .11);
+  --v2-paper-shadow-lift: 8px 14px 30px rgba(80, 53, 34, .17);
+  isolation: isolate;
+}
+
+.visualV2 :where(.primaryLink, .secondaryLink, .secondaryButton, .customizationUploadButton, .customizationSecondaryButton) {
+  transition: background-color var(--v2-motion-control) ease, border-color var(--v2-motion-control) ease,
+    box-shadow var(--v2-motion-control) ease, color var(--v2-motion-control) ease,
+    transform var(--v2-motion-control) var(--v2-ease-spring);
+}
+
+.visualV2 :where(.primaryLink, .secondaryLink, .secondaryButton, .customizationUploadButton, .customizationSecondaryButton):active:not(:disabled) {
+  box-shadow: 1px 2px 4px rgba(60, 42, 30, .12);
+  transform: translateY(var(--v2-lift-control));
+}
+
+.visualV2 :where(.primaryLink, .secondaryLink, .secondaryButton, .customizationUploadButton, .customizationSecondaryButton):focus-visible,
+.visualV2 .discoveryCardLink:focus-visible,
+.visualV2 .discoveryPolaroid:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--fusion-focus) 72%, white);
+  outline-offset: 4px;
+}
+
+.visualV2 .fusionReveal {
+  transition-duration: var(--v2-motion-reveal);
+  transition-timing-function: var(--v2-ease-paper);
+}
+
+.visualV2 .discoveryPolaroid {
+  box-shadow: var(--v2-paper-shadow);
+  transition: box-shadow var(--v2-motion-control) ease, transform var(--v2-motion-control) var(--v2-ease-spring);
+  will-change: transform;
+}
+
+.visualV2 .discoveryPolaroid1 { animation: visualV2FloatOne 6.8s ease-in-out infinite; }
+.visualV2 .discoveryPolaroid2 { animation: visualV2FloatTwo 7.6s ease-in-out infinite .35s; }
+.visualV2 .discoveryPolaroid3 { animation: visualV2FloatThree 6.2s ease-in-out infinite .7s; }
+
+.visualV2 .discoveryPolaroid:hover,
+.visualV2 .discoveryPolaroid:focus-visible {
+  animation-play-state: paused;
+  box-shadow: var(--v2-paper-shadow-lift);
+  transform: translateY(calc(-1 * var(--v2-lift-card))) rotate(0deg);
+}
+
+@keyframes visualV2FloatOne {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(-5deg); }
+  50% { transform: translate3d(0, -7px, 0) rotate(-4.2deg); }
+}
+@keyframes visualV2FloatTwo {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(4deg); }
+  50% { transform: translate3d(0, -9px, 0) rotate(3.2deg); }
+}
+@keyframes visualV2FloatThree {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(-1deg); }
+  50% { transform: translate3d(0, -5px, 0) rotate(-.2deg); }
+}
+
+.visualV2 .referenceProductCard {
+  transition: box-shadow var(--v2-motion-control) ease, transform var(--v2-motion-control) var(--v2-ease-spring);
+}
+
+.visualV2 .referenceProductCard .discoveryMedia,
+.visualV2 .referenceProductCard .discoveryMediaFallback {
+  transition: transform var(--v2-motion-reveal) var(--v2-ease-paper);
+}
+
+.visualV2 .referenceProductCard:hover,
+.visualV2 .referenceProductCard:focus-within {
+  box-shadow: var(--v2-paper-shadow-lift);
+  transform: translateY(calc(-1 * var(--v2-lift-card))) rotate(0deg);
+}
+
+.visualV2 .referenceProductCard:hover .discoveryMedia,
+.visualV2 .referenceProductCard:focus-within .discoveryMedia,
+.visualV2 .referenceProductCard:hover .discoveryMediaFallback,
+.visualV2 .referenceProductCard:focus-within .discoveryMediaFallback {
+  transform: scale(1.035);
+}
+
+.visualV2 .fusionPdp :where(.fusionPdpTitleBlock, .fusionPdpSpec, .selector, .customizationForm, .customizationSummary, .customizationHandoffGate) {
+  transition: border-color var(--v2-motion-control) ease, box-shadow var(--v2-motion-control) ease,
+    transform var(--v2-motion-control) var(--v2-ease-paper);
+}
+
+.visualV2 .fusionPdp :where(.selector, .customizationForm, .customizationSummary, .customizationHandoffGate):focus-within {
+  box-shadow: var(--v2-paper-shadow);
+  transform: translateY(-2px);
+}
+
+.visualV2 .customizationImageSlot {
+  transition: background-color var(--v2-motion-control) ease, border-color var(--v2-motion-control) ease,
+    box-shadow var(--v2-motion-control) ease, transform var(--v2-motion-control) var(--v2-ease-paper);
+}
+
+.visualV2 .customizationImageSlot[data-upload-state="uploading"],
+.visualV2 .customizationImageSlot[data-upload-state="server_pending"],
+.visualV2 .customizationImageSlot[data-upload-state="draft_saving"] {
+  background: color-mix(in srgb, var(--fusion-honey) 16%, var(--fusion-paper));
+  border-color: var(--fusion-gold);
+}
+
+.visualV2 .customizationImageSlot[data-upload-state="accepted"] {
+  background: color-mix(in srgb, var(--color-success) 7%, var(--fusion-paper));
+  border-color: color-mix(in srgb, var(--color-success) 48%, var(--fusion-line));
+  box-shadow: 0 7px 22px rgba(74, 104, 64, .1);
+}
+
+.visualV2 .customizationImageSlot[data-upload-state="accepted"] .customizationUploadSuccess {
+  animation: visualV2Ready var(--v2-motion-reveal) var(--v2-ease-spring) both;
+}
+
+@keyframes visualV2Ready {
+  from { opacity: 0; transform: translateY(7px) rotate(-1deg); }
+  to { opacity: 1; transform: translateY(0) rotate(0); }
+}
+
+.visualV2 .customizationHandoffGate[data-handoff-state="locally_ready"] {
+  box-shadow: inset 4px 0 0 color-mix(in srgb, var(--color-success) 68%, var(--fusion-gold));
+}
+
+.visualV2 .cartLine,
+.visualV2 .checkoutLine {
+  animation: visualV2ListIn var(--v2-motion-reveal) var(--v2-ease-paper) both;
+  transition: background-color var(--v2-motion-control) ease, box-shadow var(--v2-motion-control) ease,
+    transform var(--v2-motion-control) var(--v2-ease-paper);
+}
+
+.visualV2 .cartLine:hover,
+.visualV2 .cartLine:focus-within {
+  box-shadow: var(--v2-paper-shadow);
+  transform: translateY(-3px);
+}
+
+@keyframes visualV2ListIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.visualV2 .fusionCheckout[data-checkout-state="submitting"] .checkoutMain {
+  cursor: progress;
+  opacity: .82;
+}
+
+.visualV2 .fusionCheckout .checkoutFieldset,
+.visualV2 .fusionOrder .checkoutFeedbackSuccess {
+  transition: box-shadow var(--v2-motion-control) ease, transform var(--v2-motion-control) var(--v2-ease-paper);
+}
+
+.visualV2 .fusionCheckout .checkoutFieldset:focus-within {
+  box-shadow: var(--v2-paper-shadow);
+  transform: translateY(-2px);
+}
+
+.visualV2ApprovedStamp {
+  border: 3px double var(--color-success);
+  color: var(--color-success);
+  display: inline-block;
+  font-family: var(--fusion-font-hand);
+  font-size: clamp(1rem, 2vw, 1.35rem);
+  font-weight: 800;
+  letter-spacing: .13em;
+  margin: 2px 0 14px;
+  padding: 7px 12px 5px;
+  transform: rotate(-4deg);
+}
+
+.visualV2 [data-preview-state="preview_approved"] .visualV2ApprovedStamp {
+  animation: visualV2Stamp 720ms var(--v2-ease-spring) both;
+}
+
+@keyframes visualV2Stamp {
+  0% { opacity: 0; transform: scale(1.5) rotate(-9deg); }
+  62% { opacity: 1; transform: scale(.94) rotate(-3deg); }
+  100% { opacity: 1; transform: scale(1) rotate(-4deg); }
+}
+
+.visualV2 .fusionOrder[data-payment-state="succeeded"] > .checkoutMain > .checkoutFeedbackSuccess {
+  animation: visualV2Success 900ms var(--v2-ease-paper) both;
+}
+
+@keyframes visualV2Success {
+  from { opacity: 0; transform: translateY(16px) rotate(-.6deg); }
+  to { opacity: 1; transform: translateY(0) rotate(0); }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .visualV2 .discoveryPolaroid:hover,
+  .visualV2 .referenceProductCard:hover,
+  .visualV2 .cartLine:hover {
+    box-shadow: var(--fusion-shadow-card);
+    transform: none;
+  }
+  .visualV2 .referenceProductCard:hover :where(.discoveryMedia, .discoveryMediaFallback) { transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .visualV2 *,
+  .visualV2 *::before,
+  .visualV2 *::after {
+    animation-delay: 0s !important;
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: .001ms !important;
+  }
+  .visualV2 .fusionReveal { opacity: 1 !important; transform: none !important; }
+  .visualV2ApprovedStamp { opacity: 1; transform: rotate(-4deg); }
+}
+
+/* ============================================================
    FUSION ORDER SUCCESS — VISUAL CALIBRATION
    Presentation-only refinement for the existing Order Success surface.
    Order, Payment, Fulfillment, Supplier, Tracking, and API boundaries stay

@@ -27,7 +27,7 @@ function CatalogShellContent({ children, categoryLinks, page }: { children: Reac
   const isReferenceFooter = isHomeReference || page === "category-reference" || page === "editorial-reference";
 
   return (
-    <div className={`${styles.shell} ${styles.referenceShell} ${isHomeReference ? styles.homeReferenceShell : ""}`}>
+    <div className={`${styles.shell} ${styles.referenceShell} ${styles.visualV2} ${isHomeReference ? styles.homeReferenceShell : ""}`} data-visual-version="v2">
       <a className={styles.skipLink} href="#main-content">{t("Skip to content")}</a>
       <div className={styles.topNote} role="note" aria-label={t("FigMemento storefront preview")}>
         <span className={styles.visuallyHidden}>{t("FigMemento storefront preview")}</span>

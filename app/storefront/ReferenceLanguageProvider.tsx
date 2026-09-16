@@ -489,6 +489,7 @@ const translations: Record<string, Translation> = {
   "Not published": { es: "No publicada", zh: "未发布" },
   "Revision requests remaining": { es: "Solicitudes de revisión restantes", zh: "剩余修改请求次数" },
   "Approve Preview": { es: "Aprobar vista previa", zh: "批准预览" },
+  "APPROVED": { es: "APROBADO", zh: "已批准" },
   "Revision note": { es: "Nota de revisión", zh: "修改备注" },
   "Tell the local operator what to adjust.": { es: "Dile al operador local qué debe ajustar。", zh: "告诉本地操作员需要调整什么。" },
   "Request Revision": { es: "Solicitar revisión", zh: "请求修改" },

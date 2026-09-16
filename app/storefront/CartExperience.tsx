@@ -85,7 +85,7 @@ export function CartExperience() {
   }
 
   return (
-    <div className={styles.fusionCart}>
+    <div className={styles.fusionCart} data-cart-state="ready" data-cart-lines={cart.lines.length}>
       <section className={styles.cartLayout} aria-labelledby="cart-heading">
         <div>
           <p className={styles.eyebrow}>{t("Your FigMemento cart")}</p>

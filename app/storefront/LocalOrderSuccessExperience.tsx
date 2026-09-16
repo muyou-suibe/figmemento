@@ -437,7 +437,7 @@ export function LocalOrderSuccessExperience({
   const copy = paymentStatusCopy(order, payment, t);
   const canSimulate = localPaymentEnabled && order.paymentStatus !== "succeeded";
   return (
-    <section className={`${styles.fusionOrder} ${styles.checkoutLayout}`} aria-labelledby="local-order-heading">
+    <section className={`${styles.fusionOrder} ${styles.checkoutLayout}`} aria-labelledby="local-order-heading" data-payment-state={order.paymentStatus}>
       <div className={styles.checkoutMain}>
         <p className={styles.eyebrow}>{t("Local order created")}</p>
         <h1 className={styles.title} id="local-order-heading">{t("Your order is held")}<br /><em>{t("for the next step.")}</em></h1>
@@ -452,7 +452,7 @@ export function LocalOrderSuccessExperience({
         {payment && <p className={styles.checkoutHelp}>{t("Simulation reference")}: {payment.paymentReference} · {formatCurrencyCents(payment.simulatedAmountCents, payment.simulatedCurrency)} · {payment.timestamp}</p>}
 
         {order.paymentStatus === "succeeded" && (
-          <section className={styles.fulfillmentCard} aria-labelledby="local-fulfillment-heading">
+          <section className={styles.fulfillmentCard} aria-labelledby="local-fulfillment-heading" data-preview-state={fulfillment.status === "found" ? fulfillment.value.status : "unavailable"}>
             <p className={styles.eyebrow}>{t("Local Fulfillment")}</p>
             <h2 id="local-fulfillment-heading">{t("Photo review and preview")}</h2>
             <p className={styles.fixtureNotice}>{t("DEVELOPMENT / TEST ONLY — No production preview or shipping workflow is active.")}</p>
@@ -465,6 +465,7 @@ export function LocalOrderSuccessExperience({
             )}
             {fulfillment.status === "found" && (
               <>
+                {fulfillment.value.status === "preview_approved" && <span className={styles.visualV2ApprovedStamp} aria-label={t("Preview approved")}>{t("APPROVED")}</span>}
                 <p><strong>{t("Status")}:</strong> {fulfillmentStatusCopy(fulfillment.value.status, t)}</p>
                 <p><strong>{t("Preview Version")}:</strong> {fulfillment.value.currentPreviewVersion ?? t("Not published")}</p>
                 <p><strong>{t("Revision requests remaining")}:</strong> {fulfillment.value.revisionRequestsRemaining}</p>

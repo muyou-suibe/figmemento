@@ -213,7 +213,7 @@ export function LocalCheckoutExperience({ localOrderEnabled = false }: { readonl
   }
 
   return (
-    <div className={styles.fusionCheckout}>
+    <div className={styles.fusionCheckout} data-checkout-state={submitting ? "submitting" : result?.status ?? "editing"}>
       <section className={styles.checkoutLayout} aria-labelledby="checkout-heading">
         <div className={styles.checkoutMain}>
         <p className={styles.eyebrow}>{t("Local checkout review")}</p>

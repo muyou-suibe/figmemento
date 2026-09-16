@@ -957,7 +957,7 @@ export function ProductCustomizationImageField(props: ProductCustomizationImageF
           const replacementAwaitingUpload = Boolean(slot.image && slot.file && !slot.selectedFileAccepted);
           const cropEditor = slot.cropEditor;
           return (
-            <section className={styles.customizationImageSlot} key={slot.slotId} aria-label={`${t("Image")} ${index + 1}`} data-current-order={index + 1} data-image-slot-id={slot.slotId}>
+            <section className={styles.customizationImageSlot} key={slot.slotId} aria-label={`${t("Image")} ${index + 1}`} data-current-order={index + 1} data-image-slot-id={slot.slotId} data-upload-state={slot.status}>
               <div className={styles.customizationImageSlotHeader}>
                 <h3>{t("Image")} {index + 1} {t("of")} {slots.length}</h3>
                 <span className={styles.customizationImageStatus} aria-live="polite">{t(imageStatusLabel(slot.status))}</span>

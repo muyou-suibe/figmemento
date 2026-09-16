@@ -19,7 +19,7 @@ export function ProductCustomizationHandoffGate({
     : t(result.message);
 
   return (
-    <section className={styles.customizationHandoffGate} aria-labelledby="customization-status-heading">
+    <section className={styles.customizationHandoffGate} aria-labelledby="customization-status-heading" data-handoff-state={result.status}>
       <h2 className={styles.selectorHeading} id="customization-status-heading">{t("Personalization status")}</h2>
       <p className={result.status === "locally_ready" ? styles.customizationHandoffReady : styles.customizationHandoffBlocked} aria-live="polite">
         {message}
