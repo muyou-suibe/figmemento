@@ -127,12 +127,12 @@ Current status for every row is the frozen audit value (`PARTIAL` or `NOT IMPLEM
 | C24 | 2 | 2.5 | NOT IMPLEMENTED | DONE | YES | MAYBE | Product inspection rules | Expected/detected count matrix | 2.7, 10.1–10.4 |
 | N08 | 2 | 2.6 | PARTIAL | DONE | YES | MAYBE | PDP/Catalog assets | Responsive/a11y/readiness tests | 2.7, 10.1–10.4 |
 | E07 | 3 | 3.1 | NOT IMPLEMENTED | DONE | YES | YES | Refund aggregate/Admin command | Idempotency/race/ledger tests | 3.3, 10.1–10.4 |
-| E28 | 3 | 3.2 | NOT IMPLEMENTED | DONE | YES | YES | Webhook inbox/reconciliation | Duplicate/order/restart tests | 3.3, 10.1–10.4 |
+| E28 | 3 | 3.2 | PARTIAL | DONE | YES | YES | Webhook inbox/reconciliation | Duplicate/order/restart tests | 3.3, 10.1–10.4 |
 | E13 | 4 | 4.1 | PARTIAL | DONE | YES | YES | Promotion rules | Fixed allocation tests | 4.13, 10.1–10.4 |
 | E14 | 4 | 4.2 | NOT IMPLEMENTED | DONE | YES | YES | Promotion rules | Free-shipping allocation tests | 4.13, 10.1–10.4 |
-| E15 | 4 | 4.3 | NOT IMPLEMENTED | DONE | YES | YES | Coupon constraints/redemption | Limit/race matrix | 4.13, 10.1–10.4 |
-| E16 | 4 | 4.4 | NOT IMPLEMENTED | DONE | YES | YES | Coupon grants/redemption | Concurrent registration tests | 4.13, 10.1–10.4 |
-| E17 | 4 | 4.5 | NOT IMPLEMENTED | DONE | YES | YES | Promotion rules | Threshold boundary tests | 4.13, 10.1–10.4 |
+| E15 | 4 | 4.3 | PARTIAL | DONE | YES | YES | Coupon constraints/redemption | Limit/race matrix | 4.13, 10.1–10.4 |
+| E16 | 4 | 4.4 | PARTIAL | DONE | YES | YES | Coupon grants/redemption | Concurrent registration tests | 4.13, 10.1–10.4 |
+| E17 | 4 | 4.5 | PARTIAL | DONE | YES | YES | Promotion rules | Threshold boundary tests | 4.13, 10.1–10.4 |
 | E18 | 4 | 4.6 | NOT IMPLEMENTED | DONE | YES | YES | Promotion rules | Quantity/allocation tests | 4.13, 10.1–10.4 |
 | E19 | 4 | 4.7 | NOT IMPLEMENTED | DONE | YES | YES | Promotion rules | Time-zone/version tests | 4.13, 10.1–10.4 |
 | E20 | 4 | 4.8 | NOT IMPLEMENTED | DONE | YES | YES | Promotion rules | Eligibility/allocation tests | 4.13, 10.1–10.4 |
@@ -147,8 +147,8 @@ Current status for every row is the frozen audit value (`PARTIAL` or `NOT IMPLEM
 | H18 | 5 | 5.5 | NOT IMPLEMENTED | DONE | YES | YES | Admin shipping rules | Auth/stale/read-back tests | 5.8, 10.1–10.4 |
 | N07 | 5 | 5.6 | PARTIAL | DONE | YES | NO | PDP shipping projection | Destination/no-promise tests | 5.8, 10.1–10.4 |
 | N09 | 5 | 5.7 | NOT IMPLEMENTED | DONE | YES | NO | PDP shipping explanation | Rule/copy/link render tests | 5.8, 10.1–10.4 |
-| G06 | 6 | 6.1 | NOT IMPLEMENTED | DONE | NO | NO | Account Order history | Pagination/restart/auth tests | 6.8, 10.1–10.4 |
-| G07 | 6 | 6.2 | NOT IMPLEMENTED | DONE | NO | NO | Account Order detail | Session/capability/render tests | 6.8, 10.1–10.4 |
+| G06 | 6 | 6.1 | PARTIAL | DONE | NO | NO | Account Order history | Pagination/restart/auth tests | 6.8, 10.1–10.4 |
+| G07 | 6 | 6.2 | PARTIAL | DONE | NO | NO | Account Order detail | Session/capability/render tests | 6.8, 10.1–10.4 |
 | G09 | 6 | 6.3 | NOT IMPLEMENTED | DONE | YES | YES | Guest claim command | Atomic/conflict/cross-owner tests | 6.8, 10.1–10.4 |
 | G12 | 6 | 6.4 | NOT IMPLEMENTED | DONE | YES | YES | Privacy request | Fresh-auth/idempotency tests | 6.8, 10.1–10.4 |
 | G13 | 6 | 6.5 | NOT IMPLEMENTED | DONE | NO | NO | Account profile route | Auth/render/unavailable tests | 6.8, 10.1–10.4 |
@@ -165,7 +165,7 @@ Current status for every row is the frozen audit value (`PARTIAL` or `NOT IMPLEM
 | J08 | 8 | 8.4 | PARTIAL | DONE | NO | MAYBE | Error analytics taxonomy | Privacy/failure-matrix tests | 8.5, 10.1–10.4 |
 | K16 | 9 | 9.1 | PARTIAL | DONE | YES | MAYBE | SEO/Catalog metadata | Product fallback snapshots | 9.7, 10.1–10.4 |
 | K17 | 9 | 9.2 | PARTIAL | DONE | YES | MAYBE | Catalog asset readiness | Alt rejection/render tests | 9.7, 10.1–10.4 |
-| K18 | 9 | 9.3 | PARTIAL | DONE | NO | NO | Product/Offer JSON-LD | Schema/escaping tests | 9.7, 10.1–10.4 |
+| K18 | 9 | 9.3 | PARTIAL | DONE | YES | NO | Product/Offer JSON-LD | Schema/escaping tests | 9.7, 10.1–10.4 |
 | N02 | 9 | 9.4 | NOT IMPLEMENTED | DONE | YES | MAYBE | Home content/assets | Responsive/a11y tests | 9.7, 10.1–10.4 |
-| N10 | 9 | 9.5 | PARTIAL | DONE | NO | NO | PDP fulfillment projection | Required/optional render tests | 9.7, 10.1–10.4 |
+| N10 | 9 | 9.5 | PARTIAL | DONE | YES | NO | PDP fulfillment projection | Required/optional render tests | 9.7, 10.1–10.4 |
 | N13 | 9 | 9.6 | NOT IMPLEMENTED | DONE | YES | MAYBE | PDP Product FAQ | Content/render/interaction tests | 9.7, 10.1–10.4 |

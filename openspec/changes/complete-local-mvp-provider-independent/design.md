@@ -76,9 +76,14 @@ Shipping rule core (F03-F06)
   -> Admin shipping (H18)
   -> PDP shipping projections (N07/N09)
 
-Verified claim authority (G09)
-  -> member history/detail (G06/G07)
-  -> privacy request/executor (G12/K07)
+Member Order read model (G06/G07)
+  -> verified guest-Order claim integration (G09)
+  -> Phase 6 acceptance proves legitimately claimed Orders appear in the same owner-scoped history/detail surfaces
+
+Authenticated deletion request (G12)
+  -> retention/erasure executor (K07)
+
+Route compatibility (G13/G14) is independent
 
 Admin command/read foundations
   -> pricing/order lifecycle/reporting (H04/H06/H07/H13)
@@ -121,6 +126,8 @@ The following decisions materially affect Engineering tasks and must be supplied
 | Admin settings allowlist | K08, H19 | Explicit non-secret key/value/types list |
 | Reporting definitions | H13 | Approved measures, periods, privacy thresholds |
 | Home/PDP assets and FAQ content | N02, N08, K16, K17, N13 | Approved content/assets; no fabricated claims |
+| Product/Offer launch facts and canonical public domain/content | K18 | Generic structured-data work may use clearly labelled local fixtures; final acceptance requires approved truthful launch facts |
+| Product classification and preview-required policy | N10 | Generic PDP projection may use existing Product fulfillment configuration; final acceptance requires the approved D02 classification/policy |
 
 Missing input blocks only the dependent task; it does not remove or reclassify the ID.
 
