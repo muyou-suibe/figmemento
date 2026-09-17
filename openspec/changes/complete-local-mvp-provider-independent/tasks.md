@@ -1,6 +1,6 @@
 ## 0. Configuration foundation
 
-- [ ] 0.1 Inventory every canonical, business, security, and provider configuration value; implement explicit typed environment composition and fail-closed mode/project/endpoint validation for K08, with no secret or provider credential in browser-visible state.
+- [x] 0.1 Inventory every canonical, business, security, and provider configuration value; implement explicit typed environment composition and fail-closed mode/project/endpoint validation for K08, with no secret or provider credential in browser-visible state.
 - [ ] 0.2 Obtain the approved non-secret Admin-settings allowlist, then implement the restricted `/admin/settings` read/versioned-update/audit boundary for H19; reject stale, unknown, secret, cross-project, and unauthorized changes.
 - [ ] 0.3 Run the Phase 0 gate: environment matrix, secret/source scan, two-worker stale-version race, restart read-back, Admin authorization, rendered settings states, lint, typecheck, offline, fresh build→rendered, verify, OpenSpec strict, diff check, and migration integrity.
 

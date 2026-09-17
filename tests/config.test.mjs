@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import "./server-runtime-configuration-composition.test.mjs";
+
 import {
   brandName,
   canonicalHostname,
