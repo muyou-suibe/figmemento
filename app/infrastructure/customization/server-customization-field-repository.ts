@@ -7,6 +7,7 @@ import { getSupabaseServerClient } from "../../lib/supabase-server.ts";
 import { createDevelopmentCustomizationFieldRepository } from "./development-customization-field-repository.ts";
 import { SupabaseCustomizationFieldRepository } from "./supabase-customization-field-repository.ts";
 import { LocalCatalogAuthority } from "../local-commerce/local-catalog-authority.server.ts";
+import { resolveCanonicalLocalCommerceCapability } from "../../config/server-runtime-composition.server.ts";
 
 export interface ServerCustomizationFieldRepository {
   repository: CustomizationFieldReadRepository;
@@ -33,7 +34,11 @@ export function createServerCustomizationFieldRepository(
   const runtimeEnvironment = createCatalogRuntimeEnvironment(environment, runtimeMode);
   const source = readProductSource(runtimeEnvironment);
   if (source === "local_persistent") {
-    return { repository: new LocalCatalogAuthority({ ...(environment ?? process.env), ...runtimeEnvironment }), source };
+    const effectiveEnvironment = { ...(environment ?? process.env), ...runtimeEnvironment };
+    if (resolveCanonicalLocalCommerceCapability("catalog", effectiveEnvironment) !== "selected") {
+      throw new Error("Persistent Catalog requires the canonical Catalog read boundary.");
+    }
+    return { repository: new LocalCatalogAuthority(effectiveEnvironment), source };
   }
   if (source === "fixture") {
     return {

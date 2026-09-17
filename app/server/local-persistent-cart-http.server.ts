@@ -1,4 +1,5 @@
 import { readCartConfig } from "../config/server.ts";
+import { resolveCanonicalLocalCommerceCapability } from "../config/server-runtime-composition.server.ts";
 import { resolveLocalPersistentComposition } from "../application/local-persistent-commerce-composition.server.ts";
 import { ensureGuestResourceOwner, resolveGuestResourceOwner, type VerifiedResourceOwner } from "../application/guest-resource-ownership.server.ts";
 import { acceptCartItem, cartErrorResponse, publicCartWithCatalogRevalidation } from "../application/shopping-cart-service.ts";
@@ -13,12 +14,13 @@ import { isSameOriginCartMutation } from "./cart-http.server.ts";
 import { readShoppingCartId, cartCookieHeader } from "./shopping-cart-runtime.server.ts";
 import { persistentOwnerVerifier, persistentPurchaseReceipts } from "./local-persistent-purchase-authority.server.ts";
 
-export const persistentCartSelected = () => process.env.CART_SOURCE?.trim() === "local_persistent";
+export const persistentCartSelected = () => resolveCanonicalLocalCommerceCapability("cart") === "selected";
 
 /** Existing HTTP projection over the unified authorized, versioned command port. */
 export async function persistentCartHttp(request: Request, operation: "read" | "add" | "update" | "remove" | "clear", lineId?: string): Promise<Response> {
   if (operation !== "read" && !isSameOriginCartMutation(request)) return cartErrorResponse(403, "Cart request was not allowed.");
   try {
+    if (resolveCanonicalLocalCommerceCapability("cart") !== "selected") throw new Error("Source unavailable");
     if (readCartConfig().source !== "local_persistent") throw new Error("Source unavailable");
     const composition = resolveLocalPersistentComposition(process.env, { requiredCapabilities: ["cart"] });
     if (composition.status !== "ready") throw new Error("Composition unavailable");

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { createCustomerAuthRuntime } from "../app/server/customer-auth-runtime.server.ts";
+import { catalogTestEnvironment } from "./fixtures/local-persistent-catalog.mjs";
 import {
   handleCustomerAuthCredentialsMutation,
   handleCustomerAuthSession,
@@ -133,7 +134,12 @@ function createPersistentAdapter() {
 
 function createRuntime(adapter) {
   return createCustomerAuthRuntime(
-    { CUSTOMER_AUTH_SOURCE: "local_persistent" },
+    catalogTestEnvironment({
+      LOCAL_COMMERCE_PROJECT_ID: PROJECT_ID,
+      LOCAL_COMMERCE_RUN_ID: "run-auth3333",
+      CUSTOMER_AUTH_SOURCE: "local_persistent",
+      PHOTOGIFT_PRODUCT_SOURCE: "fixture",
+    }),
     "test",
     {
       adapterFactory: async () => ({

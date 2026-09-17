@@ -4,11 +4,17 @@ import { createConfiguredGuestDraftOwnerService } from "../../../lib/guest-draft
 import { createCustomerInputSafeObservability } from "../../../server/customer-input-safe-failure.server.ts";
 import { createCustomerUploadPreviewHttpHandler } from "../../../server/customer-upload-preview-handler.server.ts";
 import { persistentMediaHttp } from "../../../server/local-persistent-media-http.server.ts";
+import { resolveCanonicalLocalCommerceCapability } from "../../../config/server-runtime-composition.server.ts";
 
 export async function GET(request: Request): Promise<Response> {
   const observability = createCustomerInputSafeObservability();
   try {
-    if (process.env.CUSTOMER_UPLOAD_SOURCE?.trim() === "local_persistent") return await persistentMediaHttp(request, "preview");
+    const selection = resolveCanonicalLocalCommerceCapability("upload");
+    if (selection === "selected") return await persistentMediaHttp(request, "preview");
+    if (selection === "unavailable") {
+      observability.record("preview", "temporary_failure");
+      return Response.json({ error: "Customer input preview is temporarily unavailable." }, { status: 503 });
+    }
     const configuration = readCustomerUploadConfig(process.env, process.env.NODE_ENV);
     if (configuration.source !== "local_fake") {
       observability.record("preview", "temporary_failure");
@@ -30,7 +36,7 @@ export async function GET(request: Request): Promise<Response> {
 }
 
 export async function POST(request: Request): Promise<Response> {
-  if (process.env.CUSTOMER_UPLOAD_SOURCE?.trim() !== "local_persistent") {
+  if (resolveCanonicalLocalCommerceCapability("upload") !== "selected") {
     return Response.json({ error: "Customer media is unavailable." }, { status: 503 });
   }
   return persistentMediaHttp(request, "crop");

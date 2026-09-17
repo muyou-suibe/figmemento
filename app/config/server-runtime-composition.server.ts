@@ -9,7 +9,11 @@ import {
   type DeploymentEnvironment,
   type PublicSiteConfig,
 } from "./public.ts";
-import type { RuntimeEnvironment } from "./server.ts";
+import {
+  readGuestDraftOwnerContextConfig,
+  ServerConfigurationError,
+  type RuntimeEnvironment,
+} from "./server.ts";
 
 export type ServerRuntimeMode = "development" | "test" | "production";
 export type ConfiguredSource =
@@ -29,7 +33,9 @@ export type ServerRuntimeConfigurationIssueCode =
   | "local_persistent_unavailable"
   | "local_source_not_allowed"
   | "missing_required_secret"
+  | "invalid_required_configuration"
   | "provider_activation_not_supported"
+  | "provider_authority_deferred"
   | "runtime_deployment_mismatch";
 
 export interface ServerRuntimeConfigurationIssue {
@@ -55,7 +61,6 @@ export interface ServerRuntimeSources {
 }
 
 export interface InactiveProviderConfiguration {
-  readonly configuredPlaceholders: readonly string[];
   readonly activation: "inactive";
 }
 
@@ -135,26 +140,6 @@ const PROVIDER_ACTIVATION_KEYS = [
   "TRACKING_PROVIDER_SOURCE",
 ] as const;
 
-const PROVIDER_PLACEHOLDER_KEYS = [
-  "GA4_MEASUREMENT_ID",
-  "GOOGLE_OAUTH_CLIENT_ID",
-  "GOOGLE_OAUTH_CLIENT_SECRET",
-  "META_PIXEL_ID",
-  "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY",
-  "PAYPAL_CLIENT_ID",
-  "PAYPAL_CLIENT_SECRET",
-  "R2_ACCESS_KEY_ID",
-  "R2_ACCOUNT_ID",
-  "R2_BUCKET_NAME",
-  "R2_SECRET_ACCESS_KEY",
-  "RESEND_API_KEY",
-  "STRIPE_SECRET_KEY",
-  "STRIPE_WEBHOOK_SECRET",
-  "SUPABASE_SECRET_KEY",
-  "TIKTOK_PIXEL_ID",
-  "TRACKING_API_KEY",
-] as const;
-
 const LOCAL_OPERATOR_KEYS = [
   "LOCAL_FULFILLMENT_OPERATOR",
   "LOCAL_SUPPLIER_OPERATOR",
@@ -197,6 +182,7 @@ function requiredPersistentSecrets(
   selectedCapabilities: readonly string[],
   issues: ServerRuntimeConfigurationIssue[],
 ) {
+  if (selectedCapabilities.length === 0) return;
   const required = new Set(["LOCAL_COMMERCE_SERVICE_ROLE_KEY"]);
   if (selectedCapabilities.includes("upload")) required.add("LOCAL_COMMERCE_IMAGE_HELPER_SECRET");
   if (selectedCapabilities.includes("order")) {
@@ -205,6 +191,43 @@ function requiredPersistentSecrets(
   }
   for (const name of required) {
     if (!normalized(environment, name)) issues.push({ code: "missing_required_secret", name });
+  }
+
+  // Guest ownership is a dependency of the durable cart/draft/media/order
+  // journey. Authentication-only or Catalog-only compositions may remain
+  // ready for member-only operations, but a selected commerce capability
+  // that can resolve guest resources must validate the existing owner-context
+  // parser at the canonical boundary.
+  const guestScoped = ["cart", "upload", "checkout", "order", "payment", "fulfillment", "tracking"];
+  if (selectedCapabilities.some((capability) => guestScoped.includes(capability))) {
+    const guestSecret = normalized(environment, "PHOTOGIFT_GUEST_DRAFT_OWNER_SECRET");
+    const guestTtl = normalized(environment, "PHOTOGIFT_GUEST_DRAFT_OWNER_CONTEXT_TTL_SECONDS");
+    if (!guestSecret) issues.push({ code: "missing_required_secret", name: "PHOTOGIFT_GUEST_DRAFT_OWNER_SECRET" });
+    if (!guestTtl) issues.push({ code: "missing_required_secret", name: "PHOTOGIFT_GUEST_DRAFT_OWNER_CONTEXT_TTL_SECONDS" });
+    if (guestSecret && guestTtl) {
+      try {
+        readGuestDraftOwnerContextConfig(environment);
+      } catch (error) {
+        issues.push({
+          code: "invalid_required_configuration",
+          name: error instanceof ServerConfigurationError ? error.key : "PHOTOGIFT_GUEST_DRAFT_OWNER_CONTEXT_TTL_SECONDS",
+        });
+      }
+    }
+  }
+
+  const imageSecret = normalized(environment, "LOCAL_COMMERCE_IMAGE_HELPER_SECRET");
+  if (selectedCapabilities.includes("upload") && imageSecret && !/^[A-Za-z0-9_-]{43,128}$/.test(imageSecret)) {
+    issues.push({ code: "invalid_required_configuration", name: "LOCAL_COMMERCE_IMAGE_HELPER_SECRET" });
+  }
+
+  const orderSecret = normalized(environment, "LOCAL_ORDER_CAPABILITY_SECRET");
+  const orderTtl = normalized(environment, "LOCAL_ORDER_CAPABILITY_TTL_SECONDS");
+  if (selectedCapabilities.includes("order") && orderSecret && orderTtl
+    && (!/^[0-9a-f]{64,128}$/.test(orderSecret) || orderSecret.length % 2 !== 0
+      || !/^[1-9][0-9]*$/.test(orderTtl) || !Number.isSafeInteger(Number(orderTtl))
+      || Number(orderTtl) > 2_592_000)) {
+    issues.push({ code: "invalid_required_configuration", name: "LOCAL_ORDER_CAPABILITY_TTL_SECONDS" });
   }
 }
 
@@ -286,15 +309,22 @@ export function composeServerRuntimeConfiguration(
   }
 
   const selectedPersistentCapabilities = persistentCapabilities(sources);
+  requiredPersistentSecrets(environment, selectedPersistentCapabilities, issues);
   const persistent = resolveLocalPersistentComposition(environment, {
     requiredCapabilities: selectedPersistentCapabilities,
   });
   let localPersistent: LocalPersistentComposition | null = null;
   if (persistent.status === "ready") {
     localPersistent = persistent.value;
-    requiredPersistentSecrets(environment, persistent.value.selectedCapabilities, issues);
   } else if (persistent.status === "unavailable") {
     issues.push({ code: "local_persistent_unavailable", name: "LOCAL_COMMERCE_*" });
+  }
+
+  // Supabase is a provider-backed authority, not an inactive placeholder
+  // that K08 can report as safely ready. Provider activation belongs to a
+  // later change; credentials alone never authorize it.
+  if (sources.catalog === "supabase") {
+    issues.push({ code: "provider_authority_deferred", name: "PHOTOGIFT_PRODUCT_SOURCE" });
   }
 
   if (issues.length > 0 || !mode || !publicConfiguration) {
@@ -311,11 +341,45 @@ export function composeServerRuntimeConfiguration(
       localPersistent,
       providers: {
         activation: "inactive",
-        configuredPlaceholders: PROVIDER_PLACEHOLDER_KEYS.filter((name) => Boolean(normalized(environment, name))),
       },
     },
     issues: [],
   };
+}
+
+export type CanonicalLocalCommerceCapabilitySelection = "selected" | "not_selected" | "unavailable";
+
+const CAPABILITY_SOURCE_KEYS: Readonly<Record<Exclude<LocalPersistentCapability, "delivery">, keyof RuntimeEnvironment>> = {
+  admin: "ADMIN_ACCEPTANCE_SOURCE",
+  auth: "CUSTOMER_AUTH_SOURCE",
+  cart: "CART_SOURCE",
+  catalog: "PHOTOGIFT_PRODUCT_SOURCE",
+  checkout: "LOCAL_CHECKOUT_SOURCE",
+  fulfillment: "LOCAL_FULFILLMENT_SOURCE",
+  order: "LOCAL_ORDER_SOURCE",
+  payment: "LOCAL_PAYMENT_SOURCE",
+  tracking: "LOCAL_TRACKING_SOURCE",
+  upload: "CUSTOMER_UPLOAD_SOURCE",
+};
+
+/**
+ * The one source-selection seam for application/HTTP local commerce
+ * consumers. Provider-specific readers may still validate their own adapter
+ * settings, but they cannot select a persistent local authority around this
+ * composition. The tri-state result prevents an invalid selected persistent
+ * source from falling back to a fake or fixture provider.
+ */
+export function resolveCanonicalLocalCommerceCapability(
+  capability: LocalPersistentCapability,
+  environment: RuntimeEnvironment = process.env,
+): CanonicalLocalCommerceCapabilitySelection {
+  const key = capability === "delivery" ? "LOCAL_FULFILLMENT_SOURCE" : CAPABILITY_SOURCE_KEYS[capability];
+  const persistentRequested = normalized(environment, key) === "local_persistent";
+  if (!persistentRequested) return "not_selected";
+  const composition = composeServerRuntimeConfiguration(environment);
+  if (composition.status !== "ready") return "unavailable";
+  if (capability === "delivery") return composition.value.sources.fulfillment === "local_persistent" ? "selected" : "unavailable";
+  return composition.value.sources[capability] === "local_persistent" ? "selected" : "unavailable";
 }
 
 export function projectPublicRuntimeConfiguration(configuration: ServerRuntimeConfiguration) {

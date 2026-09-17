@@ -7,6 +7,7 @@ import { createLocalPersistentDraftPort } from "../infrastructure/local-commerce
 import { createLocalPersistentMediaAuthority } from "../infrastructure/local-commerce/local-persistent-media-authority.server.ts";
 import { isSameOriginCartMutation } from "./cart-http.server.ts";
 import { persistentOwnerVerifier } from "./local-persistent-purchase-authority.server.ts";
+import { resolveCanonicalLocalCommerceCapability } from "../config/server-runtime-composition.server.ts";
 
 const uuid = (value: unknown): value is string => typeof value === "string"
   && /^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(value);
@@ -40,7 +41,7 @@ function selectorCookie(request: Request, productId: string, draftId: string): s
 
 async function resolveOwner(request: Request, environment: RuntimeEnvironment, allowIssue: boolean) {
   const composition = resolveLocalPersistentComposition(environment, { requiredCapabilities: ["cart", "catalog", "upload"] });
-  if (composition.status !== "ready" || environment.CUSTOMER_UPLOAD_SOURCE?.trim() !== "local_persistent") return null;
+  if (composition.status !== "ready" || resolveCanonicalLocalCommerceCapability("upload", environment) !== "selected") return null;
   const existing = await persistentOwnerVerifier(request, environment)();
   if (existing) return { ...existing, request, setCookie: null as string | null };
   if (!allowIssue) return null;

@@ -14,6 +14,7 @@ import { isSameOriginCartMutation } from "./cart-http.server.ts";
 import { getSharedLocalNotificationOutbox } from "./local-notification-runtime.server.ts";
 import { readTrustedLocalPaymentConfig } from "../config/local-payment-runtime.ts";
 import { executePersistentPayment } from "./local-persistent-payment.server.ts";
+import { resolveCanonicalLocalCommerceCapability } from "../config/server-runtime-composition.server.ts";
 
 const MAX_PAYMENT_BODY_BYTES = 16 * 1024;
 
@@ -86,7 +87,9 @@ export function createLocalPaymentMutationHttpHandler(
     const parsed = parseLocalPaymentMutationInput(rawInput);
     if (!parsed.ok) return failure("blocked", "INVALID_PAYMENT_INPUT", "Local Payment input is invalid.", 400);
 
-    if (process.env.LOCAL_PAYMENT_SOURCE?.trim() === "local_persistent") {
+    const selection = resolveCanonicalLocalCommerceCapability("payment");
+    if (selection === "unavailable") return failure("unavailable", "LOCAL_PAYMENT_UNAVAILABLE", "Local Payment is unavailable.", 503);
+    if (selection === "selected") {
       try {
         const configuration = readTrustedLocalPaymentConfig();
         const result = await executePersistentPayment(request, parsed.value, { ...process.env, NODE_ENV: configuration.runtimeMode });

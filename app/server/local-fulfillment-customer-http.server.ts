@@ -12,6 +12,7 @@ import { isSameOriginLocalFulfillmentRequest } from "./local-fulfillment-http.se
 import type { LocalFulfillmentCustomerServiceResult } from "../application/local-fulfillment-customer-service.ts";
 import { parsePersistentPreviewCustomerAction } from "../application/local-persistent-preview-customer-contract.server.ts";
 import { executePersistentCustomerPreview } from "./local-persistent-preview-customer.server.ts";
+import { resolveCanonicalLocalCommerceCapability } from "../config/server-runtime-composition.server.ts";
 
 const MAX_CUSTOMER_FULFILLMENT_BODY_BYTES = 16 * 1024;
 
@@ -97,7 +98,9 @@ export function createLocalFulfillmentCustomerHttpHandler(
         return jsonResponse({ status: "blocked", issues: [{ code: "LOCAL_FULFILLMENT_UNAVAILABLE", message: "Fulfillment request was not allowed." }] }, 403);
       }
       if (!isLocalOrderPublicReference(publicOrderReference)) return unavailable();
-      if(process.env.LOCAL_FULFILLMENT_SOURCE==="local_persistent")return persistentResponse(request,publicOrderReference);
+      const selection = resolveCanonicalLocalCommerceCapability("fulfillment");
+      if (selection === "unavailable") return unavailable();
+      if (selection === "selected") return persistentResponse(request,publicOrderReference);
       const browserCapability = readLocalOrderBrowserCapability(request);
       if (!browserCapability) return unavailable();
 
@@ -132,7 +135,9 @@ export function createLocalFulfillmentCustomerHttpHandler(
     } catch {
       return invalid();
     }
-    if(process.env.LOCAL_FULFILLMENT_SOURCE==="local_persistent")return persistentResponse(request,publicOrderReference,rawInput);
+    const selection = resolveCanonicalLocalCommerceCapability("fulfillment");
+    if (selection === "unavailable") return unavailable();
+    if (selection === "selected") return persistentResponse(request,publicOrderReference,rawInput);
     const parsed = parseLocalFulfillmentCustomerActionInput(rawInput, publicOrderReference);
     if (!parsed.ok) return invalid();
 

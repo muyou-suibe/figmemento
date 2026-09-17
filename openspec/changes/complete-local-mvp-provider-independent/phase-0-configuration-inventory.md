@@ -6,7 +6,7 @@ Status: implemented for Task 0.1. This document inventories configuration; it do
 
 The inventory was built from `.env.example`, `local/commerce/example.env`, all `process.env`/runtime-environment reads under `app`, `local`, and `scripts`, the fixed identity module, and the persisted local Catalog/checkout rule authorities. There are **73 canonical entries**: 59 declared environment values, 3 fixed public identity facts, 8 explicitly inactive provider placeholders not yet declared in `.env.example`, and 3 persisted business-setting groups.
 
-`app/config/server-runtime-composition.server.ts` is the K08 server-only composition boundary. `composeServerRuntimeConfiguration` normalizes the runtime, deployment, all source selectors, local project identity/endpoints, persistent dependencies, required server credentials, inactive provider placeholders, and forbidden browser/provider activation selectors. `projectPublicRuntimeConfiguration` is the only projection added by K08 and deliberately contains only brand, deployment class, canonical origin, and an already validated optional support email.
+`app/config/server-runtime-composition.server.ts` is the K08 server-only composition boundary. `composeServerRuntimeConfiguration` normalizes the runtime, deployment, all source selectors, local project identity/endpoints, persistent dependencies, required server credentials, provider deferral, and forbidden browser/provider activation selectors. `resolveCanonicalLocalCommerceCapability` is the single tri-state (`selected` / `not_selected` / `unavailable`) source-selection seam used by real application/HTTP consumers; provider-specific readers remain adapter validation only. `projectPublicRuntimeConfiguration` is the only projection added by K08 and deliberately contains only brand, deployment class, canonical origin, and an already validated optional support email.
 
 The primary classifications below are mutually exclusive. “H19” means only whether the value could ever be considered for a future owner-approved Admin settings allowlist.
 
@@ -19,7 +19,7 @@ The primary classifications below are mutually exclusive. “H19” means only w
 | `STAGING_HOSTNAME` | `app/config/identity.ts` | staging canonical policy | public | PUBLIC_SAFE | Staging | fixed hostname | composed only as staging identity | read-only |
 | `APP_DEPLOYMENT_ENV` | environment | public config/SEO/composition | public-safe projection | SERVER_NON_SECRET | Required logically; inferred from `NODE_ENV` if absent | accepted production/staging/preview/development/test | unknown and runtime mismatch reject | no |
 | `NEXT_PUBLIC_DEPLOYMENT_ORIGIN` | environment | public config/SEO | public | PUBLIC_SAFE | Required for preview; optional otherwise | production/fixed or local default | absolute origin; production exact; local authority requires loopback | read-only |
-| `NEXT_PUBLIC_SUPPORT_EMAIL` | environment | support copy | public | OWNER_BUSINESS_SETTING | Optional until owner supplies | absent gives generic support wording | validated email; placeholder rejected | candidate |
+| `NEXT_PUBLIC_SUPPORT_EMAIL` | environment | current support-copy fallback | public | OWNER_BUSINESS_SETTING | Optional until owner supplies | absent gives generic support wording | validated email; placeholder rejected | future fallback only |
 
 ## Runtime and authority source selection
 
@@ -66,12 +66,12 @@ The primary classifications below are mutually exclusive. “H19” means only w
 | `LOCAL_COMMERCE_WORKDIR` | ignored local env | stack wrapper | server | TEST_ONLY | Disposable tooling | default under `local/commerce` | stack wrapper path restrictions remain authoritative | no |
 | `LOCAL_COMMERCE_MARKER_PATH` | ignored local env | marker wrapper | server | TEST_ONLY | Disposable tooling | workdir marker | wrapper-owned path; never public | no |
 | `LOCAL_COMMERCE_MARKER_DIGEST` | ignored local env | composition/RPC identity | server secret | SERVER_SECRET | Persistent only | none | required 64 lowercase hex and same authority set | never |
-| `LOCAL_COMMERCE_SERVICE_ROLE_KEY` | ignored local env | durable adapters | server secret | SERVER_SECRET | Persistent only | none | required whenever persistent authority selected; never projected | never |
-| `LOCAL_COMMERCE_IMAGE_HELPER_SECRET` | ignored local env | helper request signing | server secret | SERVER_SECRET | Persistent upload | none | required for persistent upload; never projected | never |
-| `LOCAL_ORDER_CAPABILITY_SECRET` | ignored local env | Order capability signing | server secret | SERVER_SECRET | Persistent Order | none | required for persistent Order; never projected | never |
-| `LOCAL_ORDER_CAPABILITY_TTL_SECONDS` | ignored local env | Order capability service | server | SERVER_NON_SECRET | Persistent Order | none | required and subsequently bounded by capability service | no |
-| `PHOTOGIFT_GUEST_DRAFT_OWNER_SECRET` | ignored local env | guest owner signing | server secret | SERVER_SECRET | Guest durable flows | none | existing length/entropy validation; never projected | never |
-| `PHOTOGIFT_GUEST_DRAFT_OWNER_CONTEXT_TTL_SECONDS` | ignored local env | guest owner service | server | SERVER_NON_SECRET | Guest durable flows | none | existing integer 300–604800 validation | no |
+| `LOCAL_COMMERCE_SERVICE_ROLE_KEY` | ignored local env | durable adapters | server secret | SERVER_SECRET | Persistent only | none | REQUIRED_AT_COMPOSITION whenever persistent authority is selected; never projected | never |
+| `LOCAL_COMMERCE_IMAGE_HELPER_SECRET` | ignored local env | helper request signing | server secret | SERVER_SECRET | Persistent upload | none | REQUIRED_AT_COMPOSITION for persistent upload; existing bounded helper-secret validation; never projected | never |
+| `LOCAL_ORDER_CAPABILITY_SECRET` | ignored local env | Order capability signing | server secret | SERVER_SECRET | Persistent Order | none | REQUIRED_AT_COMPOSITION for persistent Order; existing capability codec bounds; never projected | never |
+| `LOCAL_ORDER_CAPABILITY_TTL_SECONDS` | ignored local env | Order capability service | server | SERVER_NON_SECRET | Persistent Order | none | REQUIRED_AT_COMPOSITION for persistent Order; existing positive safe-integer/maximum bounds | no |
+| `PHOTOGIFT_GUEST_DRAFT_OWNER_SECRET` | ignored local env | guest owner signing | server secret | SERVER_SECRET | Guest-scoped durable flows | none | REQUIRED_AT_COMPOSITION for guest-scoped persistent capabilities; existing owner-context validation; never projected | never |
+| `PHOTOGIFT_GUEST_DRAFT_OWNER_CONTEXT_TTL_SECONDS` | ignored local env | guest owner service | server | SERVER_NON_SECRET | Guest-scoped durable flows | none | REQUIRED_AT_COMPOSITION with existing integer 300–604800 validation | no |
 
 ## Provider configuration and inactive placeholders
 
@@ -105,10 +105,10 @@ All provider entries remain inactive in Task 0.1. Presence is reported to server
 
 | Key/name | Current source | Consumers | Visibility | Primary classification | Required / applicability | Existing fallback / old validation | K08 validation | H19 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `ADMIN_PASSWORD` | ignored local env | signed local Admin auth | server secret | SERVER_SECRET | Local Admin only | absent means unavailable | never projected; not an Admin setting | never |
-| `SHIPPING_RULES` | versioned local Catalog/checkout authority | Checkout/Order/PDP | server + safe projection | OWNER_BUSINESS_SETTING | Local accepted rules; production pending | bounded local rule authority | retained as server authority, not env/browser input | candidate |
-| `PROMOTION_COUPON_RULES` | versioned local Catalog/checkout authority | Checkout/Order | server + safe projection | OWNER_BUSINESS_SETTING | Local accepted rules; production pending | invalid/expired/not-applicable = zero discount | retained as server authority, not env/browser input | candidate |
-| `DIGITAL_DELIVERY_POLICY` | persisted local delivery authority | digital grants/tickets | server + safe projection | OWNER_BUSINESS_SETTING | Local accepted policy; production pending | durable 30-day/5-download local policy | retained as server authority, not env/browser input | read-only pending decision |
+| `ADMIN_PASSWORD` | ignored local env | signed local Admin auth | server secret | SERVER_SECRET | Local Admin operation only | absent means unavailable | INTENTIONALLY_OPERATION_SCOPED: existing signed Admin verifier fails closed at the operation boundary; not required for customer/Catalog-only composition; never projected | never |
+| `SHIPPING_RULES` | versioned local Catalog/checkout authority | Checkout/Order/PDP | server + safe projection | OWNER_BUSINESS_SETTING | Local accepted rules; production pending | bounded local rule authority | retained as server authority, not env/browser input | not mutable by H19 |
+| `PROMOTION_COUPON_RULES` | versioned local Catalog/checkout authority | Checkout/Order | server + safe projection | OWNER_BUSINESS_SETTING | Local accepted rules; production pending | invalid/expired/not-applicable = zero discount | retained as server authority, not env/browser input | not mutable by H19 |
+| `DIGITAL_DELIVERY_POLICY` | persisted local delivery authority | digital grants/tickets | server + safe projection | OWNER_BUSINESS_SETTING | Local accepted policy; production pending | durable 30-day/5-download local policy | retained as server authority, not env/browser input | read-only only |
 
 ## Test/tool-only values discovered outside `.env.example`
 
@@ -122,23 +122,27 @@ These are not application configuration and cannot become browser or H19 authori
 - Local public origin that is not HTTP loopback: unavailable.
 - Wrong project/run/kind/PostgreSQL version, malformed/remote endpoint, duplicate/mismatched port, or malformed marker digest: unavailable through the existing exact local-commerce parser/composition.
 - Persistent capability with a non-persistent required dependency: unavailable; no memory/fixture fallback.
-- Missing service-role, image-helper, or Order capability configuration when applicable: unavailable.
+- Missing or malformed service-role, image-helper, Order capability, or guest owner configuration when the corresponding persistent capability is selected: unavailable; these are REQUIRED_AT_COMPOSITION dependencies. `ADMIN_PASSWORD` remains INTENTIONALLY_OPERATION_SCOPED because only the signed Admin operation reads it and fails closed when absent.
+- A selected provider-backed Catalog source (`supabase`), including one with credentials present, is deferred/unavailable until a separately authorized provider activation exists; credentials never make it ready.
 - Unsupported provider activation selector: unavailable; configured credentials alone remain inactive.
 - Browser-visible authority selector: unavailable.
+
+## Composition-required configuration matrix
+
+The canonical boundary has a bounded dependency rule: it requires only values needed by the selected persistent capabilities. `LOCAL_COMMERCE_SERVICE_ROLE_KEY` is required for every persistent selection; the image-helper secret is required for `upload`; Order capability secret and TTL are required for `order`; the guest owner secret and TTL are required for guest-scoped `cart`, `upload`, `checkout`, `order`, `payment`, `fulfillment`, and `tracking`. `ADMIN_PASSWORD` is intentionally operation-scoped and is re-verified by the existing signed Admin boundary. This prevents unrelated customer-only or Catalog-only composition from acquiring an unnecessary Admin-password dependency while still failing closed at Admin use.
 
 ## H19 candidate inventory (not approved)
 
 ### RECOMMENDED_ALLOWLIST
 
-- Optional support email, only after owner approval.
-- Versioned shipping and promotion business settings, only after their later task-specific semantics and authorization are approved.
+- `supportEmail` only: optional and nullable/unset is valid, with no fake default. Future implementation requires explicit version/CAS/audit semantics.
 
 ### RECOMMENDED_READ_ONLY
 
-- Brand name and canonical production origin.
+- Brand name.
+- Canonical/site origin.
 - Deployment environment identity.
-- Safe provider activation status (inactive/configured), never credential values.
-- Current digital-delivery policy projection, pending owner scope decision.
+- Coarse provider status only; never credentials or environment-variable names.
 
 ### SERVER_ONLY_NEVER_ADMIN
 
@@ -146,10 +150,13 @@ These are not application configuration and cannot become browser or H19 authori
 
 ### OWNER_DECISION_REQUIRED
 
-- Support email publication.
-- R2/production Storage bucket choice.
-- GA4/Meta/TikTok identifiers and consent policy.
-- Shipping/promotion/digital policy mutability and exact H19 allowlist membership.
+- Future persisted `supportEmail` version/CAS/audit and its authority cutover.
+
+Shipping/promotion/coupon settings (H18/H11), brand/domain, and digital policy are not mutable H19 settings under this decision. R2/production Storage, provider identifiers, and all provider configuration remain server-only/deferred.
+
+### Support-email authority transition
+
+Until a later H19 implementation is separately accepted, `NEXT_PUBLIC_SUPPORT_EMAIL` remains the existing presentation fallback. A future persisted H19 `supportEmail`, when set and active, must become the sole local-persistent authority for that fact; the environment projection must not independently control the same value. This Task 0.1 correction records the precedence/cutover requirement only and adds no schema or Admin settings route.
 
 ## Schema and provider safety
 

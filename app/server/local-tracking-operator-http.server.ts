@@ -6,6 +6,7 @@ import { isSameOriginLocalFulfillmentRequest } from "./local-fulfillment-http.se
 import { getSharedLocalOrderFulfillmentReadPort } from "./local-order-runtime.server.ts";
 import { getSharedLocalNotificationOutbox } from "./local-notification-runtime.server.ts";
 import { parsePersistentShipmentAction, persistentShipmentCommand } from "./local-persistent-tracking.server.ts";
+import { resolveCanonicalLocalCommerceCapability } from "../config/server-runtime-composition.server.ts";
 
 const MAX_BODY_BYTES = 16 * 1024;
 function json(value: unknown, status: number) { return Response.json(value, { status, headers: { "cache-control": "no-store" } }); }
@@ -31,7 +32,9 @@ export function createLocalTrackingOperatorHttpHandler(overrides: LocalTrackingO
   return async (request: Request, publicOrderReference: string): Promise<Response> => {
     if (!isSameOriginLocalFulfillmentRequest(request)) return json({ status: "blocked", issues: [{ code: "LOCAL_TRACKING_UNAVAILABLE", message: "Tracking request was not allowed." }] }, 403);
     if (!isLocalOrderPublicReference(publicOrderReference)) return unavailable();
-    const persistent = !overrides.createService && process.env.LOCAL_TRACKING_SOURCE?.trim() === "local_persistent";
+    const selection = !overrides.createService ? resolveCanonicalLocalCommerceCapability("tracking") : "not_selected";
+    if (!overrides.createService && selection === "unavailable") return unavailable();
+    const persistent = !overrides.createService && selection === "selected";
     const createService = overrides.createService ?? service;
     if (request.method === "GET") return persistent ? unavailable() : map(createService().read(publicOrderReference));
     if (request.method !== "POST") return json({ status: "blocked", issues: [{ code: "METHOD_NOT_ALLOWED", message: "Method not allowed." }] }, 405);

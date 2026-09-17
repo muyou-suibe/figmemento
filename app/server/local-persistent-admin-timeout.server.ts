@@ -6,6 +6,7 @@ import { createLocalPersistentSupabaseAdapter } from '../infrastructure/local-co
 import { createExistingAdminMutationVerifier, isSameOriginAdminMutation } from './admin-catalog-http.server.ts';
 import { projectPersistentFulfillment } from './local-persistent-fulfillment.server.ts';
 import { isRecord } from '../domain/catalog/validation.ts';
+import { resolveCanonicalLocalCommerceCapability } from '../config/server-runtime-composition.server.ts';
 
 const unavailable = { status: 'unavailable' as const };
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -31,7 +32,7 @@ export async function persistentAdminTimeout(request: Request, reference: string
     if (actor.status !== 'authorized' || actor.principal.role !== 'admin' || !isSameOriginAdminMutation(request)) return unavailable;
     // Narrow Task 7 command composition. It does not activate the broader
     // Admin Orders/Tracking/Delivery surface (Task 8), or alter fake Catalog.
-    if (environment.ADMIN_ACCEPTANCE_SOURCE?.trim() !== 'local_persistent') return unavailable;
+    if (resolveCanonicalLocalCommerceCapability('admin', environment) !== 'selected') return unavailable;
     const composition = resolveLocalPersistentComposition(environment, {requiredCapabilities:['fulfillment']});
     if (composition.status !== 'ready' || !/^FM-LOCAL-[A-Z0-9]{16}$/.test(reference)) return unavailable;
     const connection = await createLocalPersistentSupabaseAdapter(environment);

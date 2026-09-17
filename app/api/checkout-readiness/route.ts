@@ -17,6 +17,7 @@ import {
 } from "../../server/customer-upload-runtime.server.ts";
 import { readPersistentPurchaseCart, persistentPurchaseReceipts } from "../../server/local-persistent-purchase-authority.server.ts";
 import { LocalCatalogAuthority } from "../../infrastructure/local-commerce/local-catalog-authority.server.ts";
+import { resolveCanonicalLocalCommerceCapability } from "../../config/server-runtime-composition.server.ts";
 
 const deferredDependencies: readonly CheckoutReadinessDependency[] = [
   { name: "order_persistence", status: "not_activated", issue: readinessIssue("ORDER_PERSISTENCE_UNAVAILABLE") },
@@ -33,7 +34,9 @@ function responseForReport(report: ReturnType<typeof emptyCartReadiness>): Respo
 export async function GET(request: Request): Promise<Response> {
   const evaluatedAt = new Date().toISOString();
   try {
-    if (process.env.CART_SOURCE?.trim() === "local_persistent") {
+    const cartSelection = resolveCanonicalLocalCommerceCapability("cart");
+    if (cartSelection === "unavailable") return responseForReport(unavailableReadiness(evaluatedAt, "CART_UNAVAILABLE"));
+    if (cartSelection === "selected") {
       const current = await readPersistentPurchaseCart(request);
       if (current.status === "empty") return responseForReport(emptyCartReadiness(evaluatedAt));
       if (current.status !== "found") return responseForReport(unavailableReadiness(evaluatedAt, "CART_UNAVAILABLE"));

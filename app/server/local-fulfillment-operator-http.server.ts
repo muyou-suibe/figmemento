@@ -11,6 +11,7 @@ import { persistentFulfillmentOperator } from "./local-persistent-fulfillment.se
 import { parsePersistentLifecycleAction, persistentFulfillmentLifecycle } from "./local-persistent-fulfillment-lifecycle.server.ts";
 import { parsePersistentPhotoReviewDecision, persistentPhotoReviewDecision } from "./local-persistent-photo-review-decision.server.ts";
 import { isRecord } from "../domain/catalog/validation.ts";
+import { resolveCanonicalLocalCommerceCapability } from "../config/server-runtime-composition.server.ts";
 
 const MAX_OPERATOR_FULFILLMENT_BODY_BYTES = 16 * 1024;
 
@@ -91,9 +92,11 @@ export function createLocalFulfillmentOperatorHttpHandler(
     if (!isLocalOrderPublicReference(publicOrderReference)) return unavailable();
 
     const createService = overrides.createService ?? createDefaultService;
+    const selection = !overrides.createService ? resolveCanonicalLocalCommerceCapability("fulfillment") : "not_selected";
+    if (!overrides.createService && selection === "unavailable") return unavailable();
     if (request.method === "GET") {
       try {
-        if (!overrides.createService && process.env.LOCAL_FULFILLMENT_SOURCE?.trim() === "local_persistent") {
+        if (!overrides.createService && selection === "selected") {
           const result = await persistentFulfillmentOperator(publicOrderReference, null);
           return result.status === "found" ? jsonResponse(result.value, 200) : unavailable();
         }
@@ -113,7 +116,7 @@ export function createLocalFulfillmentOperatorHttpHandler(
     } catch {
       return invalid();
     }
-    if (!overrides.createService && process.env.LOCAL_FULFILLMENT_SOURCE?.trim() === "local_persistent"
+    if (!overrides.createService && selection === "selected"
       && isRecord(rawInput) && ["start_production", "mark_quality_check"].includes(String(rawInput.actionKind))) {
       const action = parsePersistentLifecycleAction(rawInput);
       if (!action) return invalid();
@@ -122,7 +125,7 @@ export function createLocalFulfillmentOperatorHttpHandler(
       if (result.status === "conflict") return jsonResponse({status:"blocked",issues:[{code:"LOCAL_FULFILLMENT_CONFLICT",message:"Fulfillment action rejected."}]},409);
       return unavailable();
     }
-    if (!overrides.createService && process.env.LOCAL_FULFILLMENT_SOURCE?.trim() === "local_persistent"
+    if (!overrides.createService && selection === "selected"
       && isRecord(rawInput) && ["approve_photo_review", "reject_photo_review"].includes(String(rawInput.actionKind))) {
       const action = parsePersistentPhotoReviewDecision(rawInput);
       if (!action) return invalid();
@@ -139,7 +142,7 @@ export function createLocalFulfillmentOperatorHttpHandler(
     if (!parsed.ok) return invalid();
 
     try {
-      if (!overrides.createService && process.env.LOCAL_FULFILLMENT_SOURCE?.trim() === "local_persistent") {
+      if (!overrides.createService && selection === "selected") {
         const result = await persistentFulfillmentOperator(publicOrderReference, parsed.value);
         if (result.status === "committed" || result.status === "replayed") return jsonResponse({ status: result.status, fulfillment: result.value }, 200);
         if (result.status === "conflict") return jsonResponse({ status: "blocked", issues: [{ code: "LOCAL_FULFILLMENT_CONFLICT", message: "This Fulfillment action conflicts with an earlier request." }] }, 409);

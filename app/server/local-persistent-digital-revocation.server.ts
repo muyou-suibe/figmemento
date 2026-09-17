@@ -3,6 +3,7 @@ import { resolveLocalPersistentComposition } from "../application/local-persiste
 import { createLocalPersistentSupabaseAdapter } from "../infrastructure/local-commerce/local-persistent-supabase-adapter.server.ts";
 import { createExistingAdminMutationVerifier, isSameOriginAdminMutation } from "./admin-catalog-http.server.ts";
 import { isRecord } from "../domain/catalog/validation.ts";
+import { resolveCanonicalLocalCommerceCapability } from "../config/server-runtime-composition.server.ts";
 
 const REFERENCE = /^FM-LOCAL-[A-Z0-9]{16}$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -72,7 +73,7 @@ export async function handleLocalPersistentDigitalGrantRevocation(
     || !UUID.test(String(raw.orderItemId)) || !UUID.test(String(raw.grantId))
     || !ACTION.test(String(raw.revocationActionId))) return reply({ status: "invalid_request" }, 400);
   try {
-    if (environment.ADMIN_ACCEPTANCE_SOURCE?.trim() !== "local_persistent") return reply({ status: "unavailable" }, 409);
+    if (resolveCanonicalLocalCommerceCapability("admin", environment) !== "selected") return reply({ status: "unavailable" }, 409);
     const composition = resolveLocalPersistentComposition(environment, { requiredCapabilities: ["admin"] });
     if (composition.status !== "ready") return reply({ status: "unavailable" }, 503);
     const connection = await createLocalPersistentSupabaseAdapter(environment);

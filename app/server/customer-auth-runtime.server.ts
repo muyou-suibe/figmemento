@@ -8,6 +8,7 @@ import {
   createLocalPersistentCustomerAuthProvider,
   type PersistentCustomerAuthProviderDependencies,
 } from "../application/customer-auth-persistent-provider.server.ts";
+import { resolveCanonicalLocalCommerceCapability } from "../config/server-runtime-composition.server.ts";
 
 export interface CustomerAuthRuntime {
   readonly provider: CustomerAuthProvider;
@@ -24,14 +25,19 @@ export function createCustomerAuthRuntime(
   dependencies: PersistentCustomerAuthProviderDependencies = {},
 ): CustomerAuthRuntime {
   const configuration = readCustomerAuthConfig(environment, runtimeMode);
+  const persistentSelected = configuration.source === "local_persistent"
+    && resolveCanonicalLocalCommerceCapability("auth", environment) === "selected";
+  const effectiveSource = configuration.source === "local_persistent" && !persistentSelected
+    ? "disabled"
+    : configuration.source;
   return {
     provider: configuration.source === "local_fake"
       ? localFakeProvider
-      : configuration.source === "local_persistent"
+      : persistentSelected
         ? createLocalPersistentCustomerAuthProvider(environment, dependencies)
         : disabledProvider,
     runtimeMode: configuration.runtimeMode,
-    source: configuration.source,
+    source: effectiveSource,
   };
 }
 

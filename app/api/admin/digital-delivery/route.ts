@@ -4,6 +4,7 @@ import { readUploadConfig } from "../../../config/server";
 import { readAdminAcceptanceConfiguration } from "../../../config/admin-acceptance-runtime.server";
 import { handleLocalPersistentDigitalPublication } from "../../../server/local-persistent-digital-publication.server";
 import { handleLocalPersistentDigitalGrantRevocation } from "../../../server/local-persistent-digital-revocation.server";
+import { resolveCanonicalLocalCommerceCapability } from "../../../config/server-runtime-composition.server";
 
 const maxBytes = 15 * 1024 * 1024;
 
@@ -15,7 +16,10 @@ function cookieValue(request: Request, name: string): string | null {
 export async function POST(request: Request) {
   const source = readAdminAcceptanceConfiguration();
   if (source.status === "configuration_failure") return Response.json({ status: "unavailable" }, { status: 409 });
-  if (source.source === "local_persistent") return handleLocalPersistentDigitalPublication(request);
+  if (source.source === "local_persistent") {
+    if (resolveCanonicalLocalCommerceCapability("admin") !== "selected") return Response.json({ status: "unavailable" }, { status: 503 });
+    return handleLocalPersistentDigitalPublication(request);
+  }
   if (source.source === "local_fake") return Response.json({ status: "unavailable" }, { status: 409 });
   if (!(await isValidAdminSession(cookieValue(request, getSessionCookieName())))) return Response.json({ error: "Unauthorized." }, { status: 401 });
   const form = await request.formData();
@@ -45,6 +49,9 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
   const source = readAdminAcceptanceConfiguration();
   if (source.status === "configuration_failure") return Response.json({ status: "unavailable" }, { status: 409 });
-  if (source.source === "local_persistent") return handleLocalPersistentDigitalGrantRevocation(request);
+  if (source.source === "local_persistent") {
+    if (resolveCanonicalLocalCommerceCapability("admin") !== "selected") return Response.json({ status: "unavailable" }, { status: 503 });
+    return handleLocalPersistentDigitalGrantRevocation(request);
+  }
   return Response.json({ status: "unavailable" }, { status: 409 });
 }

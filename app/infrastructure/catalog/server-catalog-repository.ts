@@ -4,6 +4,7 @@ import { createCatalogRuntimeEnvironment } from "../../config/catalog-runtime-en
 import { readProductSource, type RuntimeEnvironment } from "../../config/server.ts";
 import { createProductionCatalogRepository } from "./catalog-repository-factory.ts";
 import { LocalCatalogAuthority } from "../local-commerce/local-catalog-authority.server.ts";
+import { resolveCanonicalLocalCommerceCapability } from "../../config/server-runtime-composition.server.ts";
 import {
   LocalCustomerDemoPresentationRepository,
   shouldUseLocalCustomerDemoPresentation,
@@ -23,6 +24,9 @@ export async function createServerCatalogRepository(
     const source = readProductSource(runtimeEnvironment);
     if (source === "local_persistent") {
       const effectiveEnvironment = { ...(environment ?? process.env), ...runtimeEnvironment };
+      if (resolveCanonicalLocalCommerceCapability("catalog", effectiveEnvironment) !== "selected") {
+        return { status: "source_failure", operation: "catalog.configure" };
+      }
       const authority = new LocalCatalogAuthority(effectiveEnvironment);
       const checked = await authority.readSnapshot();
       if (checked.status !== "found") return { status: "source_failure", operation: "catalog.configure" };

@@ -2,6 +2,7 @@
 export const ids = Object.fromEntries(['category','product','variant','option','value','fulfillment','config','field','shipping','coupon'].map((k,i)=>[k,`41000000-0000-4000-8000-${String(i+1).padStart(12,'0')}`]));
 export function catalogTestEnvironment(overrides={}) {
   return {NODE_ENV:'test',LOCAL_COMMERCE_ENVIRONMENT:'test',LOCAL_COMMERCE_PROJECT_KIND:'disposable_test',
+    APP_DEPLOYMENT_ENV:'test',NEXT_PUBLIC_DEPLOYMENT_ORIGIN:'http://localhost:3000',
     LOCAL_COMMERCE_PROJECT_ID:'figmemento-local-commerce-test-run-ab12cd34',LOCAL_COMMERCE_RUN_ID:'run-ab12cd34',
     LOCAL_COMMERCE_DB_MAJOR_VERSION:'17',LOCAL_COMMERCE_SHADOW_DB_PORT:'55420',LOCAL_COMMERCE_API_PORT:'55421',
     LOCAL_COMMERCE_DB_PORT:'55422',LOCAL_COMMERCE_STUDIO_PORT:'55423',LOCAL_COMMERCE_SMTP_PORT:'55424',
@@ -9,6 +10,10 @@ export function catalogTestEnvironment(overrides={}) {
     LOCAL_COMMERCE_API_URL:'http://127.0.0.1:55421',LOCAL_COMMERCE_RPC_URL:'http://127.0.0.1:55421',
     LOCAL_COMMERCE_STORAGE_URL:'http://127.0.0.1:55421/storage/v1',LOCAL_COMMERCE_MARKER_DIGEST:'a'.repeat(64),
     LOCAL_COMMERCE_SERVICE_ROLE_KEY:'offline-sentinel-not-a-credential',
+    LOCAL_COMMERCE_IMAGE_HELPER_SECRET:'a'.repeat(43),
+    LOCAL_ORDER_CAPABILITY_SECRET:'ab'.repeat(32),LOCAL_ORDER_CAPABILITY_TTL_SECONDS:'3600',
+    PHOTOGIFT_GUEST_DRAFT_OWNER_SECRET:'guest-owner-secret-value-never-public-123',
+    PHOTOGIFT_GUEST_DRAFT_OWNER_CONTEXT_TTL_SECONDS:'3600',
     PHOTOGIFT_PRODUCT_SOURCE:'local_persistent',...overrides};
 }
 export function catalogDatabaseRows(projectId=catalogTestEnvironment().LOCAL_COMMERCE_PROJECT_ID) {

@@ -66,7 +66,7 @@ test("customer HTTP remains GET-only and preserves approved same-origin GET poli
   const gate = await source("app/server/local-fulfillment-http.server.ts");
   assert.match(http, /request\.method !== "GET"[\s\S]+405/);
   assert.match(http, /isSameOriginLocalFulfillmentRequest/);
-  assert.match(http, /LOCAL_TRACKING_SOURCE\?\.trim\(\) === "local_persistent"/);
+  assert.match(http, /resolveCanonicalLocalCommerceCapability\("tracking"\)/);
   assert.match(gate, /request\.method === "GET" && \(fetchSite === null \|\| fetchSite === "same-origin"\)/);
 });
 

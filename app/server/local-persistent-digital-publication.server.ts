@@ -3,6 +3,7 @@ import { resolveLocalPersistentComposition } from "../application/local-persiste
 import { createLocalPersistentSupabaseAdapter } from "../infrastructure/local-commerce/local-persistent-supabase-adapter.server.ts";
 import { createExistingAdminMutationVerifier, isSameOriginAdminMutation } from "./admin-catalog-http.server.ts";
 import { isRecord } from "../domain/catalog/validation.ts";
+import { resolveCanonicalLocalCommerceCapability } from "../config/server-runtime-composition.server.ts";
 
 const MAX_BYTES = 15 * 1024 * 1024;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -74,7 +75,7 @@ export async function publishLocalPersistentDigitalVersion(
     const verifier = createExistingAdminMutationVerifier(request);
     const actor = await verifier.verifyAdminSession();
     if (actor.status !== "authorized" || actor.principal.role !== "admin" || !isSameOriginAdminMutation(request)) return { status: "unavailable" };
-    if (environment.ADMIN_ACCEPTANCE_SOURCE?.trim() !== "local_persistent") return { status: "unavailable" };
+    if (resolveCanonicalLocalCommerceCapability("admin", environment) !== "selected") return { status: "unavailable" };
     const composition = resolveLocalPersistentComposition(environment, { requiredCapabilities: ["admin"] });
     if (composition.status !== "ready") return { status: "unavailable" };
     const publicReference = String(form.get("orderNumber") ?? "").trim().toUpperCase();

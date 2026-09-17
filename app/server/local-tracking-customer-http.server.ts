@@ -5,6 +5,7 @@ import { getSharedLocalTrackingRepository } from "./local-tracking-runtime.serve
 import { isSameOriginLocalFulfillmentRequest } from "./local-fulfillment-http.server.ts";
 import { readLocalOrderBrowserCapability } from "./local-order-http.server.ts";
 import { readPersistentCustomerTracking } from "./local-persistent-tracking-customer.server.ts";
+import { resolveCanonicalLocalCommerceCapability } from "../config/server-runtime-composition.server.ts";
 
 function jsonResponse(value: unknown, status: number): Response {
   return Response.json(value, { status, headers: { "cache-control": "no-store", "content-type": "application/json; charset=utf-8" } });
@@ -28,7 +29,9 @@ export function createLocalTrackingCustomerHttpHandler(
     if (request.method !== "GET") return jsonResponse({ status: "blocked", issues: [{ code: "METHOD_NOT_ALLOWED", message: "Method not allowed." }] }, 405);
     if (!isSameOriginLocalFulfillmentRequest(request)) return jsonResponse({ status: "unavailable", issues: [{ code: "LOCAL_TRACKING_UNAVAILABLE", message: "Tracking is unavailable." }] }, 404);
     if (!isLocalOrderPublicReference(publicOrderReference)) return unavailable();
-    if (process.env.LOCAL_TRACKING_SOURCE?.trim() === "local_persistent") {
+    const selection = resolveCanonicalLocalCommerceCapability("tracking");
+    if (selection === "unavailable") return unavailable();
+    if (selection === "selected") {
       const result = await readPersistentCustomerTracking(request, publicOrderReference);
       return result.status === "found" ? jsonResponse(result.value, 200) : unavailable();
     }

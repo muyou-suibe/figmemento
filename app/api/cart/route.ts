@@ -7,13 +7,16 @@ import {
   hasPrivateImageReceiptValue,
   resolveLocalCustomerUploadReceiptAuthority,
 } from "../../server/customer-upload-runtime.server.ts";
+import { resolveCanonicalLocalCommerceCapability } from "../../config/server-runtime-composition.server.ts";
 
 function responseForCart(value: ReturnType<typeof publicCartFromProviderResult>, init?: ResponseInit): Response {
   return Response.json(value, init);
 }
 
 export async function GET(request: Request): Promise<Response> {
-  if (persistentCartSelected()) return persistentCartHttp(request, "read");
+  const selection = resolveCanonicalLocalCommerceCapability("cart");
+  if (selection === "selected") return persistentCartHttp(request, "read");
+  if (selection === "unavailable") return responseForCart(unavailableCart(), { status: 503 });
   try {
     const provider = getShoppingCartProvider();
     if (!provider) return responseForCart(unavailableCart());
@@ -30,7 +33,9 @@ export async function GET(request: Request): Promise<Response> {
 }
 
 export async function POST(request: Request): Promise<Response> {
-  if (persistentCartSelected()) return persistentCartHttp(request, "add");
+  const selection = resolveCanonicalLocalCommerceCapability("cart");
+  if (selection === "selected") return persistentCartHttp(request, "add");
+  if (selection === "unavailable") return cartErrorResponse(503, "Cart is temporarily unavailable.");
   if (!isSameOriginCartMutation(request)) return cartErrorResponse(403, "Cart request was not allowed.");
   let rawInput: unknown;
   try {
@@ -95,7 +100,9 @@ export async function POST(request: Request): Promise<Response> {
 }
 
 export async function DELETE(request: Request): Promise<Response> {
-  if (persistentCartSelected()) return persistentCartHttp(request, "clear");
+  const selection = resolveCanonicalLocalCommerceCapability("cart");
+  if (selection === "selected") return persistentCartHttp(request, "clear");
+  if (selection === "unavailable") return cartErrorResponse(503, "Cart is temporarily unavailable.");
   if (!isSameOriginCartMutation(request)) return cartErrorResponse(403, "Cart request was not allowed.");
   try {
     const provider = getShoppingCartProvider();
@@ -106,4 +113,4 @@ export async function DELETE(request: Request): Promise<Response> {
     return cartErrorResponse(503, "Cart is temporarily unavailable.");
   }
 }
-import { persistentCartHttp, persistentCartSelected } from "../../server/local-persistent-cart-http.server.ts";
+import { persistentCartHttp } from "../../server/local-persistent-cart-http.server.ts";

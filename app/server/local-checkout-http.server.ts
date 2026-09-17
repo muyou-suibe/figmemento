@@ -23,6 +23,7 @@ import {
 import { evaluateLocalPromotion } from "../application/local-promotion.ts";
 import { readLocalCustomerCommerceContext } from "./local-commerce-context.server.ts";
 import { persistentCheckoutHttp } from "./local-persistent-checkout-http.server.ts";
+import { resolveCanonicalLocalCommerceCapability } from "../config/server-runtime-composition.server.ts";
 
 export interface LocalCheckoutHttpHandlerDependencies {
   readonly readConfig?: typeof readTrustedLocalCheckoutConfig;
@@ -83,7 +84,9 @@ export function createLocalCheckoutHttpHandler(
     } catch {
       return failure("blocked", "INVALID_CHECKOUT_INPUT", "Checkout input is invalid.", 400);
     }
-    if (process.env.LOCAL_CHECKOUT_SOURCE?.trim() === "local_persistent") return persistentCheckoutHttp(request, body);
+    const selection = resolveCanonicalLocalCommerceCapability("checkout");
+    if (selection === "selected") return persistentCheckoutHttp(request, body);
+    if (selection === "unavailable") return failure("unavailable", "CHECKOUT_UNAVAILABLE", "Local Checkout is unavailable in this runtime.", 503);
     const parsed = parseLocalCheckoutRequest(body);
     if (!parsed.ok) return validationFailure(parsed.issues);
 

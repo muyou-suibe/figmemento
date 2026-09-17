@@ -28,6 +28,7 @@ import type { LocalOrderRepository } from "../application/local-order-repository
 import { getSharedLocalNotificationOutbox } from "./local-notification-runtime.server.ts";
 import { persistentOrderCreateHttp, type PersistentOrderHttpDependencies } from "./local-persistent-order-http.server.ts";
 import { readPersistentOrderHistory } from "./local-persistent-order-history.server.ts";
+import { resolveCanonicalLocalCommerceCapability } from "../config/server-runtime-composition.server.ts";
 
 export const LOCAL_ORDER_ACCESS_COOKIE_NAME = "figmemento-local-order-access";
 const MAX_CREATE_BODY_BYTES = 32 * 1024;
@@ -140,18 +141,20 @@ export function createLocalOrderCreateHttpHandler(
     } catch {
       return safeFailure("blocked", "INVALID_CHECKOUT_INPUT", "Checkout input is invalid.", 400);
     }
+    const selection = resolveCanonicalLocalCommerceCapability("order");
     // Preserve the original fake parser-before-source failure ordering.
-    if (process.env.LOCAL_ORDER_SOURCE?.trim() !== "local_persistent") {
+    if (selection === "not_selected") {
       const legacyParsed = parseLocalOrderCreateRequest(rawInput);
       if (!legacyParsed.ok) return parserFailure(legacyParsed.issues);
     }
+    if (selection === "unavailable") return sourceFailure();
     let configuration;
     try {
       configuration = readConfig();
     } catch {
       return sourceFailure();
     }
-    if (configuration.source === "local_persistent") {
+    if (selection === "selected" && configuration.source === "local_persistent") {
       return persistentOrderCreateHttp(request, rawInput, { ...process.env, NODE_ENV: configuration.runtimeMode }, overrides.persistent);
     }
     const parsed = parseLocalOrderCreateRequest(rawInput);
@@ -251,7 +254,9 @@ export function createLocalOrderReadHttpHandler(
   return async function handleLocalOrderRead(request: Request, publicReference: string): Promise<Response> {
     if (request.method !== "GET") return safeFailure("blocked", "METHOD_NOT_ALLOWED", "Method not allowed.", 405);
     if (!isLocalOrderPublicReference(publicReference)) return safeFailure("unavailable", "LOCAL_ORDER_UNAVAILABLE", "Local Order is unavailable.", 404);
-    if (process.env.LOCAL_ORDER_SOURCE?.trim() === "local_persistent") {
+    const selection = resolveCanonicalLocalCommerceCapability("order");
+    if (selection === "unavailable") return sourceFailure();
+    if (selection === "selected") {
       const history = await readPersistentOrderHistory(request, { publicReference }, process.env);
       return history.status === "found"
         ? Response.json(history.value, { headers: { "cache-control": "no-store" } })
