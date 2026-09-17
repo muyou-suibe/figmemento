@@ -3,9 +3,9 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import { customizationFieldSourceFailure } from "../app/application/customization-field-repository.ts";
-import { ServerConfigurationError } from "../app/config/server.ts";
 import { FixtureCustomizationFieldRepository } from "../app/infrastructure/customization/development-customization-field-repository.ts";
 import {
+  createProductionCustomizationFieldRepository,
   createServerCustomizationFieldRepository,
 } from "../app/infrastructure/customization/server-customization-field-repository.ts";
 
@@ -25,24 +25,20 @@ test("explicit fixture mode creates the deterministic fixture repository before 
   assert.equal(productionRepositoryCalls, 0);
 });
 
-test("normal production source selects only the supplied authoritative repository", async () => {
+test("provider-specific adapter factory remains available without being an application source selector", async () => {
   const authoritative = {
     async getCustomizationFieldsForProduct() {
       return { status: "not_found" };
     },
   };
-  const result = createServerCustomizationFieldRepository(
-    { NODE_ENV: "production" },
-    undefined,
-    () => authoritative,
-  );
+  const result = createProductionCustomizationFieldRepository(() => authoritative);
 
   assert.deepEqual(result, { repository: authoritative, source: "supabase" });
   assert.deepEqual(await result.repository.getCustomizationFieldsForProduct("product-unknown"), { status: "not_found" });
   assert.equal(result.repository instanceof FixtureCustomizationFieldRepository, false);
 });
 
-test("authoritative invalid and failure results remain unchanged and never select fixture fallback", async () => {
+test("provider-specific adapter results remain unchanged and never select fixture fallback", async () => {
   const results = [
     customizationFieldSourceFailure(),
     { status: "invalid_configuration", issues: [{ path: "$.fields", code: "invalid_value", message: "Invalid source data." }] },
@@ -53,26 +49,21 @@ test("authoritative invalid and failure results remain unchanged and never selec
         return expected;
       },
     };
-    const configured = createServerCustomizationFieldRepository(
-      { NODE_ENV: "production" },
-      undefined,
-      () => authoritative,
-    );
+    const configured = createProductionCustomizationFieldRepository(() => authoritative);
     assert.equal(configured.source, "supabase");
     assert.equal(configured.repository instanceof FixtureCustomizationFieldRepository, false);
     assert.deepEqual(await configured.repository.getCustomizationFieldsForProduct("product-frame"), expected);
   }
 });
 
-test("production runtime continues rejecting an explicit fixture source", () => {
+test("application source selection fails closed for an explicit fixture in production", () => {
   assert.throws(
     () => createServerCustomizationFieldRepository(
       { PHOTOGIFT_PRODUCT_SOURCE: "fixture", NODE_ENV: "development" },
       "production",
       () => { throw new Error("must not construct production repository"); },
     ),
-    (error) => error instanceof ServerConfigurationError
-      && error.key === "PHOTOGIFT_PRODUCT_SOURCE",
+    /Catalog source is unavailable until provider activation is authorized/,
   );
 });
 
@@ -82,6 +73,7 @@ test("source-aware customization factory shares the catalog runtime adapter and 
     "utf8",
   );
   assert.match(source, /createCatalogRuntimeEnvironment\(environment, runtimeMode\)/);
-  assert.match(source, /readProductSource\(runtimeEnvironment\)/);
+  assert.match(source, /resolveCanonicalCatalogSource\(effectiveEnvironment\)/);
+  assert.doesNotMatch(source, /readProductSource\(runtimeEnvironment\)/);
   assert.doesNotMatch(source, /catch[\s\S]*fixture|customization_schema|seed|legacy|fetch\s*\(/i);
 });

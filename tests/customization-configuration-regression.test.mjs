@@ -8,10 +8,12 @@ import {
   parseReplaceCustomizationConfigurationIntent,
 } from "../app/application/admin-customization-field-boundary.ts";
 import { loadPublicProductDetailWithCustomization } from "../app/application/customization-product-detail.ts";
-import { ServerConfigurationError } from "../app/config/server.ts";
 import { FixtureCustomizationFieldRepository } from "../app/infrastructure/customization/development-customization-field-repository.ts";
 import { createDevelopmentCustomizationFieldFixtures } from "../app/infrastructure/customization/development-customization-field-fixtures.ts";
-import { createServerCustomizationFieldRepository } from "../app/infrastructure/customization/server-customization-field-repository.ts";
+import {
+  createProductionCustomizationFieldRepository,
+  createServerCustomizationFieldRepository,
+} from "../app/infrastructure/customization/server-customization-field-repository.ts";
 import { SupabaseCustomizationFieldRepository } from "../app/infrastructure/customization/supabase-customization-field-repository.ts";
 
 const productId = "product-frame";
@@ -332,9 +334,7 @@ test("fixture source selection is explicit, deterministic, isolated, and product
     { status: "invalid_configuration", issues: [] },
     { status: "source_failure", operation: "customization_field_configuration.read" },
   ]) {
-    const production = createServerCustomizationFieldRepository(
-      { NODE_ENV: "production" },
-      undefined,
+    const production = createProductionCustomizationFieldRepository(
       () => ({ async getCustomizationFieldsForProduct() { return result; } }),
     );
     assert.equal(production.source, "supabase");
@@ -343,7 +343,7 @@ test("fixture source selection is explicit, deterministic, isolated, and product
   }
   assert.throws(
     () => createServerCustomizationFieldRepository({ NODE_ENV: "development", PHOTOGIFT_PRODUCT_SOURCE: "fixture" }, "production"),
-    (error) => error instanceof ServerConfigurationError && error.key === "PHOTOGIFT_PRODUCT_SOURCE",
+    /Catalog source is unavailable until provider activation is authorized/,
   );
 
   const fields = createDevelopmentCustomizationFieldFixtures().flatMap((configuration) => configuration.fields);

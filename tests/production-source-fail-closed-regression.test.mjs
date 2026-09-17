@@ -7,10 +7,12 @@ import { loadPublicProductDetailWithCustomization } from "../app/application/cus
 import {
   customizationFieldSourceFailure,
 } from "../app/application/customization-field-repository.ts";
-import { ServerConfigurationError } from "../app/config/server.ts";
 import { createCustomerUploadHttpHandler } from "../app/server/customer-upload-http-handler.server.ts";
 import { FixtureCustomizationFieldRepository } from "../app/infrastructure/customization/development-customization-field-repository.ts";
-import { createServerCustomizationFieldRepository } from "../app/infrastructure/customization/server-customization-field-repository.ts";
+import {
+  createProductionCustomizationFieldRepository,
+  createServerCustomizationFieldRepository,
+} from "../app/infrastructure/customization/server-customization-field-repository.ts";
 import { POST as uploadRoute } from "../app/api/uploads/route.ts";
 import { runLocalCustomerUploadSmoke } from "../app/testing/customer-upload-local-smoke-harness.ts";
 
@@ -183,14 +185,10 @@ test("9.4 production field source selects only the authoritative repository and 
         return expected;
       },
     };
-    const selected = createServerCustomizationFieldRepository(
-      { NODE_ENV: "production" },
-      undefined,
-      () => {
+    const selected = createProductionCustomizationFieldRepository(() => {
         authoritativeFactoryCalls += 1;
         return authoritative;
-      },
-    );
+      });
     assert.equal(selected.source, "supabase");
     assert.equal(selected.repository, authoritative);
     assert.equal(selected.repository instanceof FixtureCustomizationFieldRepository, false);
@@ -201,14 +199,10 @@ test("9.4 production field source selects only the authoritative repository and 
 
 test("9.4 authoritative source failure never constructs a fixture fallback", async () => {
   let authoritativeCalls = 0;
-  const selected = createServerCustomizationFieldRepository(
-    { NODE_ENV: "production" },
-    undefined,
-    () => {
+  const selected = createProductionCustomizationFieldRepository(() => {
       authoritativeCalls += 1;
       return { async getCustomizationFieldsForProduct() { return customizationFieldSourceFailure(); } };
-    },
-  );
+    });
   const result = await selected.repository.getCustomizationFieldsForProduct(productId);
   assert.deepEqual(result, customizationFieldSourceFailure());
   assert.equal(authoritativeCalls, 1);
@@ -217,12 +211,8 @@ test("9.4 authoritative source failure never constructs a fixture fallback", asy
 
 test("9.4 production repository construction failure stays a construction failure", () => {
   assert.throws(
-    () => createServerCustomizationFieldRepository(
-      { NODE_ENV: "production" },
-      undefined,
-      () => { throw new Error("authoritative repository unavailable"); },
-    ),
-    /authoritative repository unavailable/,
+    () => createServerCustomizationFieldRepository({ NODE_ENV: "production" }),
+    /Catalog source is unavailable until provider activation is authorized/,
   );
 });
 
@@ -233,7 +223,7 @@ test("9.4 production explicitly rejects fixture selection while development/test
       undefined,
       () => { throw new Error("must not construct authority"); },
     ),
-    (error) => error instanceof ServerConfigurationError && error.key === "PHOTOGIFT_PRODUCT_SOURCE",
+    /Catalog source is unavailable until provider activation is authorized/,
   );
 
   const fixture = createServerCustomizationFieldRepository({

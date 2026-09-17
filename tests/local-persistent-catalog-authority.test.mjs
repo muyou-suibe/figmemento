@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 import {LocalCatalogAuthority} from '../app/infrastructure/local-commerce/local-catalog-authority.server.ts';
 import {LocalCheckoutRuleAuthority} from '../app/infrastructure/local-commerce/local-checkout-rule-authority.server.ts';
 import {createServerCatalogRepository} from '../app/infrastructure/catalog/server-catalog-repository.ts';
+import {resolveCanonicalCatalogSource} from '../app/config/server-runtime-composition.server.ts';
 import {readProductSource} from '../app/config/server.ts';
 import {readLocalCheckoutConfig} from '../app/config/local-checkout-runtime.ts';
 import {acceptConfiguredItemHandoff} from '../app/application/configured-item-handoff-acceptance.ts';
@@ -48,9 +49,25 @@ test('4.1 stale row versions, duplicate/current and mismatched field revisions f
 });
 test('4.1 default, fixture, local_fake and independent disabled Checkout are preserved',async()=>{
   assert.equal(readProductSource({NODE_ENV:'test'}),'supabase');assert.equal(readProductSource({NODE_ENV:'test',PHOTOGIFT_PRODUCT_SOURCE:'fixture'}),'fixture');
-  assert.equal((await createServerCatalogRepository({NODE_ENV:'test',PHOTOGIFT_PRODUCT_SOURCE:'fixture'})).value.source,'fixture');
+  const fixtureEnvironment=env({PHOTOGIFT_PRODUCT_SOURCE:'fixture'});
+  const fixtureCatalog=await createServerCatalogRepository(fixtureEnvironment);
+  assert.equal(fixtureCatalog.status,'found');assert.equal(fixtureCatalog.value.source,'fixture');
   assert.equal(readLocalCheckoutConfig(env(),'test').source,'disabled');assert.equal(readLocalCheckoutConfig({LOCAL_CHECKOUT_SOURCE:'local_fake'},'test').source,'local_fake');
   for(const mode of ['production','staging','unknown'])assert.throws(()=>readLocalCheckoutConfig(checkoutEnv(),mode));
+});
+test('4.1 Catalog consumer selects only authorized local sources and defers Supabase',async()=>{
+  assert.equal(resolveCanonicalCatalogSource(env()),'local_persistent');
+  assert.equal((await new LocalCatalogAuthority(env(),client()).readSnapshot()).status,'found');
+  const fixture=await createServerCatalogRepository(env({PHOTOGIFT_PRODUCT_SOURCE:'fixture'}));
+  assert.equal(fixture.status,'found');assert.equal(fixture.value.source,'fixture');
+  for(const environment of [
+    {NODE_ENV:'test',PHOTOGIFT_PRODUCT_SOURCE:'supabase'},
+    {NODE_ENV:'test',PHOTOGIFT_PRODUCT_SOURCE:'supabase',NEXT_PUBLIC_SUPABASE_URL:'https://supabase.test',SUPABASE_SECRET_KEY:'provider-value-never-public'},
+    {NODE_ENV:'test',PHOTOGIFT_PRODUCT_SOURCE:'invalid'},
+  ]){
+    assert.equal(resolveCanonicalCatalogSource(environment),'unavailable');
+    assert.deepEqual(await createServerCatalogRepository(environment),{status:'source_failure',operation:'catalog.configure'});
+  }
 });
 test('4.1 explicitly fake Admin remains independent from persistent Catalog',async()=>{
   const a=new LocalCatalogAuthority(env({ADMIN_ACCEPTANCE_SOURCE:'local_fake'}),client());

@@ -1,10 +1,9 @@
 import type { CatalogRepositoryResult } from "../../application/catalog-repository.ts";
 import type { CatalogReadRepository } from "./catalog-repository-factory.ts";
 import { createCatalogRuntimeEnvironment } from "../../config/catalog-runtime-environment.ts";
-import { readProductSource, type RuntimeEnvironment } from "../../config/server.ts";
-import { createProductionCatalogRepository } from "./catalog-repository-factory.ts";
+import type { RuntimeEnvironment } from "../../config/server.ts";
 import { LocalCatalogAuthority } from "../local-commerce/local-catalog-authority.server.ts";
-import { resolveCanonicalLocalCommerceCapability } from "../../config/server-runtime-composition.server.ts";
+import { resolveCanonicalCatalogSource } from "../../config/server-runtime-composition.server.ts";
 import {
   LocalCustomerDemoPresentationRepository,
   shouldUseLocalCustomerDemoPresentation,
@@ -21,12 +20,9 @@ export async function createServerCatalogRepository(
 ): Promise<CatalogRepositoryResult<ServerCatalogRepository>> {
   try {
     const runtimeEnvironment = createCatalogRuntimeEnvironment(environment, runtimeMode);
-    const source = readProductSource(runtimeEnvironment);
+    const effectiveEnvironment = { ...(environment ?? process.env), ...runtimeEnvironment };
+    const source = resolveCanonicalCatalogSource(effectiveEnvironment);
     if (source === "local_persistent") {
-      const effectiveEnvironment = { ...(environment ?? process.env), ...runtimeEnvironment };
-      if (resolveCanonicalLocalCommerceCapability("catalog", effectiveEnvironment) !== "selected") {
-        return { status: "source_failure", operation: "catalog.configure" };
-      }
       const authority = new LocalCatalogAuthority(effectiveEnvironment);
       const checked = await authority.readSnapshot();
       if (checked.status !== "found") return { status: "source_failure", operation: "catalog.configure" };
@@ -48,10 +44,7 @@ export async function createServerCatalogRepository(
       };
     }
 
-    return {
-      status: "found",
-      value: createProductionCatalogRepository(),
-    };
+    return { status: "source_failure", operation: "catalog.configure" };
   } catch {
     return { status: "source_failure", operation: "catalog.configure" };
   }

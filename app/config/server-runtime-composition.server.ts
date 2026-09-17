@@ -382,6 +382,23 @@ export function resolveCanonicalLocalCommerceCapability(
   return composition.value.sources[capability] === "local_persistent" ? "selected" : "unavailable";
 }
 
+export type CanonicalCatalogSourceSelection = "fixture" | "local_persistent" | "unavailable";
+
+/**
+ * Catalog's single effective source selector. Supabase remains deferred until
+ * a later provider activation change; only the explicitly authorized local
+ * sources can become effective here.
+ */
+export function resolveCanonicalCatalogSource(
+  environment: RuntimeEnvironment = process.env,
+): CanonicalCatalogSourceSelection {
+  const requested = normalized(environment, "PHOTOGIFT_PRODUCT_SOURCE") ?? SOURCE_DEFAULTS.PHOTOGIFT_PRODUCT_SOURCE;
+  if (requested !== "fixture" && requested !== "local_persistent") return "unavailable";
+  const composition = composeServerRuntimeConfiguration(environment);
+  if (composition.status !== "ready" || composition.value.sources.catalog !== requested) return "unavailable";
+  return requested;
+}
+
 export function projectPublicRuntimeConfiguration(configuration: ServerRuntimeConfiguration) {
   return Object.freeze({
     brandName: configuration.public.brandName,

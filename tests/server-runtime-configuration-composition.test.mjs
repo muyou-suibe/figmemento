@@ -237,8 +237,9 @@ test("K08 public projection contains no server or provider credential", () => {
   for (const secret of [
     markerDigest,
     "server-role-value-never-public",
-    "image-helper-value-never-public",
-    "order-capability-value-never-public",
+    retainedPersistentEnvironment.LOCAL_COMMERCE_IMAGE_HELPER_SECRET,
+    retainedPersistentEnvironment.LOCAL_ORDER_CAPABILITY_SECRET,
+    retainedPersistentEnvironment.PHOTOGIFT_GUEST_DRAFT_OWNER_SECRET,
     "admin-value-never-public",
     "stripe-value-never-public",
   ]) {
@@ -302,11 +303,18 @@ test("K08 exposes one canonical tri-state seam to real authority consumers", asy
     "app/server/local-persistent-digital-revocation.server.ts",
     "app/server/local-persistent-admin-timeout.server.ts",
     "app/infrastructure/catalog/server-catalog-repository.ts",
+    "app/infrastructure/products/product-repository-factory.ts",
     "app/infrastructure/customization/server-customization-field-repository.ts",
   ];
   for (const relativePath of authorityConsumers) {
     const source = await readFile(new URL(`../${relativePath}`, import.meta.url), "utf8");
-    assert.match(source, /resolveCanonicalLocalCommerceCapability/, relativePath);
+    if (relativePath === "app/infrastructure/catalog/server-catalog-repository.ts"
+      || relativePath === "app/infrastructure/products/product-repository-factory.ts"
+      || relativePath === "app/infrastructure/customization/server-customization-field-repository.ts") {
+      assert.match(source, /resolveCanonicalCatalogSource/, relativePath);
+    } else {
+      assert.match(source, /resolveCanonicalLocalCommerceCapability/, relativePath);
+    }
     assert.doesNotMatch(source, /process\.env\.[A-Z_]+\?\.trim\(\)\s*[!=]==?\s*["']local_persistent|environment\.[A-Z_]+\?\.trim\(\)\s*[!=]==?\s*["']local_persistent/, relativePath);
   }
 });
