@@ -66,6 +66,23 @@
 .flagRow label { align-items: center; display: flex; font-size: 9px; gap: 5px; }
 .dangerButton { background: transparent !important; border: 1px solid #c88778; color: #94422f !important; }
 .saveBar { border-top: 1px solid var(--line); justify-content: space-between; padding-top: 16px; }
+.settingsWorkspace { max-width: 1120px; }
+.settingsStack { display: grid; gap: 22px; }
+.settingsCard { background: var(--fusion-paper); border: 1px solid var(--fusion-line); border-radius: var(--fusion-radius-card); box-shadow: var(--fusion-shadow-card); padding: clamp(20px, 3vw, 34px); }
+.settingsCardHeading { align-items: start; display: flex; gap: 18px; justify-content: space-between; }
+.settingsCardHeading h2 { color: var(--fusion-ink); font-family: var(--fusion-font-serif); font-size: clamp(1.8rem, 4vw, 2.8rem); margin: 4px 0 0; }
+.settingsVersion { background: var(--fusion-honey); border: 1px solid var(--fusion-gold); border-radius: 999px; font-family: var(--fusion-font-hand); padding: 8px 12px; }
+.settingsHint { color: var(--fusion-ink-mute); font-size: .9rem; line-height: 1.6; max-width: 620px; }
+.settingsForm { display: grid; gap: 10px; max-width: 560px; }
+.settingsForm label, .settingsReadOnly dt { color: var(--fusion-ink-mute); font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.settingsForm input { background: var(--fusion-bg); border: 1px solid var(--fusion-line); border-radius: var(--fusion-radius-control); color: var(--fusion-ink); font: inherit; min-height: var(--fusion-tap); padding: 10px 13px; width: 100%; }
+.settingsForm button { background: var(--fusion-ink); border: 1px solid var(--fusion-ink); border-radius: var(--fusion-radius-control); color: var(--fusion-paper); font-weight: 800; min-height: var(--fusion-tap); padding: 10px 16px; }
+.settingsForm button:disabled { cursor: wait; opacity: .55; }
+.settingsMessage { color: var(--fusion-terracotta); font-size: .86rem; margin: 4px 0 0; }
+.settingsReadOnly { background: var(--fusion-sage); display: grid; gap: 14px; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0; padding: 18px; }
+.settingsReadOnly div { display: grid; gap: 4px; }
+.settingsReadOnly dd { margin: 0; overflow-wrap: anywhere; }
+@media (max-width: 700px) { .settingsCardHeading { align-items: flex-start; flex-direction: column; } .settingsReadOnly { grid-template-columns: 1fr; } }
 @media (max-width: 700px) {
   .editorCard summary, .sectionHeading { align-items: flex-start; }
   .editorCard summary { flex-direction: column; }

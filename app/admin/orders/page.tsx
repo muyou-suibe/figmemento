@@ -85,7 +85,7 @@ function localOrdersUnavailable(message: string) {
     <main className={`${styles.fusionAdminShell} ${styles.fusionAdminOrdersPage}`}>
       <header className="admin-header">
         <div><p className="eyebrow">{brandName} · Local operations</p><h1>Orders</h1><p>{LOCAL_ADMIN_ORDERS_SOURCE_NOTICE} — no production Order data is used in this mode.</p></div>
-        <div className="admin-header-actions"><div className="admin-header-links"><Link className="admin-back-link" href="/admin/products">Products</Link><Link className="admin-back-link" href="/">Back to storefront ↗</Link></div><AdminLogoutButton /></div>
+        <div className="admin-header-actions"><div className="admin-header-links"><Link className="admin-back-link" href="/admin/products">Products</Link><Link className="admin-back-link" href="/admin/settings">Settings</Link><Link className="admin-back-link" href="/">Back to storefront ↗</Link></div><AdminLogoutButton /></div>
       </header>
       <section className="admin-state admin-error" role="status">{message}</section>
       <p className="admin-warning">Local Orders is read-only and has no Supabase, Storage, Fulfillment, Tracking, or Order mutation path.</p>

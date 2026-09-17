@@ -46,7 +46,9 @@ export type LocalCommerceRelation =
   | "digital_versions"
   | "digital_grants"
   | "digital_tickets"
-  | "digital_delivery_attempts";
+  | "digital_delivery_attempts"
+  | "admin_settings"
+  | "admin_settings_actions";
 
 export const LOCAL_COMMERCE_RELATIONS: ReadonlySet<LocalCommerceRelation> = new Set([
   "migration_ledger",
@@ -85,6 +87,8 @@ export const LOCAL_COMMERCE_RELATIONS: ReadonlySet<LocalCommerceRelation> = new 
   "digital_grants",
   "digital_tickets",
   "digital_delivery_attempts",
+  "admin_settings",
+  "admin_settings_actions",
 ]);
 
 export const LOCAL_COMMERCE_RPC_FUNCTIONS = [
@@ -120,6 +124,8 @@ export const LOCAL_COMMERCE_RPC_FUNCTIONS = [
   "create_customer_session",
   "lookup_customer_session",
   "revoke_customer_session",
+  "admin_settings_read",
+  "admin_settings_command",
 ] as const;
 export type LocalCommerceRpcFunction = (typeof LOCAL_COMMERCE_RPC_FUNCTIONS)[number];
 
@@ -146,6 +152,17 @@ export interface LocalPersistentCustomerAccountIdentity {
   readonly ownerId: string;
   readonly normalizedEmail: string;
 }
+
+export interface LocalPersistentAdminSettingsValue {
+  readonly supportEmail: string | null;
+  readonly version: number;
+  readonly updatedAt: string | null;
+}
+
+export type LocalPersistentAdminSettingsCommandValue =
+  | { readonly status: "found"; readonly replayed: boolean; readonly value: LocalPersistentAdminSettingsValue }
+  | { readonly status: "conflict"; readonly reason: string }
+  | { readonly status: "invalid_request"; readonly reason: string };
 
 export interface LocalPersistentCustomerSessionRpcRecord {
   readonly status: "created" | "found";
@@ -388,6 +405,20 @@ interface LocalCommerceRpcArguments {
     readonly p_session_hash: string;
     readonly p_now: string;
   };
+  admin_settings_read: {
+    readonly p_project_id: string;
+    readonly p_marker_digest: string;
+  };
+  admin_settings_command: {
+    readonly p_project_id: string;
+    readonly p_marker_digest: string;
+    readonly p_actor_kind: "admin";
+    readonly p_actor_id: "configured-admin";
+    readonly p_action_key_digest: string;
+    readonly p_context_digest: string;
+    readonly p_expected_version: number;
+    readonly p_support_email: string | null;
+  };
 }
 
 type LocalPersistentAdapterIssue =
@@ -623,6 +654,44 @@ export class LocalPersistentSupabaseAdapter {
     return { status: "found", value: result.value };
   }
 
+  async readAdminSettings(
+    input: LocalCommerceRpcArguments["admin_settings_read"],
+  ): Promise<LocalPersistentAdapterResult<LocalPersistentAdminSettingsValue>> {
+    const result = await this.callRestrictedRpc<unknown>("admin_settings_read", input);
+    if (result.status !== "found" || !isRecord(result.value) || result.value.status !== "found"
+      || !isRecord(result.value.value) || !isAdminSettingsValue(result.value.value)) {
+      return { status: "unavailable", issues: [{ code: "local_authority_unavailable" }] };
+    }
+    return { status: "found", value: result.value.value };
+  }
+
+  async updateAdminSettings(
+    input: LocalCommerceRpcArguments["admin_settings_command"],
+  ): Promise<LocalPersistentAdapterResult<LocalPersistentAdminSettingsCommandValue>> {
+    const result = await this.callRestrictedRpc<unknown>("admin_settings_command", input);
+    if (result.status !== "found" || !isRecord(result.value)
+      || (result.value.status !== "found" && result.value.status !== "conflict" && result.value.status !== "invalid_request")) {
+      return { status: "unavailable", issues: [{ code: "local_authority_unavailable" }] };
+    }
+    if (result.value.status === "conflict" || result.value.status === "invalid_request") {
+      return {
+        status: "found",
+        value: {
+          status: result.value.status,
+          reason: typeof result.value.reason === "string" ? result.value.reason : "bounded_rejection",
+        },
+      };
+    }
+    if (typeof result.value.replayed !== "boolean" || !isRecord(result.value.value)
+      || !isAdminSettingsValue(result.value.value)) {
+      return { status: "unavailable", issues: [{ code: "local_authority_unavailable" }] };
+    }
+    return {
+      status: "found",
+      value: { status: "found", replayed: result.value.replayed, value: result.value.value },
+    };
+  }
+
   async verifyProjectIdentity(projectId: string, markerDigest: string): Promise<LocalPersistentAdapterResult<true>> {
     const result = await this.callRestrictedRpc<boolean>("verify_project_identity", {
       p_project_id: projectId,
@@ -767,6 +836,15 @@ function isCustomerSessionRpcResult(
     && typeof value.created_at === "string"
     && typeof value.expires_at === "string"
     && (value.revoked_at === null || typeof value.revoked_at === "string");
+}
+
+function isAdminSettingsValue(value: unknown): value is LocalPersistentAdminSettingsValue {
+  if (!isRecord(value)) return false;
+  return (value.supportEmail === null || typeof value.supportEmail === "string")
+    && typeof value.version === "number"
+    && Number.isSafeInteger(value.version)
+    && value.version >= 0
+    && (value.updatedAt === null || typeof value.updatedAt === "string");
 }
 
 export async function createLocalPersistentSupabaseAdapter(

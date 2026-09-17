@@ -29,7 +29,7 @@ export default async function AdminProductsPage() {
   return <main className={`${styles.fusionAdminShell} ${styles.fusionAdminProducts}`}>
     <header className="admin-header">
       <div><p className="eyebrow">{brandName} · Catalog administration</p><h1>Products</h1><p>Edit Product content, Option/Variant graph, public Asset metadata, and basic Product fulfillment configuration. Lifecycle remains a separate protected workflow.</p></div>
-      <div className="admin-header-actions"><div className="admin-header-links"><Link className="admin-back-link" href="/admin/orders">Orders</Link><Link className="admin-back-link" href="/shop">View shop ↗</Link></div><AdminLogoutButton /></div>
+      <div className="admin-header-actions"><div className="admin-header-links"><Link className="admin-back-link" href="/admin/orders">Orders</Link><Link className="admin-back-link" href="/admin/settings">Settings</Link><Link className="admin-back-link" href="/shop">View shop ↗</Link></div><AdminLogoutButton /></div>
     </header>
     {readAdminCatalogSourceConfiguration().status === "local_fake" && <p className="admin-state">LOCAL / TEST ONLY — Catalog edits are process-memory only and reset when the development process restarts.</p>}
     {result.status === "found"

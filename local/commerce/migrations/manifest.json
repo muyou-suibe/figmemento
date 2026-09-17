@@ -2,7 +2,7 @@
   "format": "figmemento-local-commerce-migration-manifest/v1",
   "schema": "local_commerce",
   "projectId": "figmemento-local-commerce",
-  "schemaVersion": 37,
+  "schemaVersion": 38,
   "migrations": [
     {
       "version": 1,
@@ -299,6 +299,14 @@
       "checksum": "1f6774c75f0a3da43ff4f55a358c44a3ad81f800a3b4015d0b1496c4f2f91319",
       "rollback": "Disable stream-result recording while preserving committed claims, consumed tickets, grant quota, unknown/recorded attempts, immutable digital versions, Orders, and ledger evidence. Never refund a claim.",
       "forwardFix": "After permanent application use 0038+ only on authorized run-5576dfd8. Never edit applied 0001-0037. Preserve claim-before-stream ordering, no-refund quota, and unknown crash semantics."
+    },
+    {
+      "version": 38,
+      "migrationId": "local-commerce-admin-settings",
+      "filename": "0038_local-commerce-admin-settings.sql",
+      "checksum": "9596207bfc8c8cdaf8fa3e767f95e9cf6f336b9ee42409bd866a64fdd25bc25c",
+      "rollback": "For a disposable project only, preserve the H19 settings and audit evidence before explicit project recreation. Never reset retained development or root projects.",
+      "forwardFix": "After permanent application use 0039+ only for reviewed H19 corrections. Never edit applied 0038; preserve the typed support-email authority, version history, and restricted RPC boundary."
     }
   ]
 }
