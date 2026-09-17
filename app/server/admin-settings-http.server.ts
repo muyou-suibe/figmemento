@@ -14,6 +14,7 @@ import { readAdminAcceptanceConfiguration } from "../config/admin-acceptance-run
 import { composeServerRuntimeConfiguration, resolveCanonicalLocalCommerceCapability } from "../config/server-runtime-composition.server.ts";
 import type { RuntimeEnvironment } from "../config/server.ts";
 import { createExistingAdminMutationVerifier, isSameOriginAdminMutation } from "./admin-catalog-http.server.ts";
+import { readLocalPersistentDigitalDeliveryPolicy } from "../application/local-persistent-digital-delivery-policy.server.ts";
 import {
   createLocalPersistentAdminSettingsRepository,
   type LocalPersistentAdminSettingsRepositoryResult,
@@ -80,8 +81,8 @@ function projectReadOnly(environment: RuntimeEnvironment): AdminSettingsProjecti
     brandName: runtime.value.public.brandName,
     siteOrigin: runtime.value.public.siteUrl,
     deploymentEnvironment: runtime.value.public.deploymentEnvironment,
-    providerActivation: "inactive",
-    digitalDeliveryPolicy: { status: "local_policy", durationDays: 30, maxDownloads: 5 },
+    providerActivation: runtime.value.providers.activation,
+    digitalDeliveryPolicy: readLocalPersistentDigitalDeliveryPolicy(),
   };
 }
 

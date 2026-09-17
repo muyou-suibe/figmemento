@@ -9,6 +9,8 @@ import {
 } from "../app/application/admin-settings-boundary.server.ts";
 import { handleAdminSettings } from "../app/server/admin-settings-http.server.ts";
 import { LocalPersistentSupabaseAdapter } from "../app/infrastructure/local-commerce/local-persistent-supabase-adapter.server.ts";
+import { readLocalPersistentDigitalDeliveryPolicy } from "../app/application/local-persistent-digital-delivery-policy.server.ts";
+import { composeServerRuntimeConfiguration } from "../app/config/server-runtime-composition.server.ts";
 import { catalogTestEnvironment } from "./fixtures/local-persistent-catalog.mjs";
 
 const authorized = {
@@ -114,7 +116,7 @@ test("H19 HTTP exposes safe read projection and persists a CAS update", async ()
   assert.equal(readBody.status, "found");
   assert.deepEqual(readBody.value.settings, { supportEmail: null, version: 0, updatedAt: null });
   assert.equal(readBody.value.readOnly.brandName, "FigMemento");
-  assert.equal(readBody.value.readOnly.digitalDeliveryPolicy.maxDownloads, 5);
+  assert.deepEqual(readBody.value.readOnly.digitalDeliveryPolicy, readLocalPersistentDigitalDeliveryPolicy());
   assert.doesNotMatch(JSON.stringify(readBody), /projectId|marker|service.?role|password|secret|credential/i);
 
   const update = await handleAdminSettings(request("PATCH", { expectedVersion: 0, supportEmail: "team@example.test" }, {
@@ -128,6 +130,42 @@ test("H19 HTTP exposes safe read projection and persists a CAS update", async ()
   assert.equal(updateBody.value.settings.supportEmail, "team@example.test");
   assert.equal(updateBody.value.settings.version, 1);
   assert.equal(fake.updates, 1);
+});
+
+test("H19 read-only projection uses the canonical Digital Delivery policy and K08 provider state", async () => {
+  async function readWith(overrides = {}) {
+    const dependencies = {
+      environment: environment(overrides),
+      verifier: authorized,
+      createRepository: async () => ({ status: "ready", repository: repository().repository }),
+    };
+    const response = await handleAdminSettings(request("GET"), dependencies);
+    assert.equal(response.status, 200);
+    return (await response.json()).value.readOnly;
+  }
+
+  const withoutCredentials = await readWith();
+  const withCredentialPlaceholders = await readWith({
+    STRIPE_SECRET_KEY: "placeholder-not-a-credential",
+    RESEND_API_KEY: "placeholder-not-a-credential",
+    PAYPAL_CLIENT_SECRET: "placeholder-not-a-credential",
+  });
+  const runtime = composeServerRuntimeConfiguration(environment());
+  assert.equal(runtime.status, "ready");
+  assert.deepEqual(withoutCredentials.digitalDeliveryPolicy, readLocalPersistentDigitalDeliveryPolicy());
+  assert.equal(withoutCredentials.providerActivation, runtime.value.providers.activation);
+  assert.deepEqual(withCredentialPlaceholders.digitalDeliveryPolicy, withoutCredentials.digitalDeliveryPolicy);
+  assert.equal(withCredentialPlaceholders.providerActivation, withoutCredentials.providerActivation);
+});
+
+test("H19 HTTP has no private policy or provider authority literals", () => {
+  const http = readFileSync("app/server/admin-settings-http.server.ts", "utf8");
+  const page = readFileSync("app/admin/settings/page.tsx", "utf8");
+  for (const source of [http, page]) {
+    assert.match(source, /readLocalPersistentDigitalDeliveryPolicy\(\)/);
+    assert.match(source, /providerActivation:\s*(?:runtime\.value\.providers\.activation)/);
+    assert.doesNotMatch(source, /durationDays:\s*30|maxDownloads:\s*5/);
+  }
 });
 
 test("H19 stale writers and changed same-key contexts are bounded conflicts", async () => {

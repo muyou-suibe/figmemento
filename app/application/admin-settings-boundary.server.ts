@@ -1,4 +1,5 @@
 import type { AdminAuthorizationResult, AdminSessionVerifier } from "./admin-catalog-boundary.ts";
+import type { LocalPersistentDigitalDeliveryPolicy } from "./local-persistent-digital-delivery-policy.server.ts";
 
 export const ADMIN_SETTINGS_MUTABLE_KEYS = ["supportEmail"] as const;
 const PLACEHOLDER_SUPPORT_EMAIL = "hello@photogift.example";
@@ -16,11 +17,7 @@ export type AdminSettingsReadOnlyValue = {
   readonly siteOrigin: string;
   readonly deploymentEnvironment: string;
   readonly providerActivation: "inactive";
-  readonly digitalDeliveryPolicy: {
-    readonly status: "local_policy";
-    readonly durationDays: 30;
-    readonly maxDownloads: 5;
-  };
+  readonly digitalDeliveryPolicy: LocalPersistentDigitalDeliveryPolicy;
 };
 
 export type AdminSettingsProjection = {

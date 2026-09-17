@@ -4,6 +4,7 @@ import { createLocalPersistentSupabaseAdapter } from "../infrastructure/local-co
 import { createExistingAdminMutationVerifier, isSameOriginAdminMutation } from "./admin-catalog-http.server.ts";
 import { isRecord } from "../domain/catalog/validation.ts";
 import { resolveCanonicalLocalCommerceCapability } from "../config/server-runtime-composition.server.ts";
+import { LOCAL_PERSISTENT_DIGITAL_DELIVERY_POLICY } from "../application/local-persistent-digital-delivery-policy.server.ts";
 
 const REFERENCE = /^FM-LOCAL-[A-Z0-9]{16}$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -18,7 +19,7 @@ export interface SafeDigitalRevocation {
   readonly revokedAt: string;
   readonly activatedAt: string;
   readonly expiresAt: string;
-  readonly maxDownloads: 5;
+  readonly maxDownloads: typeof LOCAL_PERSISTENT_DIGITAL_DELIVERY_POLICY.maxDownloads;
   readonly consumedAttempts: number;
   readonly version: number;
 }
@@ -44,9 +45,9 @@ function projection(value: unknown): SafeDigitalRevocation | null {
     || !UUID.test(String(value.orderItemId)) || !UUID.test(String(value.grantId))
     || value.status !== "revoked" || !Number.isFinite(Date.parse(String(value.revokedAt)))
     || !Number.isFinite(Date.parse(String(value.activatedAt)))
-    || !Number.isFinite(Date.parse(String(value.expiresAt))) || value.maxDownloads !== 5
+    || !Number.isFinite(Date.parse(String(value.expiresAt))) || value.maxDownloads !== LOCAL_PERSISTENT_DIGITAL_DELIVERY_POLICY.maxDownloads
     || !Number.isSafeInteger(value.consumedAttempts) || Number(value.consumedAttempts) < 0
-    || Number(value.consumedAttempts) > 5 || !Number.isSafeInteger(value.version)
+    || Number(value.consumedAttempts) > LOCAL_PERSISTENT_DIGITAL_DELIVERY_POLICY.maxDownloads || !Number.isSafeInteger(value.version)
     || Number(value.version) < 2) return null;
   return value as unknown as SafeDigitalRevocation;
 }

@@ -20,10 +20,13 @@ test("Task 9.2 reuses existing customer Order and owner/session authorization", 
 
 test("Task 9.2 owns fixed server policy and rejects browser policy fields", async () => {
   const server = await source("app/server/local-persistent-digital-grant.server.ts");
+  const policy = await source("app/application/local-persistent-digital-delivery-policy.server.ts");
   assert.match(server, /\["orderItemId","grantActionId"\]/);
-  assert.match(server, /"grant-30-days", 5/);
-  assert.match(server, /2_592_000_000/);
-  assert.match(server, /maxDownloads: 5/);
+  assert.match(server, /LOCAL_PERSISTENT_DIGITAL_DELIVERY_POLICY/);
+  assert.match(server, /LOCAL_PERSISTENT_DIGITAL_DELIVERY_WINDOW_MS/);
+  assert.match(policy, /status: "local_policy"/);
+  assert.match(policy, /durationDays: 30/);
+  assert.match(policy, /maxDownloads: 5/);
   assert.doesNotMatch(server, /raw token|signedUrl|storagePath|contentReference/i);
 });
 

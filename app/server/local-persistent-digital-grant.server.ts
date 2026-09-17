@@ -9,6 +9,10 @@ import { readCustomerAuthSessionId } from "./customer-auth-http.server.ts";
 import { createLocalPersistentCustomerAuthProvider } from "../application/customer-auth-persistent-provider.server.ts";
 import { isSameOriginCartMutation } from "./cart-http.server.ts";
 import { isRecord } from "../domain/catalog/validation.ts";
+import {
+  LOCAL_PERSISTENT_DIGITAL_DELIVERY_POLICY,
+  LOCAL_PERSISTENT_DIGITAL_DELIVERY_WINDOW_MS,
+} from "../application/local-persistent-digital-delivery-policy.server.ts";
 
 const REFERENCE = /^FM-LOCAL-[A-Z0-9]{16}$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -21,7 +25,7 @@ export interface SafeDigitalGrant {
   readonly orderItemId: string;
   readonly activatedAt: string;
   readonly expiresAt: string;
-  readonly maxDownloads: 5;
+  readonly maxDownloads: typeof LOCAL_PERSISTENT_DIGITAL_DELIVERY_POLICY.maxDownloads;
   readonly consumedAttempts: number;
   readonly status: "active";
 }
@@ -39,9 +43,9 @@ function project(value: unknown): SafeDigitalGrant | null {
     || !REFERENCE.test(String(value.publicReference)) || !UUID.test(String(value.orderItemId))
     || typeof value.activatedAt !== "string" || typeof value.expiresAt !== "string"
     || !Number.isFinite(Date.parse(value.activatedAt)) || !Number.isFinite(Date.parse(value.expiresAt))
-    || Date.parse(value.expiresAt) - Date.parse(value.activatedAt) !== 2_592_000_000
-    || value.maxDownloads !== 5 || !Number.isSafeInteger(value.consumedAttempts)
-    || Number(value.consumedAttempts) < 0 || Number(value.consumedAttempts) > 5
+    || Date.parse(value.expiresAt) - Date.parse(value.activatedAt) !== LOCAL_PERSISTENT_DIGITAL_DELIVERY_WINDOW_MS
+    || value.maxDownloads !== LOCAL_PERSISTENT_DIGITAL_DELIVERY_POLICY.maxDownloads || !Number.isSafeInteger(value.consumedAttempts)
+    || Number(value.consumedAttempts) < 0 || Number(value.consumedAttempts) > LOCAL_PERSISTENT_DIGITAL_DELIVERY_POLICY.maxDownloads
     || value.status !== "active") return null;
   return value as unknown as SafeDigitalGrant;
 }
@@ -82,7 +86,7 @@ export async function handleLocalPersistentDigitalGrantActivation(
     if (connection.status !== "ready" || connection.composition.projectId !== composition.value.projectId
       || connection.composition.markerDigest !== composition.value.markerDigest) return response({ status: "unavailable" }, 503);
     const keyDigest = await digest(String(raw.grantActionId));
-    const contextDigest = await digest(JSON.stringify([publicReference, raw.orderItemId, "grant-30-days", 5]));
+    const contextDigest = await digest(JSON.stringify([publicReference, raw.orderItemId, "grant-30-days", LOCAL_PERSISTENT_DIGITAL_DELIVERY_POLICY.maxDownloads]));
     const activate = async (verified: typeof initial) => {
       const owner = verified.owner;
       const sessionToken = readCustomerAuthSessionId(request);

@@ -11,6 +11,7 @@ import { AdminLogoutButton } from "../AdminLogoutButton";
 import { brandName } from "../../config/identity.ts";
 import styles from "../products/admin-products.module.css";
 import { AdminSettingsEditor } from "./AdminSettingsEditor";
+import { readLocalPersistentDigitalDeliveryPolicy } from "../../application/local-persistent-digital-delivery-policy.server.ts";
 
 export const dynamic = "force-dynamic";
 
@@ -32,8 +33,8 @@ export default async function AdminSettingsPage() {
           brandName: runtime.value.public.brandName,
           siteOrigin: runtime.value.public.siteUrl,
           deploymentEnvironment: runtime.value.public.deploymentEnvironment,
-          providerActivation: "inactive",
-          digitalDeliveryPolicy: { status: "local_policy", durationDays: 30, maxDownloads: 5 },
+          providerActivation: runtime.value.providers.activation,
+          digitalDeliveryPolicy: readLocalPersistentDigitalDeliveryPolicy(),
         });
       }
     }
