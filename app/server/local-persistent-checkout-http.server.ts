@@ -32,7 +32,9 @@ export async function persistentCheckoutHttp(request: Request, body: unknown, en
     if (baseline.status !== "found") return fail("STALE_CATALOG");
     const hasImages = cart.record.lines.some(line => line.handoff.customizationValues.some(field => field.kind === "image" && field.images.length));
     const dependencies = { catalogRepository: catalog.repository, customizationFieldRepository: catalog,
-      verifiedOwnerId: cart.owner.ownerId, ...(hasImages ? { receiptRepository: persistentPurchaseReceipts(environment, cart.verifyOwner, cart.record.lines.map(line => line.handoff)) } : {}) };
+      verifiedOwnerId: cart.owner.ownerId,
+      pricingResolver: (pricingInput: Parameters<LocalCatalogAuthority["resolveCustomizationPricing"]>[0]) => catalog.resolveCustomizationPricing(pricingInput),
+      ...(hasImages ? { receiptRepository: persistentPurchaseReceipts(environment, cart.verifyOwner, cart.record.lines.map(line => line.handoff)) } : {}) };
     const results = await Promise.all(cart.record.lines.map(line => evaluateLocalCheckoutLine(line, dependencies, new Date().toISOString())));
     for (const result of results) if (result.status !== "resolved") return fail(result.issue.code, result.status === "unavailable" ? 503 : 409);
     const lines = results.flatMap(result => result.status === "resolved" ? [result.summary] : []);
@@ -74,7 +76,8 @@ export async function persistentCheckoutHttp(request: Request, body: unknown, en
     return Response.json({ status: "accepted", fixtureNotice: "DEVELOPMENT / TEST ONLY",
       lines: lines.map(line => ({ lineId: line.lineId, productId: line.productId, productName: line.productName,
         productSlug: line.productSlug, variantId: line.variantId, skuCode: line.skuCode, selectedOptions: line.selectedOptions,
-        unitBasePriceCents: line.unitBasePriceCents, currency: line.currency, quantity: line.quantity, lineSubtotalCents: line.lineSubtotalCents })),
+        unitBasePriceCents: line.unitBasePriceCents, ...(line.unitPriceCents !== undefined ? { unitPriceCents: line.unitPriceCents } : {}),
+        currency: line.currency, quantity: line.quantity, lineSubtotalCents: line.lineSubtotalCents })),
       currency, subtotalCents,
       shipping: shipping.status === "not_applicable" ? { status: "not_applicable", amountCents: 0 }
         : { status: "eligible", method: shipping.method, amountCents: shipping.amountCents, currency: shipping.currency, estimatedRange: shipping.estimatedRange },

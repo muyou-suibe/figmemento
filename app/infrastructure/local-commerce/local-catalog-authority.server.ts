@@ -6,9 +6,16 @@ import { resolveLocalPersistentComposition } from "../../application/local-persi
 import { isRecord, parseCategory, parseCatalogProduct, parseProductOption, parseProductOptionValue, parseProductVariant, parseProductAsset, type CatalogValidationResult } from "../../domain/catalog/index.ts";
 import { persistentBaseFulfillment } from "../../application/local-persistent-fulfillment-authority.server.ts";
 import { createLocalPersistentSupabaseAdapter, type LocalPersistentSupabaseClientFactory } from "./local-persistent-supabase-adapter.server.ts";
+import {
+  calculateCustomizationPricing,
+  parseCustomizationSurchargeRuleRow,
+  type CustomizationPricingResult,
+} from "../../application/customization-surcharge-pricing.ts";
+import type { CustomizationPricingResolver } from "../../application/shopping-cart-service.ts";
 
 type Row = Record<string, unknown>;
 export interface LocalCatalogSnapshot {
+  readonly projectId: string;
   readonly dataSet: CatalogDataSet;
   readonly configurations: readonly Row[];
   readonly rules: readonly Row[];
@@ -112,7 +119,7 @@ export class LocalCatalogAuthority implements CatalogDataSource, CustomizationFi
         ruleKeys.add(r.rule_key);
       }
       if(Object.entries(expectedVersions).some(([key,version])=>versions[key]!==version)) return failure();
-      return {status:"found",value:{dataSet,configurations,rules,versions,
+      return {status:"found",value:{projectId, dataSet,configurations,rules,versions,
         purchasedFulfillments:Object.fromEntries(products.map(p=>[String(p.id),structuredClone(p.fulfillment_definition)]))}};
     } catch { return failure(); }
   }
@@ -127,5 +134,26 @@ export class LocalCatalogAuthority implements CatalogDataSource, CustomizationFi
     const config = result.value.configurations.find(c=>c.product_id===productId);
     if(!config) return {status:"not_found" as const};
     return normalizeCustomizationFieldConfiguration(productId,config.definition);
+  }
+
+  /**
+   * C03 read-only pricing authority. It reuses the same request-scoped Catalog
+   * snapshot as the storefront and never accepts a browser price.
+   */
+  async resolveCustomizationPricing(input: Parameters<CustomizationPricingResolver>[0]): Promise<CustomizationPricingResult> {
+    const snapshot = await this.readSnapshot();
+    if (snapshot.status !== "found") return { status: "unavailable", reason: "catalog_unavailable" };
+    const rows = snapshot.value.rules.filter((row) =>
+      isRecord(row.definition) && row.definition.kind === "customization_surcharge",
+    );
+    const rules = rows.map((row) => parseCustomizationSurchargeRuleRow(row, snapshot.value.projectId));
+    if (rules.some((rule) => rule === null)) return { status: "unavailable", reason: "invalid_pricing_rule" };
+    return calculateCustomizationPricing({
+      productId: input.productId,
+      variant: input.variant,
+      configuration: input.configuration,
+      handoff: input.handoff,
+      rules: rules.filter((rule): rule is NonNullable<typeof rule> => rule !== null),
+    });
   }
 }

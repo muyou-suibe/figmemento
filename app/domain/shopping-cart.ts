@@ -1,5 +1,6 @@
 import type { ConfiguredItemHandoff } from "./configured-item.ts";
 import type { CatalogCurrency, SelectedOptionValue } from "./catalog/variant.ts";
+import type { CustomizationPricingSnapshot } from "../application/customization-surcharge-pricing.ts";
 
 export const LOCAL_CART_COOKIE_NAME = "figmemento-local-cart";
 export const MAX_CART_LINE_QUANTITY = 20;
@@ -57,6 +58,8 @@ export interface StoredCartLine {
   readonly snapshot: CartCatalogSnapshot;
   readonly customization: SafeCartCustomizationSummary;
   readonly quantity: number;
+  /** Server-owned pricing provenance; never included in the customer projection. */
+  readonly pricingSnapshot?: CustomizationPricingSnapshot;
 }
 
 export interface ShoppingCartRecord {
@@ -87,6 +90,7 @@ export interface AcceptedCartItem {
   readonly handoff: ConfiguredItemHandoff;
   readonly snapshot: CartCatalogSnapshot;
   readonly customization: SafeCartCustomizationSummary;
+  readonly pricingSnapshot?: CustomizationPricingSnapshot;
 }
 
 export interface ShoppingCartProvider {

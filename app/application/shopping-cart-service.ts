@@ -10,6 +10,7 @@ import { createProductCustomizationSummary } from "./product-customization-summa
 import { toSafeCartCustomizationSummary } from "./shopping-cart-summary.ts";
 import type { PublicCatalogProductDetail, PublicCatalogReadRepository } from "./catalog-repository.ts";
 import type { CustomizationFieldReadRepository } from "./customization-field-repository.ts";
+import type { ProductCustomizationFieldConfiguration } from "./customization-field-repository.ts";
 import type { CustomerUploadReceiptRepository } from "./customer-upload-repository.ts";
 import type { CustomerUploadOwnerId } from "../domain/customer-upload.ts";
 import type {
@@ -21,10 +22,18 @@ import type {
   StoredCartLine,
 } from "../domain/shopping-cart.ts";
 import { toPublicShoppingCart } from "../domain/shopping-cart.ts";
+import type { CustomizationPricingResult } from "./customization-surcharge-pricing.ts";
 
 export type CartAddAcceptanceResult =
   | { readonly status: "accepted"; readonly value: AcceptedCartItem }
   | { readonly status: "rejected"; readonly reason: "invalid_item" | "unavailable" | "source_failure" };
+
+export type CustomizationPricingResolver = (input: {
+  readonly productId: string;
+  readonly variant: PublicCatalogProductDetail["variants"][number];
+  readonly configuration: ProductCustomizationFieldConfiguration;
+  readonly handoff: AcceptedCartItem["handoff"];
+}) => Promise<CustomizationPricingResult>;
 
 function missingReceiptRepository(): Pick<CustomerUploadReceiptRepository, "findOwnedReceipt"> {
   return {
@@ -67,6 +76,7 @@ export async function acceptCartItem(
     readonly customizationFieldRepository: CustomizationFieldReadRepository;
     readonly receiptRepository?: Pick<CustomerUploadReceiptRepository, "findOwnedReceipt">;
     readonly verifiedOwnerId?: CustomerUploadOwnerId | null;
+    readonly pricingResolver?: CustomizationPricingResolver;
   },
 ): Promise<CartAddAcceptanceResult> {
   const dependencies: ConfiguredItemHandoffAcceptanceDependencies = {
@@ -113,6 +123,22 @@ export async function acceptCartItem(
     return { status: "rejected", reason: "source_failure" };
   }
   if (configuration.status !== "found") return { status: "rejected", reason: "invalid_item" };
+  let pricingSnapshot: AcceptedCartItem["pricingSnapshot"];
+  if (input.pricingResolver) {
+    let pricing: CustomizationPricingResult;
+    try {
+      pricing = await input.pricingResolver({
+        productId: detail.product.id,
+        variant,
+        configuration: configuration.value,
+        handoff: accepted.handoff,
+      });
+    } catch {
+      return { status: "rejected", reason: "source_failure" };
+    }
+    if (pricing.status !== "found") return { status: "rejected", reason: "source_failure" };
+    pricingSnapshot = pricing.value;
+  }
   const draft = draftFromAcceptedHandoff({
     productId: detail.product.id,
     configurationRevision: configuration.value.configurationRevision,
@@ -137,10 +163,11 @@ export async function acceptCartItem(
         variantId: variant.id,
         skuCode: variant.skuCode,
         selectedOptions: variant.selectedOptions.map((selection) => ({ ...selection })),
-        unitPriceCents: variant.priceCents,
+        unitPriceCents: pricingSnapshot?.finalUnitPriceCents ?? variant.priceCents,
         currency: variant.currency,
         availability: "available",
       },
+      ...(pricingSnapshot ? { pricingSnapshot } : {}),
     },
   };
 }
@@ -194,10 +221,11 @@ export async function publicCartWithCatalogRevalidation(
         return withAvailability(line, "unavailable");
       }
       const current = variant.value;
+      const storedBasePrice = line.pricingSnapshot?.basePriceCents ?? line.snapshot.unitPriceCents;
       const stale = product.value.product.name !== line.snapshot.productName
         || product.value.product.slug !== line.snapshot.productSlug
         || current.skuCode !== line.snapshot.skuCode
-        || current.priceCents !== line.snapshot.unitPriceCents
+        || current.priceCents !== storedBasePrice
         || current.currency !== line.snapshot.currency
         || !sameOptions(current.selectedOptions, line.snapshot.selectedOptions);
       return withAvailability(line, stale ? "stale" : "available");

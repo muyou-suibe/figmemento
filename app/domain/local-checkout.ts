@@ -259,6 +259,8 @@ export interface LocalCheckoutLineSummary {
   readonly skuCode: string;
   readonly selectedOptions: readonly { readonly optionId: string; readonly valueId: string }[];
   readonly unitBasePriceCents: number;
+  /** Final server-calculated configured unit price when C03 pricing applies. */
+  readonly unitPriceCents?: number;
   readonly currency: "USD";
   readonly fulfillmentType: "physical" | "digital";
   readonly quantity: number;

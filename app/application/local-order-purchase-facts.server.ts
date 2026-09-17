@@ -54,9 +54,20 @@ export function prepareLocalOrderPurchaseFacts(input: {
         || s.variantId !== variant.id || s.skuCode !== variant.skuCode
         || canonicalVariantSignature(s.selectedOptions) !== canonicalVariantSignature(h.selectedOptions)
         || s.unitBasePriceCents !== variant.priceCents || s.currency !== variant.currency || s.currency !== "USD"
-        || !Number.isSafeInteger(s.lineSubtotalCents) || s.lineSubtotalCents !== variant.priceCents * s.quantity
         || s.fulfillmentType !== fulfillment.fulfillmentType
         || fulfillment.fulfillmentType === "digital" && fulfillment.requiresShipping) return unavailable;
+      const pricingSnapshot = line.pricingSnapshot;
+      const finalUnitPriceCents = pricingSnapshot?.finalUnitPriceCents ?? variant.priceCents;
+      const customizationPriceComponents = pricingSnapshot?.surchargeAllocations ?? [];
+      const customizationAmountCents = pricingSnapshot?.totalSurchargeCents ?? 0;
+      if (pricingSnapshot && (pricingSnapshot.basePriceCents !== variant.priceCents
+        || pricingSnapshot.currency !== variant.currency
+        || pricingSnapshot.configurationRevision !== h.configurationRevision
+        || !Number.isSafeInteger(pricingSnapshot.finalUnitPriceCents)
+        || !Number.isSafeInteger(pricingSnapshot.totalSurchargeCents)
+        || pricingSnapshot.finalUnitPriceCents !== s.unitPriceCents
+        || pricingSnapshot.finalUnitPriceCents !== variant.priceCents + pricingSnapshot.totalSurchargeCents)) return unavailable;
+      if (!Number.isSafeInteger(s.lineSubtotalCents) || s.lineSubtotalCents !== finalUnitPriceCents * s.quantity) return unavailable;
       const selectedOptions = [];
       for (const selected of h.selectedOptions) {
         const options = input.catalog.options.filter(o => o.id === selected.optionId && o.productId === product.id);
@@ -82,8 +93,10 @@ export function prepareLocalOrderPurchaseFacts(input: {
       items.push({ cartLineId: s.lineId, product, variant, selectedOptions,
         quantity: s.quantity, fulfillment: { ...fulfillment, requiresProductionPreview: purchasedFulfillment.value.requiresProductionPreview }, configuration: configuration.value,
         customizationValues: h.customizationValues, media,
-        customizationPriceComponents: [], customizationAmountCents: 0,
-        currency: s.currency, unitPriceCents: s.unitBasePriceCents, subtotalCents: s.lineSubtotalCents });
+        ...(pricingSnapshot ? { pricingSnapshot } : {}),
+        unitBasePriceCents: variant.priceCents,
+        customizationPriceComponents, customizationAmountCents,
+        currency: s.currency, unitPriceCents: finalUnitPriceCents, subtotalCents: s.lineSubtotalCents });
     }
     const allocation = allocateLocalOrderAmounts({ lines: items.map(i => ({
       lineId: i.cartLineId, subtotalCents: i.subtotalCents, discountEligible: true,

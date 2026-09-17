@@ -4,7 +4,6 @@ import {
   type SafeConfiguredItemRejectionReason,
 } from "./configured-item-handoff-acceptance.ts";
 import {
-  calculateResolvedOrderSubtotal,
   resolveOrderCatalogItems,
   type OrderCatalogResolutionRejection,
   type ResolvedOrderCatalogItem,
@@ -38,6 +37,11 @@ import {
   type ShoppingCartRecord,
 } from "../domain/shopping-cart.ts";
 import type { LocalPromotionResolver } from "./local-promotion.ts";
+import {
+  equalCustomizationPricingSnapshot,
+  type CustomizationPricingSnapshot,
+} from "./customization-surcharge-pricing.ts";
+import type { CustomizationPricingResolver } from "./shopping-cart-service.ts";
 
 export interface LocalCheckoutEvaluatorDependencies {
   readonly cartReader: Pick<ShoppingCartProvider, "getCart">;
@@ -61,12 +65,14 @@ export interface LocalCheckoutEvaluatorDependencies {
   readonly promotionResolver?: LocalPromotionResolver;
   readonly firstOrderEligible?: boolean;
   readonly pointsBalance?: number;
+  readonly pricingResolver?: CustomizationPricingResolver;
 }
 
 export interface FreshLocalCheckoutLine {
   readonly cartLine: StoredCartLine;
   readonly handoff: ConfiguredItemHandoff;
   readonly summary: LocalCheckoutLineSummary;
+  readonly pricingSnapshot?: CustomizationPricingSnapshot;
 }
 
 export type FreshLocalCheckoutAuthorityResult =
@@ -153,9 +159,14 @@ function sameOptions(
   return left.length === right.length && canonicalVariantSignature(left) === canonicalVariantSignature(right);
 }
 
-function safeSubtotal(items: readonly ResolvedOrderCatalogItem[]): number | null {
-  const subtotal = calculateResolvedOrderSubtotal(items);
-  return Number.isSafeInteger(subtotal) && subtotal >= 0 ? subtotal : null;
+function safeSubtotal(items: readonly Pick<LocalCheckoutLineSummary, "lineSubtotalCents">[]): number | null {
+  let subtotal = 0;
+  for (const item of items) {
+    if (!Number.isSafeInteger(item.lineSubtotalCents) || item.lineSubtotalCents < 0
+      || subtotal > Number.MAX_SAFE_INTEGER - item.lineSubtotalCents) return null;
+    subtotal += item.lineSubtotalCents;
+  }
+  return subtotal;
 }
 
 function compareSnapshot(
@@ -173,7 +184,8 @@ function compareSnapshot(
   ) {
     return issue("STALE_CATALOG", "A Cart item no longer matches the current catalog.");
   }
-  if (resolved.unitBasePriceCents !== snapshot.unitPriceCents) {
+  const storedBasePrice = line.pricingSnapshot?.basePriceCents ?? snapshot.unitPriceCents;
+  if (resolved.unitBasePriceCents !== storedBasePrice) {
     return issue("STALE_CATALOG", "A Cart price has changed and needs review.");
   }
   if (resolved.currency !== snapshot.currency) {
@@ -182,7 +194,12 @@ function compareSnapshot(
   return null;
 }
 
-function lineSummary(line: StoredCartLine, resolved: ResolvedOrderCatalogItem): LocalCheckoutLineSummary {
+function lineSummary(
+  line: StoredCartLine,
+  resolved: ResolvedOrderCatalogItem,
+  pricingSnapshot?: CustomizationPricingSnapshot,
+): LocalCheckoutLineSummary {
+  const unitPriceCents = pricingSnapshot?.finalUnitPriceCents ?? resolved.unitBasePriceCents;
   return {
     lineId: line.lineId,
     productId: resolved.productId,
@@ -192,10 +209,11 @@ function lineSummary(line: StoredCartLine, resolved: ResolvedOrderCatalogItem): 
     skuCode: resolved.skuCode,
     selectedOptions: resolved.selectedOptions.map((selection) => ({ ...selection })),
     unitBasePriceCents: resolved.unitBasePriceCents,
+    ...(pricingSnapshot ? { unitPriceCents } : {}),
     currency: resolved.currency,
     fulfillmentType: resolved.fulfillmentType,
     quantity: resolved.quantity,
-    lineSubtotalCents: resolved.unitBasePriceCents * resolved.quantity,
+    lineSubtotalCents: unitPriceCents * resolved.quantity,
   };
 }
 
@@ -225,10 +243,10 @@ function lineRequest(line: StoredCartLine): {
 
 export async function evaluateLocalCheckoutLine(
   line: StoredCartLine,
-  dependencies: Pick<LocalCheckoutEvaluatorDependencies, "catalogRepository" | "customizationFieldRepository" | "receiptRepository" | "verifiedOwnerId">,
+  dependencies: Pick<LocalCheckoutEvaluatorDependencies, "catalogRepository" | "customizationFieldRepository" | "receiptRepository" | "verifiedOwnerId" | "pricingResolver">,
   observedAt: CustomerUploadTimestamp,
 ): Promise<
-  | { readonly status: "resolved"; readonly summary: LocalCheckoutLineSummary; readonly handoff: ConfiguredItemHandoff }
+  | { readonly status: "resolved"; readonly summary: LocalCheckoutLineSummary; readonly handoff: ConfiguredItemHandoff; readonly pricingSnapshot?: CustomizationPricingSnapshot }
   | { readonly status: "rejected"; readonly issue: LocalCheckoutIssue }
   | { readonly status: "unavailable"; readonly issue: LocalCheckoutIssue }
 > {
@@ -294,7 +312,33 @@ export async function evaluateLocalCheckoutLine(
   if (!current) return { status: "unavailable", issue: issue("BASE_AUTHORITY_UNAVAILABLE", "The current catalog authority cannot be verified.") };
   const snapshotIssue = compareSnapshot(line, current);
   if (snapshotIssue) return { status: "rejected", issue: snapshotIssue };
-  return { status: "resolved", summary: lineSummary(line, current), handoff: acceptance.handoff };
+  let pricingSnapshot: CustomizationPricingSnapshot | undefined;
+  if (dependencies.pricingResolver) {
+    let pricing;
+    try {
+      const detail = await dependencies.catalogRepository.findPublicProductById(current.productId);
+      const configuration = await dependencies.customizationFieldRepository.getCustomizationFieldsForProduct(current.productId);
+      const variant = detail.status === "found"
+        ? detail.value.variants.find(candidate => candidate.id === current.variantId)
+        : undefined;
+      if (detail.status !== "found" || !variant || configuration.status !== "found") throw new Error("pricing authority unavailable");
+      pricing = await dependencies.pricingResolver({
+        productId: current.productId,
+        variant,
+        configuration: configuration.value,
+        handoff: acceptance.handoff,
+      });
+    } catch {
+      return { status: "unavailable", issue: issue("BASE_AUTHORITY_UNAVAILABLE", "Cart pricing authority cannot be verified.") };
+    }
+    if (pricing.status !== "found") return { status: "unavailable", issue: issue("BASE_AUTHORITY_UNAVAILABLE", "Cart pricing authority cannot be verified.") };
+    pricingSnapshot = pricing.value;
+    if (!line.pricingSnapshot || !equalCustomizationPricingSnapshot(line.pricingSnapshot, pricingSnapshot)
+      || line.snapshot.unitPriceCents !== pricingSnapshot.finalUnitPriceCents) {
+      return { status: "rejected", issue: issue("STALE_CATALOG", "A Cart price rule has changed and needs review.") };
+    }
+  }
+  return { status: "resolved", summary: lineSummary(line, current, pricingSnapshot), handoff: acceptance.handoff, ...(pricingSnapshot ? { pricingSnapshot } : {}) };
 }
 
 /**
@@ -420,6 +464,7 @@ export async function evaluateFreshLocalCheckout(
       cartLine: cartResult.value.lines.find((line) => line.lineId === result.summary.lineId) as StoredCartLine,
       handoff: result.handoff,
       summary: result.summary,
+      ...(result.pricingSnapshot ? { pricingSnapshot: result.pricingSnapshot } : {}),
     })),
   };
 }

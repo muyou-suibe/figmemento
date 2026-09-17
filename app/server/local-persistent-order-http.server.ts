@@ -62,6 +62,7 @@ async function createPersistentPurchase(request: Request, input: PersistentOrder
   const hasImages = cart.record.lines.some(line => line.handoff.customizationValues.some(f => f.kind === "image" && f.images.length));
   const resolved = await Promise.all(cart.record.lines.map(line => evaluateLocalCheckoutLine(line, {
     catalogRepository: catalog.repository, customizationFieldRepository: catalog, verifiedOwnerId: cart.owner.ownerId,
+    pricingResolver: pricingInput => catalog.resolveCustomizationPricing(pricingInput),
     ...(hasImages ? { receiptRepository: persistentPurchaseReceipts(environment, cart.verifyOwner, cart.record.lines.map(l => l.handoff)) } : {}),
   }, new Date().toISOString())));
   if (resolved.some(line => line.status !== "resolved")) return fail(409);

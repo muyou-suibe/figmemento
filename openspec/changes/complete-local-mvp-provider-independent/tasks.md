@@ -6,7 +6,7 @@
 
 ## 1. Customization model and Admin
 
-- [ ] 1.1 Obtain surcharge semantics and implement versioned server-owned customization surcharge rules/allocation snapshots for C03; reject browser amounts and stale revisions.
+- [x] 1.1 Obtain surcharge semantics and implement versioned server-owned customization surcharge rules/allocation snapshots for C03; reject browser amounts and stale revisions.
 - [ ] 1.2 Obtain allowed option semantics and implement ordered single-select fields for C07 across domain, persistence, Admin, PDP, configured item, Cart, Checkout, and immutable Order snapshot.
 - [ ] 1.3 Obtain bounds/ordering semantics and implement normalized bounded multi-select fields for C08 with duplicate, order, cardinality, stale-rule, and snapshot evidence.
 - [ ] 1.4 Obtain range/step semantics and implement server-normalized numeric fields for C09 with exact validation and immutable snapshots.

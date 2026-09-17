@@ -82,7 +82,12 @@ export class LocalCheckoutRuleAuthority {
       || typeof input.requiresShipping!=="boolean") return unavailable;
     const snapshot = await new LocalCatalogAuthority(this.environment,this.clientFactory).readSnapshot(input.expectedVersions);
     if(snapshot.status!=="found") return unavailable;
-    const rules = snapshot.value.rules.map(r=>parseRule(r.definition,r.revision));
+    // C03 customization surcharge rows are owned by the dedicated pricing
+    // authority, not shipping/coupon evaluation. They must not make the
+    // existing promotion parser reject an otherwise valid Catalog snapshot.
+    const rules = snapshot.value.rules
+      .filter(r => !(isRecord(r.definition) && r.definition.kind === "customization_surcharge"))
+      .map(r=>parseRule(r.definition,r.revision));
     if(rules.some(r=>r===null)) return unavailable;
     const shippingRules = rules.filter((r):r is ShippingRule=>r?.kind==="shipping");
     const couponRules = rules.filter((r):r is CouponRule=>r?.kind==="coupon");

@@ -32,7 +32,8 @@ export function localOrderPurchaseVersions(input: {
       const r = row.definition as Record<string, unknown> | undefined;
       if (!r) return null;
       if (input.requiresShipping && r.kind === "shipping" && r.country === input.country?.toUpperCase() && r.method === input.method
-        || input.couponCode && r.kind === "coupon" && r.code === input.couponCode) include(`rules:${row.id}`);
+        || input.couponCode && r.kind === "coupon" && r.code === input.couponCode
+        || r.kind === "customization_surcharge" && input.selections.some(selection => selection.productId === r.productId)) include(`rules:${row.id}`);
     }
     return Object.freeze(Object.fromEntries(Object.entries(selected).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)));
   } catch { return null; }

@@ -2,7 +2,7 @@
   "format": "figmemento-local-commerce-migration-manifest/v1",
   "schema": "local_commerce",
   "projectId": "figmemento-local-commerce",
-  "schemaVersion": 38,
+  "schemaVersion": 41,
   "migrations": [
     {
       "version": 1,
@@ -307,6 +307,30 @@
       "checksum": "9596207bfc8c8cdaf8fa3e767f95e9cf6f336b9ee42409bd866a64fdd25bc25c",
       "rollback": "For a disposable project only, preserve the H19 settings and audit evidence before explicit project recreation. Never reset retained development or root projects.",
       "forwardFix": "After permanent application use 0039+ only for reviewed H19 corrections. Never edit applied 0038; preserve the typed support-email authority, version history, and restricted RPC boundary."
+    },
+    {
+      "version": 39,
+      "migrationId": "local-commerce-customization-surcharge",
+      "filename": "0039_local-commerce-customization-surcharge.sql",
+      "checksum": "bc5f3cde648fce0b703b4facf9c907f6e6a415233bdd1c6de172ef926dcf9c08",
+      "rollback": "For a disposable project only, disable the C03 pricing path while preserving immutable Cart and Order pricing snapshots and ledger evidence. Never rewrite accepted purchase facts.",
+      "forwardFix": "After permanent application use 0040+ only for reviewed C03 corrections. Never edit applied 0039; preserve fixed-cent pricing, exact rule provenance, and the existing Cart/Checkout/Order authority boundaries."
+    },
+    {
+      "version": 40,
+      "migrationId": "local-commerce-customization-surcharge-tax-forward-fix",
+      "filename": "0040_local-commerce-customization-surcharge-tax-forward-fix.sql",
+      "checksum": "d979ab0441258eb6744a0535455f8eeb04654f0855c2e0f3acabb66d3318e0d0",
+      "rollback": "For a disposable project only, preserve the accepted C03 function definition and ledger evidence before explicit project recreation. Never reset retained development data or rewrite immutable purchase facts.",
+      "forwardFix": "Replaces only the stale tax JSON field literal in the accepted 0039 order_commit body; never edit 0039 or alter the C03 pricing authority."
+    },
+    {
+      "version": 41,
+      "migrationId": "local-commerce-customization-surcharge-order-tax-shape-forward-fix",
+      "filename": "0041_local-commerce-customization-surcharge-order-tax-shape-forward-fix.sql",
+      "checksum": "4cd5f3c224ab7d891b40e4834436ad68a33251e62e01c171855a40f1e365ac8f",
+      "rollback": "For a disposable project only, preserve the accepted C03 function definition and ledger evidence before explicit project recreation. Never reset retained development data or rewrite immutable purchase facts.",
+      "forwardFix": "Restores the existing Order allocation tax field literal after the 0040 compatibility correction; Checkout remains on its separate amountCents projection. Never edit 0039 or 0040."
     }
   ]
 }

@@ -91,6 +91,7 @@ export async function createLocalPersistentCartPort(input: {
           const accepted = await acceptCartItem(item?.handoff, { observedAt: new Date().toISOString(),
             catalogRepository: catalog.repository, customizationFieldRepository: catalog,
             verifiedOwnerId: input.owner.ownerId,
+            pricingResolver: pricingInput => catalog.resolveCustomizationPricing(pricingInput),
             receiptRepository: persistentPurchaseReceipts(input.environment, input.verifyOwner ?? (async () => null), [item?.handoff]) });
           // Fresh receipt checks remain INSIDE the unified CAS command boundary.
           if (accepted.status !== "accepted") return unavailable(accepted.reason === "source_failure" ? "source_failure" : "rejected");
