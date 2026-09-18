@@ -90,17 +90,18 @@ test("Task 4.5 editor state loads canonical configured and not_configured forms,
   assert.deepEqual(editorFieldsFromConfiguration([]), []);
 });
 
-test("Task 4.5 permits exactly three approved field kinds and creates request-local new draft IDs only", () => {
+test("Task 4.5 permits the approved field kinds including C07 single-select and creates request-local new draft IDs only", () => {
   let state = { fields: [], draftCounter: 0 };
-  for (const kind of ["image", "short_text", "long_text"]) {
+  for (const kind of ["image", "short_text", "long_text", "single_select"]) {
     state = addCustomizationEditorField(state.fields, state.draftCounter, kind);
   }
-  assert.deepEqual(state.fields.map((item) => item.kind), ["image", "short_text", "long_text"]);
-  assert.deepEqual(state.fields.map((item) => item.identity.kind), ["new", "new", "new"]);
-  assert.deepEqual(state.fields.map((item) => item.identity.draftId), ["new:field-1", "new:field-2", "new:field-3"]);
+  assert.deepEqual(state.fields.map((item) => item.kind), ["image", "short_text", "long_text", "single_select"]);
+  assert.deepEqual(state.fields.map((item) => item.identity.kind), ["new", "new", "new", "new"]);
+  assert.deepEqual(state.fields.map((item) => item.identity.draftId), ["new:field-1", "new:field-2", "new:field-3", "new:field-4"]);
   assert.equal(JSON.stringify(state).includes("randomUUID"), false);
   assert.deepEqual(defaultCustomizationConstraints("short_text"), { maxLength: 100 });
   assert.equal(defaultCustomizationConstraints("image").allowedMimeTypes.includes("image/webp"), true);
+  assert.equal(defaultCustomizationConstraints("single_select").choices[0].id, "new:choice-1");
 });
 
 test("Task 4.5 deactivates/re-activates existing fields but removes unsaved drafts and normalizes complete order", () => {
@@ -205,7 +206,7 @@ test("Task 4.5 UI and client graph do not gain forbidden authority or privileged
   const ui = await readFile(new URL("../app/admin/products/AdminCustomizationFieldEditor.tsx", import.meta.url), "utf8");
   const route = await readFile(new URL("../app/api/admin/catalog/products/[id]/customization/route.ts", import.meta.url), "utf8");
   const server = await readFile(new URL("../app/server/admin-customization-field-http.server.ts", import.meta.url), "utf8");
-  assert.match(ui, /Add image field[\s\S]*Add short text field[\s\S]*Add long text field/);
+  assert.match(ui, /Add image field[\s\S]*Add short text field[\s\S]*Add long text field[\s\S]*Add single-select field/);
   assert.match(ui, /readOnly=\{field\.identity\.kind === "existing"\}/);
   assert.doesNotMatch(ui, /supabase-server|server-customization-configuration-writer|SupabaseCustomizationConfigurationWriter|product_options|product_variants|skuCode|priceCents|surcharge|visibleWhen|dependsOn|supplier|manufacturing instruction|bucket|storage provider|production preview|upload receipt/i);
   assert.match(route, /handleAdminCustomizationFieldQuery[\s\S]*handleAdminCustomizationFieldMutation/);

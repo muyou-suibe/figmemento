@@ -10,6 +10,7 @@ import type {
 import styles from "./catalog-storefront.module.css";
 import { ProductCustomizationImageField } from "./ProductCustomizationImageField.tsx";
 import { ProductCustomizationTextField } from "./ProductCustomizationTextField.tsx";
+import { ProductCustomizationSingleSelectField } from "./ProductCustomizationSingleSelectField.tsx";
 import { useReferenceLanguage } from "./ReferenceLanguageProvider";
 import type { BrowserRestoredDraft, PersistentCustomizationDraftController } from "../client/local-persistent-draft.ts";
 
@@ -61,6 +62,13 @@ export function ProductCustomizationFormShell(props: ProductCustomizationFormShe
             draft={props.draft}
             touched={touchedFieldIds.has(field.id)}
             onTouched={markTouched}
+            onDraftAction={dispatchAction}
+          />
+        ) : field.kind === "single_select" ? (
+          <ProductCustomizationSingleSelectField
+            key={field.id}
+            field={field}
+            draft={props.draft}
             onDraftAction={dispatchAction}
           />
         ) : (

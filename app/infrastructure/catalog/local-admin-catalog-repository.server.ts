@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import {
   normalizeAdminCustomizationFieldConfiguration,
   type ProductCustomizationFieldConfiguration,
@@ -24,7 +25,7 @@ import {
 } from "./local-admin-catalog-runtime.server.ts";
 import { createDevelopmentCustomizationFieldFixtures } from "../customization/development-customization-field-fixtures.ts";
 import type { CatalogValidationIssue } from "../../domain/catalog/index.ts";
-import { parseCustomizationField, type CustomizationField } from "../../domain/customization-field.ts";
+import { parseCustomizationField, type CustomizationField, type SingleSelectCustomizationFieldConstraints } from "../../domain/customization-field.ts";
 
 export { LocalAdminCatalogState } from "./local-admin-catalog-runtime.server.ts";
 
@@ -38,17 +39,21 @@ function issue(path: string, code: CatalogValidationIssue["code"], message: stri
 
 class LocalAdminCustomizationState implements LocalAdminSharedCapabilityState {
   private readonly initialCustomizationConfigurations: readonly ProductCustomizationFieldConfiguration[];
+  private readonly initialChoiceIdentityHistory: Map<string, Map<string, string>>;
   private readonly customizationConfigurations: Map<string, ProductCustomizationFieldConfiguration>;
+  private readonly choiceIdentityHistory: Map<string, Map<string, string>>;
   private customizationRevisionCounter = 0;
 
   constructor(configurations: readonly ProductCustomizationFieldConfiguration[]) {
     this.initialCustomizationConfigurations = configurations.map(cloneCustomizationConfiguration);
+    this.initialChoiceIdentityHistory = choiceIdentityHistoryFrom(this.initialCustomizationConfigurations);
     this.customizationConfigurations = new Map(
       this.initialCustomizationConfigurations.map((configuration) => [
         configuration.productId,
         cloneCustomizationConfiguration(configuration),
       ]),
     );
+    this.choiceIdentityHistory = cloneChoiceIdentityHistory(this.initialChoiceIdentityHistory);
   }
 
   snapshotCustomization(productId: string): ProductCustomizationFieldConfiguration | undefined {
@@ -61,6 +66,11 @@ class LocalAdminCustomizationState implements LocalAdminSharedCapabilityState {
       configuration.productId,
       cloneCustomizationConfiguration(configuration),
     );
+    registerChoiceIdentityHistory(this.choiceIdentityHistory, configuration);
+  }
+
+  choiceIdentityBindings(productId: string, fieldId: string): ReadonlyMap<string, string> {
+    return this.choiceIdentityHistory.get(choiceIdentityHistoryKey(productId, fieldId)) ?? new Map();
   }
 
   resetForTest(): void {
@@ -70,6 +80,10 @@ class LocalAdminCustomizationState implements LocalAdminSharedCapabilityState {
         configuration.productId,
         cloneCustomizationConfiguration(configuration),
       );
+    }
+    this.choiceIdentityHistory.clear();
+    for (const [key, bindings] of this.initialChoiceIdentityHistory) {
+      this.choiceIdentityHistory.set(key, new Map(bindings));
     }
     this.customizationRevisionCounter = 0;
   }
@@ -91,6 +105,39 @@ function customizationStateFor(
   return created;
 }
 
+function choiceIdentityHistoryKey(productId: string, fieldId: string): string {
+  return `${productId}\u0000${fieldId}`;
+}
+
+function choiceIdentityHistoryFrom(
+  configurations: readonly ProductCustomizationFieldConfiguration[],
+): Map<string, Map<string, string>> {
+  const history = new Map<string, Map<string, string>>();
+  for (const configuration of configurations) {
+    registerChoiceIdentityHistory(history, configuration);
+  }
+  return history;
+}
+
+function cloneChoiceIdentityHistory(
+  history: ReadonlyMap<string, ReadonlyMap<string, string>>,
+): Map<string, Map<string, string>> {
+  return new Map([...history].map(([key, bindings]) => [key, new Map(bindings)]));
+}
+
+function registerChoiceIdentityHistory(
+  history: Map<string, Map<string, string>>,
+  configuration: ProductCustomizationFieldConfiguration,
+): void {
+  for (const field of configuration.fields) {
+    if (field.kind !== "single_select") continue;
+    const key = choiceIdentityHistoryKey(configuration.productId, field.id);
+    const bindings = history.get(key) ?? new Map<string, string>();
+    for (const choice of field.constraints.choices) bindings.set(choice.id, choice.code);
+    history.set(key, bindings);
+  }
+}
+
 function cloneCustomizationField(field: CustomizationField): CustomizationField {
   return {
     ...field,
@@ -103,8 +150,55 @@ function cloneCustomizationField(field: CustomizationField): CustomizationField 
             ? { recommendedDimensions: { ...field.constraints.recommendedDimensions } }
             : {}),
         }
-      : { ...field.constraints },
+      : field.kind === "single_select"
+        ? { ...field.constraints, choices: field.constraints.choices.map((choice) => ({ ...choice })) }
+        : { ...field.constraints },
   } as CustomizationField;
+}
+
+function materializeSingleSelectConstraints(
+  replacement: AdminCustomizationFieldReplacement,
+  productId: string,
+  fieldId: string,
+  configurationRevision: string,
+  currentField: CustomizationField | undefined,
+  historicalBindings: ReadonlyMap<string, string>,
+): AdminCustomizationFieldReplacement | null {
+  if (replacement.kind !== "single_select") return replacement;
+  const singleSelect = replacement.constraints as SingleSelectCustomizationFieldConstraints;
+  const currentChoices = currentField?.kind === "single_select"
+    ? new Map(currentField.constraints.choices.map((choice) => [choice.id, choice]))
+    : new Map();
+  const historicalIdsByCode = new Map([...historicalBindings].map(([id, code]) => [code, id]));
+  const seenIds = new Set<string>();
+  const choices = singleSelect.choices.map((choice) => {
+    if (choice.id.startsWith("new:")) {
+      if (historicalIdsByCode.has(choice.code)) return null;
+      const generatedId = `local-customization-choice-${createHash("sha256")
+        .update(`${productId}\u0000${fieldId}\u0000${configurationRevision}\u0000${choice.id}`)
+        .digest("hex")
+        .slice(0, 32)}`;
+      if (historicalBindings.has(generatedId)) return null;
+      return {
+        ...choice,
+        id: generatedId,
+      };
+    }
+    const historicalCode = historicalBindings.get(choice.id);
+    if ((historicalCode && historicalCode !== choice.code)
+      || (historicalIdsByCode.has(choice.code) && historicalIdsByCode.get(choice.code) !== choice.id)) return null;
+    const current = currentChoices.get(choice.id);
+    if ((!current && !historicalCode) || (current && current.code !== choice.code)) return null;
+    return { ...choice };
+  });
+  if (choices.some((choice) => choice === null)) return null;
+  const materialized = choices as Array<SingleSelectCustomizationFieldConstraints["choices"][number]>;
+  if (materialized.some((choice) => seenIds.has(choice.id))) return null;
+  materialized.forEach((choice) => seenIds.add(choice.id));
+  return {
+    ...replacement,
+    constraints: { ...replacement.constraints, choices: materialized },
+  };
 }
 
 function cloneCustomizationConfiguration(
@@ -200,8 +294,22 @@ class LocalAdminCustomizationRepository
       if (seenIds.has(fieldId)) {
         return { status: "invalid_configuration", issues: [issue("$.fields", "duplicate", "Customization field identity is duplicated.")] };
       }
-      const field = customizationFieldFromReplacement(
+      const materializedReplacement = materializeSingleSelectConstraints(
         replacement,
+        intent.productId,
+        fieldId,
+        configurationRevision,
+        currentFields.get(fieldId),
+        customizationStateFor(this.state).choiceIdentityBindings(intent.productId, fieldId),
+      );
+      if (!materializedReplacement) {
+        return {
+          status: "invalid_configuration",
+          issues: [issue("$.fields.constraints.choices", "ownership", "Single-select choice identity is unavailable or has been rebound.")],
+        };
+      }
+      const field = customizationFieldFromReplacement(
+        materializedReplacement,
         intent.productId,
         configurationRevision,
         fieldId,

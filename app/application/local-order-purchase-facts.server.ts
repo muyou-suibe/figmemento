@@ -1,6 +1,6 @@
 import type { CatalogDataSet } from "./catalog-data-set.ts";
 import type { FreshLocalCheckoutLine } from "./local-checkout-evaluator.ts";
-import { normalizeCustomizationFieldConfiguration } from "./customization-field-repository.ts";
+import { normalizeAdminCustomizationFieldConfiguration } from "./customization-field-repository.ts";
 import { parseConfiguredItemHandoff } from "../domain/configured-item.ts";
 import { canonicalVariantSignature } from "../domain/catalog/variant.ts";
 import { allocateLocalOrderAmounts } from "./local-order-allocation.ts";
@@ -38,7 +38,11 @@ export function prepareLocalOrderPurchaseFacts(input: {
       const purchasedFulfillment = parsePersistentPurchaseFulfillment(input.purchasedFulfillments[product.id]);
       if (purchasedFulfillment.status !== "found"
         || JSON.stringify(purchasedFulfillment.value.fulfillment) !== JSON.stringify(fulfillment)) return unavailable;
-      const configuration = normalizeCustomizationFieldConfiguration(h.productId, config.definition);
+      // Order purchase facts compare against the complete server-owned Catalog
+      // definition. Public reads intentionally omit inactive choices, but that
+      // presentation projection must not alter the immutable internal fact
+      // compared by the persistent order command.
+      const configuration = normalizeAdminCustomizationFieldConfiguration(h.productId, config.definition);
       if (configuration.status !== "found" || configuration.value.configurationRevision !== h.configurationRevision
         || String(config.revision) !== h.configurationRevision
         || !Number.isSafeInteger(config.revision) || Number(config.revision) < 1

@@ -9,7 +9,7 @@ import {
   type CatalogValidationResult,
 } from "./catalog/validation.ts";
 
-export type CustomizationFieldKind = "image" | "short_text" | "long_text";
+export type CustomizationFieldKind = "image" | "short_text" | "long_text" | "single_select";
 export type AllowedImageMimeType = "image/jpeg" | "image/png" | "image/webp";
 
 export interface CustomizationDimensions {
@@ -19,6 +19,19 @@ export interface CustomizationDimensions {
 
 export interface TextCustomizationFieldConstraints {
   maxLength: number;
+  helpText?: string;
+}
+
+export interface CustomizationSingleSelectChoice {
+  id: string;
+  code: string;
+  label: string;
+  position: number;
+  isActive: boolean;
+}
+
+export interface SingleSelectCustomizationFieldConstraints {
+  choices: readonly CustomizationSingleSelectChoice[];
   helpText?: string;
 }
 
@@ -57,7 +70,11 @@ export type CustomizationField =
   | ((CustomizationFieldCore & {
       kind: "short_text" | "long_text";
       constraints: TextCustomizationFieldConstraints;
-    }));
+    }))
+  | (CustomizationFieldCore & {
+      kind: "single_select";
+      constraints: SingleSelectCustomizationFieldConstraints;
+    });
 
 export interface CustomizationFieldDefinition {
   code: string;
@@ -66,17 +83,24 @@ export interface CustomizationFieldDefinition {
   required: boolean;
   isActive: boolean;
   position: number;
-  constraints: TextCustomizationFieldConstraints | ImageCustomizationFieldConstraints;
+  constraints: TextCustomizationFieldConstraints | ImageCustomizationFieldConstraints | SingleSelectCustomizationFieldConstraints;
 }
 
 const FIELD_KINDS: readonly CustomizationFieldKind[] = [
   "image",
   "short_text",
   "long_text",
+  "single_select",
 ];
 
 function isNonBlankString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
+}
+
+function isSafePlainText(value: unknown, maximumLength: number): value is string {
+  return isNonBlankString(value)
+    && value.length <= maximumLength
+    && !/[\u0000-\u001F\u007F]/u.test(value);
 }
 
 function isPositiveInteger(value: unknown): value is number {
@@ -207,6 +231,83 @@ function parseImageConstraints(
   });
 }
 
+function parseSingleSelectConstraints(
+  value: unknown,
+  path: string,
+  fieldIsActive: boolean,
+): CatalogValidationResult<SingleSelectCustomizationFieldConstraints> {
+  if (!isRecord(value)) {
+    return validationFailure(validationIssue(path, "invalid_type", "Single-select constraints must be an object."));
+  }
+  const issues = unknownFieldIssues(value, ["choices", "helpText"], path);
+  if (!Array.isArray(value.choices) || value.choices.length < 1 || value.choices.length > 50) {
+    issues.push(validationIssue(`${path}.choices`, "invalid_value", "Single-select fields require between 1 and 50 choices."));
+  }
+  if (value.helpText !== undefined && !isSafePlainText(value.helpText, 240)) {
+    issues.push(validationIssue(`${path}.helpText`, "invalid_value", "Help text must be non-empty, safe plain text of at most 240 characters."));
+  }
+
+  const choices: CustomizationSingleSelectChoice[] = [];
+  const ids = new Set<string>();
+  const codes = new Set<string>();
+  const positions = new Set<number>();
+  let activeChoiceCount = 0;
+  if (Array.isArray(value.choices)) {
+    value.choices.forEach((candidate, index) => {
+      const choicePath = `${path}.choices[${index}]`;
+      if (!isRecord(candidate)) {
+        issues.push(validationIssue(choicePath, "invalid_type", "Single-select choice must be an object."));
+        return;
+      }
+      issues.push(...unknownFieldIssues(candidate, ["id", "code", "label", "position", "isActive"], choicePath));
+      if (!isIdentifier(candidate.id)) {
+        issues.push(validationIssue(`${choicePath}.id`, "invalid_format", "Single-select choice ID is invalid."));
+      } else if (ids.has(candidate.id)) {
+        issues.push(validationIssue(`${choicePath}.id`, "duplicate", "Single-select choice IDs must be unique within a field."));
+      }
+      if (!isCode(candidate.code)) {
+        issues.push(validationIssue(`${choicePath}.code`, "invalid_format", "Single-select choice code is invalid."));
+      } else if (codes.has(candidate.code)) {
+        issues.push(validationIssue(`${choicePath}.code`, "duplicate", "Single-select choice codes must be unique within a field."));
+      }
+      if (!isSafePlainText(candidate.label, 160)) {
+        issues.push(validationIssue(`${choicePath}.label`, "invalid_value", "Single-select choice label must be safe, non-empty plain text of at most 160 characters."));
+      }
+      if (!isNonNegativeInteger(candidate.position)) {
+        issues.push(validationIssue(`${choicePath}.position`, "invalid_value", "Single-select choice position must be a non-negative integer."));
+      } else if (positions.has(candidate.position)) {
+        issues.push(validationIssue(`${choicePath}.position`, "duplicate", "Single-select choice positions must be unique within a field."));
+      }
+      if (typeof candidate.isActive !== "boolean") {
+        issues.push(validationIssue(`${choicePath}.isActive`, "invalid_type", "Single-select choice isActive must be boolean."));
+      } else if (candidate.isActive) {
+        activeChoiceCount += 1;
+      }
+      if (isIdentifier(candidate.id) && !ids.has(candidate.id)) ids.add(candidate.id);
+      if (isCode(candidate.code) && !codes.has(candidate.code)) codes.add(candidate.code);
+      if (isNonNegativeInteger(candidate.position) && !positions.has(candidate.position)) positions.add(candidate.position);
+      if (isIdentifier(candidate.id) && isCode(candidate.code) && isSafePlainText(candidate.label, 160)
+        && isNonNegativeInteger(candidate.position) && typeof candidate.isActive === "boolean") {
+        choices.push({
+          id: candidate.id,
+          code: candidate.code,
+          label: candidate.label.trim(),
+          position: candidate.position,
+          isActive: candidate.isActive,
+        });
+      }
+    });
+  }
+  if (fieldIsActive && activeChoiceCount < 1) {
+    issues.push(validationIssue(`${path}.choices`, "invalid_value", "An active single-select field requires at least one active choice."));
+  }
+  if (issues.length > 0) return validationFailure(...issues);
+  return validationSuccess({
+    choices: choices.toSorted((left, right) => left.position - right.position || left.id.localeCompare(right.id)),
+    ...(typeof value.helpText === "string" ? { helpText: value.helpText.trim() } : {}),
+  });
+}
+
 export function parseCustomizationFieldCore(
   value: unknown,
 ): CatalogValidationResult<CustomizationFieldCore> {
@@ -322,7 +423,9 @@ export function parseCustomizationFieldDefinition(
 
   const constraints = value.kind === "image"
     ? parseImageConstraints(value.constraints, "$.constraints")
-    : parseTextConstraints(value.constraints, "$.constraints");
+    : value.kind === "single_select"
+      ? parseSingleSelectConstraints(value.constraints, "$.constraints", value.isActive === true)
+      : parseTextConstraints(value.constraints, "$.constraints");
   if (!constraints.ok) return validationFailure(...constraints.issues);
   return validationSuccess({
     code: value.code as string,

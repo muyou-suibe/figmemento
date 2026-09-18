@@ -22,6 +22,7 @@ import type {
   CustomizationField,
   CustomizationFieldKind,
   ImageCustomizationFieldConstraints,
+  SingleSelectCustomizationFieldConstraints,
   TextCustomizationFieldConstraints,
 } from "../../domain/customization-field.ts";
 import type { CatalogProduct } from "../../domain/catalog/index.ts";
@@ -170,7 +171,7 @@ export function AdminCustomizationFieldEditor({ product }: { product: CatalogPro
     {status === "error" && issues.length === 0 ? <p role="status" className={styles.message}>Customization configuration is temporarily unavailable.</p> : null}
     {status === "stale" ? <div className={styles.conflict}><p>This Product&apos;s customization configuration changed after you opened it. Your local edits have not been overwritten.</p><button type="button" onClick={() => void load()}>Reload current configuration</button></div> : null}
     {status !== "loading" && (hasLoaded || status !== "error") ? <>
-      <div className={styles.inlineActions}><button type="button" onClick={() => addField("image")}>Add image field</button><button type="button" onClick={() => addField("short_text")}>Add short text field</button><button type="button" onClick={() => addField("long_text")}>Add long text field</button></div>
+      <div className={styles.inlineActions}><button type="button" onClick={() => addField("image")}>Add image field</button><button type="button" onClick={() => addField("short_text")}>Add short text field</button><button type="button" onClick={() => addField("long_text")}>Add long text field</button><button type="button" onClick={() => addField("single_select")}>Add single-select field</button></div>
       <div className={styles.customizationStack}>{fields.map((field, index) => <FieldEditor key={field.identity.kind === "existing" ? field.identity.id : field.identity.draftId} field={field} index={index} total={fields.length} onChange={(next) => replace(index, next)} onMove={move} onDeactivate={() => removeOrDeactivate(index)} />)}</div>
       <div className={styles.saveBar}><span>{status === "saved" ? "Saved canonical configuration." : isDirty ? "Unsaved field configuration." : "Ready."}</span><button type="button" onClick={() => void save()} disabled={status === "saving" || status === "stale"}>{status === "saving" ? "Saving…" : "Save configuration"}</button></div>
       {issues.length > 0 ? <ul className={styles.issueList}>{issues.map((issue) => <li key={`${issue.path}:${issue.code}`}>{issue.path}: {issue.message}</li>)}</ul> : null}
@@ -179,20 +180,46 @@ export function AdminCustomizationFieldEditor({ product }: { product: CatalogPro
 }
 
 function FieldEditor({ field, index, total, onChange, onMove, onDeactivate }: { field: EditorField; index: number; total: number; onChange: (field: EditorField) => void; onMove: (index: number, direction: -1 | 1) => void; onDeactivate: () => void }) {
-  const text = field.kind !== "image" ? field.constraints as TextCustomizationFieldConstraints : null;
+  const text = field.kind === "short_text" || field.kind === "long_text" ? field.constraints as TextCustomizationFieldConstraints : null;
   const image = field.kind === "image" ? field.constraints as ImageCustomizationFieldConstraints : null;
+  const singleSelect = field.kind === "single_select" ? field.constraints as SingleSelectCustomizationFieldConstraints : null;
   const update = (patch: Partial<EditorField>) => onChange({ ...field, ...patch });
   return <fieldset className={styles.skuGroup}>
     <legend>{field.identity.kind === "existing" ? "Persisted field" : "New field"} · position {field.position}</legend>
     <div className={styles.skuGrid}>
       <label><span>Code</span><input value={field.identity.code} readOnly={field.identity.kind === "existing"} onChange={(event) => field.identity.kind === "new" && update({ identity: { ...field.identity, code: event.target.value } })} /></label>
       <label><span>Label</span><input value={field.label} onChange={(event) => update({ label: event.target.value })} /></label>
-      <label><span>Field kind</span><select value={field.kind} onChange={(event) => update({ kind: event.target.value as CustomizationFieldKind, constraints: defaultCustomizationConstraints(event.target.value as CustomizationFieldKind) })}><option value="image">image</option><option value="short_text">short_text</option><option value="long_text">long_text</option></select></label>
+      <label><span>Field kind</span><select value={field.kind} onChange={(event) => update({ kind: event.target.value as CustomizationFieldKind, constraints: defaultCustomizationConstraints(event.target.value as CustomizationFieldKind) })}><option value="image">image</option><option value="short_text">short_text</option><option value="long_text">long_text</option><option value="single_select">single_select</option></select></label>
       <label className={styles.checkField}><input type="checkbox" checked={field.required} onChange={(event) => update({ required: event.target.checked })} /><span>Required</span></label>
       <label className={styles.checkField}><input type="checkbox" checked={field.isActive} onChange={(event) => update({ isActive: event.target.checked })} /><span>Active</span></label>
     </div>
     {text ? <div className={styles.skuGrid}><label><span>Maximum text length</span><input type="number" min="1" value={text.maxLength} onChange={(event) => update({ constraints: { ...text, maxLength: Number(event.target.value) } })} /></label><label><span>Help text (optional)</span><input value={text.helpText ?? ""} onChange={(event) => update({ constraints: { maxLength: text.maxLength, ...(event.target.value.trim() ? { helpText: event.target.value } : {}) } })} /></label></div> : null}
     {image ? <div className={styles.skuGrid}><label><span>Maximum bytes</span><input type="number" min="1" value={image.maxBytes} onChange={(event) => update({ constraints: { ...image, maxBytes: Number(event.target.value) } })} /></label><label><span>Minimum width</span><input type="number" min="1" value={image.minDimensions.width} onChange={(event) => update({ constraints: { ...image, minDimensions: { ...image.minDimensions, width: Number(event.target.value) } } })} /></label><label><span>Minimum height</span><input type="number" min="1" value={image.minDimensions.height} onChange={(event) => update({ constraints: { ...image, minDimensions: { ...image.minDimensions, height: Number(event.target.value) } } })} /></label><label><span>Recommended width (optional)</span><input type="number" min="1" value={image.recommendedDimensions?.width ?? ""} onChange={(event) => update({ constraints: { ...image, ...(event.target.value === "" ? {} : { recommendedDimensions: { width: Number(event.target.value), height: image.recommendedDimensions?.height ?? image.minDimensions.height } }) } })} /></label><label><span>Recommended height (optional)</span><input type="number" min="1" value={image.recommendedDimensions?.height ?? ""} onChange={(event) => update({ constraints: { ...image, ...(event.target.value === "" ? {} : { recommendedDimensions: { width: image.recommendedDimensions?.width ?? image.minDimensions.width, height: Number(event.target.value) } }) } })} /></label><label><span>Minimum image count</span><input type="number" min="0" value={image.minImageCount} onChange={(event) => update({ constraints: { ...image, minImageCount: Number(event.target.value) } })} /></label><label><span>Maximum image count</span><input type="number" min="1" value={image.maxImageCount} onChange={(event) => update({ constraints: { ...image, maxImageCount: Number(event.target.value) } })} /></label><label className={styles.checkField}><input type="checkbox" checked={image.cropEnabled} onChange={(event) => update({ constraints: { ...image, cropEnabled: event.target.checked } })} /><span>Allow customer-input crop later</span></label><label className={styles.mimeField}><span>Allowed types</span>{(["image/jpeg", "image/png", "image/webp"] as const).map((mime: AllowedImageMimeType) => <span key={mime}><input type="checkbox" checked={image.allowedMimeTypes.includes(mime)} onChange={(event) => update({ constraints: { ...image, allowedMimeTypes: event.target.checked ? [...image.allowedMimeTypes, mime] : image.allowedMimeTypes.filter((value) => value !== mime) } })} />{mime}</span>)}</label></div> : null}
+    {singleSelect ? <SingleSelectEditor value={singleSelect} onChange={(constraints) => update({ constraints })} /> : null}
     <div className={styles.inlineActions}><button type="button" disabled={index === 0} onClick={() => onMove(index, -1)}>Move up</button><button type="button" disabled={index === total - 1} onClick={() => onMove(index, 1)}>Move down</button>{field.identity.kind === "new" ? <button type="button" className={styles.dangerButton} onClick={onDeactivate}>Remove unsaved field</button> : <button type="button" className={styles.dangerButton} onClick={onDeactivate}>{field.isActive ? "Deactivate field" : "Reactivate field"}</button>}</div>
   </fieldset>;
+}
+
+function SingleSelectEditor({ value, onChange }: { value: SingleSelectCustomizationFieldConstraints; onChange: (value: SingleSelectCustomizationFieldConstraints) => void }) {
+  const updateChoice = (index: number, patch: Partial<SingleSelectCustomizationFieldConstraints["choices"][number]>) => {
+    onChange({ ...value, choices: value.choices.map((choice, choiceIndex) => choiceIndex === index ? { ...choice, ...patch } : choice) });
+  };
+  const addChoice = () => {
+    const next = value.choices.length + 1;
+    onChange({ ...value, choices: [...value.choices, { id: `new:choice-${next}`, code: `choice-${next}`, label: `Choice ${next}`, position: value.choices.length, isActive: true }] });
+  };
+  const removeChoice = (index: number) => {
+    if (value.choices.length <= 1) return;
+    onChange({ ...value, choices: value.choices.filter((_, choiceIndex) => choiceIndex !== index).map((choice, position) => ({ ...choice, position })) });
+  };
+  return <div className={styles.skuGrid}>
+    <label><span>Help text (optional)</span><input value={value.helpText ?? ""} onChange={(event) => onChange({ ...value, ...(event.target.value.trim() ? { helpText: event.target.value } : {}) })} /></label>
+    <div className={styles.full}><span>Choices (ordered, stable IDs)</span>{value.choices.map((choice, index) => <div className={styles.inlineActions} key={choice.id}>
+      <input aria-label={`Choice ${index + 1} code`} value={choice.code} readOnly={!choice.id.startsWith("new:")} onChange={(event) => choice.id.startsWith("new:") && updateChoice(index, { code: event.target.value })} />
+      <input aria-label={`Choice ${index + 1} label`} value={choice.label} onChange={(event) => updateChoice(index, { label: event.target.value })} />
+      <input aria-label={`Choice ${index + 1} position`} type="number" min="0" value={choice.position} onChange={(event) => updateChoice(index, { position: Number(event.target.value) })} />
+      <label className={styles.checkField}><input type="checkbox" checked={choice.isActive} onChange={(event) => updateChoice(index, { isActive: event.target.checked })} /><span>Active</span></label>
+      <button type="button" className={styles.dangerButton} onClick={() => removeChoice(index)} disabled={value.choices.length <= 1}>Remove</button>
+    </div>)}<button type="button" onClick={addChoice}>Add choice</button></div>
+  </div>;
 }

@@ -6,6 +6,7 @@ import type {
   CustomizationField,
   CustomizationFieldKind,
   ImageCustomizationFieldConstraints,
+  SingleSelectCustomizationFieldConstraints,
   TextCustomizationFieldConstraints,
 } from "../domain/customization-field.ts";
 
@@ -13,7 +14,7 @@ export type AdminCustomizationEditorField = AdminCustomizationFieldReplacement;
 
 export function defaultCustomizationConstraints(
   kind: CustomizationFieldKind,
-): TextCustomizationFieldConstraints | ImageCustomizationFieldConstraints {
+): TextCustomizationFieldConstraints | ImageCustomizationFieldConstraints | SingleSelectCustomizationFieldConstraints {
   return kind === "image"
     ? {
         allowedMimeTypes: ["image/jpeg", "image/png", "image/webp"],
@@ -23,7 +24,9 @@ export function defaultCustomizationConstraints(
         maxImageCount: 1,
         cropEnabled: false,
       }
-    : { maxLength: 100 };
+    : kind === "single_select"
+      ? { choices: [{ id: "new:choice-1", code: "choice-1", label: "Choice 1", position: 0, isActive: true }] }
+      : { maxLength: 100 };
 }
 
 export function normalizeCustomizationEditorPositions(
@@ -56,7 +59,7 @@ export function addCustomizationEditorField(
     draftCounter: nextCounter,
     fields: normalizeCustomizationEditorPositions([...fields, {
       identity: { kind: "new", draftId: `new:field-${nextCounter}`, code: `field-${nextCounter}` },
-      label: kind === "image" ? "Photo" : kind === "short_text" ? "Text" : "Long text",
+      label: kind === "image" ? "Photo" : kind === "short_text" ? "Text" : kind === "long_text" ? "Long text" : "Choose one",
       kind,
       required: false,
       isActive: true,

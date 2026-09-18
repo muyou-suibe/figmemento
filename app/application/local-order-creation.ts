@@ -14,6 +14,8 @@ import {
 } from "../domain/local-order.ts";
 import type { LocalCheckoutIssue } from "../domain/local-checkout.ts";
 import type { ConfiguredItemHandoff } from "../domain/configured-item.ts";
+import type { LocalOrderSingleSelectChoiceFact } from "../domain/local-order.ts";
+import type { CustomizationSingleSelectValue } from "../domain/customization-value.ts";
 import type { CustomerPointsRepository } from "./customer-points.ts";
 
 export interface LocalOrderCreationDependencies extends LocalCheckoutEvaluatorDependencies {
@@ -71,12 +73,19 @@ function canonicalHandoff(handoff: ConfiguredItemHandoff): string {
             ...(image.crop ? { crop: { ...image.crop } } : {}),
           })),
         }
-      : {
-          fieldId: value.fieldId,
-          fieldCode: value.fieldCode,
-          kind: value.kind,
-          value: value.value,
-        }),
+      : value.kind === "single_select"
+        ? {
+            fieldId: value.fieldId,
+            fieldCode: value.fieldCode,
+            kind: value.kind,
+            choiceId: value.choiceId,
+          }
+        : {
+            fieldId: value.fieldId,
+            fieldCode: value.fieldCode,
+            kind: value.kind,
+            value: value.value,
+          }),
   });
 }
 
@@ -136,6 +145,7 @@ function createSnapshotDraft(
   evaluated: Extract<FreshLocalCheckoutAuthorityResult, { status: "accepted" }>,
   address: LocalOrderCreateRequest["address"],
   customerId: string | undefined,
+  singleSelectChoiceFactsByLine: ReadonlyMap<string, readonly LocalOrderSingleSelectChoiceFact[]>,
 ): LocalOrderSnapshotDraft {
   return {
     ...(customerId ? { customerId } : {}),
@@ -167,9 +177,69 @@ function createSnapshotDraft(
       customization: {
         configurationRevision: line.handoff.configurationRevision,
         values: line.handoff.customizationValues,
+        ...(singleSelectChoiceFactsByLine.has(line.cartLine.lineId)
+          ? { singleSelectChoiceFacts: singleSelectChoiceFactsByLine.get(line.cartLine.lineId) }
+          : {}),
       },
     })),
   };
+}
+
+type SingleSelectChoiceFactsResolution =
+  | { readonly status: "resolved"; readonly byLine: ReadonlyMap<string, readonly LocalOrderSingleSelectChoiceFact[]> }
+  | { readonly status: "unavailable" };
+
+async function resolveSingleSelectChoiceFacts(
+  evaluated: Extract<FreshLocalCheckoutAuthorityResult, { status: "accepted" }>,
+  repository: LocalOrderCreationDependencies["customizationFieldRepository"],
+): Promise<SingleSelectChoiceFactsResolution> {
+  const configurations = new Map<string, Awaited<ReturnType<typeof repository.getCustomizationFieldsForProduct>>>();
+  const byLine = new Map<string, readonly LocalOrderSingleSelectChoiceFact[]>();
+  for (const line of evaluated.lines) {
+    const singleSelectValues = line.handoff.customizationValues.filter(
+      (value): value is CustomizationSingleSelectValue => value.kind === "single_select",
+    );
+    if (singleSelectValues.length === 0) continue;
+
+    let configuration = configurations.get(line.handoff.productId);
+    if (!configuration) {
+      try {
+        configuration = await repository.getCustomizationFieldsForProduct(line.handoff.productId);
+      } catch {
+        return { status: "unavailable" };
+      }
+      configurations.set(line.handoff.productId, configuration);
+    }
+    if (configuration.status !== "found"
+      || configuration.value.productId !== line.handoff.productId
+      || configuration.value.configurationRevision !== line.handoff.configurationRevision) {
+      return { status: "unavailable" };
+    }
+
+    const facts: LocalOrderSingleSelectChoiceFact[] = [];
+    for (const value of singleSelectValues) {
+      const field = configuration.value.fields.find((candidate) =>
+        candidate.id === value.fieldId
+        && candidate.code === value.fieldCode
+        && candidate.kind === "single_select"
+        && candidate.isActive
+      );
+      if (!field || field.kind !== "single_select") return { status: "unavailable" };
+      const choice = field.constraints.choices.find((candidate) => candidate.id === value.choiceId && candidate.isActive);
+      if (!choice) return { status: "unavailable" };
+      facts.push({
+        fieldId: field.id,
+        fieldCode: field.code,
+        fieldLabel: field.label,
+        choiceId: choice.id,
+        choiceCode: choice.code,
+        choiceLabel: choice.label,
+        position: choice.position,
+      });
+    }
+    byLine.set(line.cartLine.lineId, facts);
+  }
+  return { status: "resolved", byLine };
 }
 
 /**
@@ -211,7 +281,16 @@ export class LocalOrderCreationService {
     } catch {
       return { status: "failed", issues: [unavailableIssue()] };
     }
-    const snapshot = createSnapshotDraft(evaluated, request.address, this.dependencies.customerId);
+    const choiceFacts = await resolveSingleSelectChoiceFacts(evaluated, this.dependencies.customizationFieldRepository);
+    if (choiceFacts.status !== "resolved") {
+      return { status: "unavailable", issues: [{ code: "CHECKOUT_UNAVAILABLE", message: "Local Order cannot be evaluated right now." }] };
+    }
+    const snapshot = createSnapshotDraft(
+      evaluated,
+      request.address,
+      this.dependencies.customerId,
+      choiceFacts.byLine,
+    );
     let result: LocalOrderCreationResult;
     try {
       result = await this.dependencies.repository.findOrCreate({

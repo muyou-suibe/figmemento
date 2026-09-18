@@ -55,6 +55,19 @@ function configurationIssue(
   return validationIssue(path, code, message);
 }
 
+function publicCustomizationField(field: CustomizationField): CustomizationField {
+  if (field.kind !== "single_select") return field;
+  return {
+    ...field,
+    constraints: {
+      ...field.constraints,
+      choices: field.constraints.choices
+        .filter((choice) => choice.isActive)
+        .map((choice) => ({ ...choice })),
+    },
+  };
+}
+
 /**
  * Validates and normalizes data that a provider implementation has identified
  * as one current configuration. It intentionally does not perform I/O or
@@ -171,7 +184,9 @@ function normalizeCustomizationFieldConfigurationWithActivity(
     value: {
       productId: expectedProductId,
       configurationRevision: value.configurationRevision,
-      fields: fields.toSorted((left, right) => left.position - right.position),
+      fields: fields
+        .toSorted((left, right) => left.position - right.position)
+        .map((field) => allowInactive ? field : publicCustomizationField(field)),
     },
   };
 }

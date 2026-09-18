@@ -21,6 +21,7 @@ import {
 import {
   parseCustomizationValue,
   type CustomizationImageValue,
+  type CustomizationSingleSelectValue,
   type CustomizationTextValue,
   type CustomizationValue,
   type CustomizationValues,
@@ -120,6 +121,7 @@ export type ProductCustomizationDraftAction =
   | { readonly type: "set_selected_options"; readonly selectedOptions: readonly SelectedOptionValue[] }
   | { readonly type: "set_text_value"; readonly value: CustomizationTextValue }
   | { readonly type: "set_image_value"; readonly value: CustomizationImageValue }
+  | { readonly type: "set_single_select_value"; readonly value: CustomizationSingleSelectValue }
   | { readonly type: "remove_customization_value"; readonly fieldId: string }
   | { readonly type: "record_accepted_receipt"; readonly receipt: CustomerUploadReceipt }
   | { readonly type: "upload_started"; readonly operation: ProductCustomizationActiveUpload }
@@ -156,7 +158,14 @@ function cloneValue(value: CustomizationValue): CustomizationValue {
           ...(image.crop ? { crop: { ...image.crop } } : {}),
         })),
       }
-    : {
+    : value.kind === "single_select"
+      ? {
+          fieldId: value.fieldId,
+          fieldCode: value.fieldCode,
+          kind: "single_select",
+          choiceId: value.choiceId,
+        }
+      : {
         fieldId: value.fieldId,
         fieldCode: value.fieldCode,
         kind: value.kind,
@@ -284,13 +293,19 @@ export function reduceProductCustomizationDraft(
     }
     case "set_text_value": {
       const parsed = parseCustomizationValue(action.value);
-      return parsed.ok && parsed.value.kind !== "image"
+      return parsed.ok && (parsed.value.kind === "short_text" || parsed.value.kind === "long_text")
         ? { ...next, values: upsertValue(next.values, parsed.value) }
         : next;
     }
     case "set_image_value": {
       const parsed = parseCustomizationValue(action.value);
       return parsed.ok && parsed.value.kind === "image"
+        ? { ...next, values: upsertValue(next.values, parsed.value) }
+        : next;
+    }
+    case "set_single_select_value": {
+      const parsed = parseCustomizationValue(action.value);
+      return parsed.ok && parsed.value.kind === "single_select"
         ? { ...next, values: upsertValue(next.values, parsed.value) }
         : next;
     }

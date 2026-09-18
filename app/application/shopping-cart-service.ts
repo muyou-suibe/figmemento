@@ -61,9 +61,12 @@ function draftFromAcceptedHandoff(input: {
     selection: { variantId: input.handoff.variantId, skuCode: input.handoff.skuCode },
   });
   for (const value of input.handoff.customizationValues) {
-    draft = reduceProductCustomizationDraft(draft, value.kind === "image"
-      ? { type: "set_image_value", value }
-      : { type: "set_text_value", value });
+    draft = reduceProductCustomizationDraft(draft,
+      value.kind === "image"
+        ? { type: "set_image_value", value }
+        : value.kind === "single_select"
+          ? { type: "set_single_select_value", value }
+          : { type: "set_text_value", value });
   }
   return draft;
 }

@@ -541,7 +541,9 @@ export function LocalOrderSuccessExperience({
                 {line.selectedOptions.length > 0 && <span>{line.selectedOptions.map((selection) => `${selection.optionId}: ${selection.valueId}`).join(" · ")}</span>}
                 {line.customization?.map((value) => value.kind === "image"
                   ? <span key={`${value.fieldId}-image`}>{value.fieldCode}: {value.imageCount} {t(value.imageCount === 1 ? "image" : "images")}</span>
-                  : <span key={value.fieldId}>{value.fieldCode}: {value.value}</span>)}
+                  : value.kind === "single_select"
+                    ? <span key={value.fieldId}>{value.fieldCode}: {value.choiceLabel ?? value.choiceId}</span>
+                    : <span key={value.fieldId}>{value.fieldCode}: {value.value}</span>)}
               </div>
               <strong>{formatCurrencyCents(line.lineSubtotalCents, line.currency)}</strong>
             </article>

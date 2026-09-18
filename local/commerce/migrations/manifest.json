@@ -2,7 +2,7 @@
   "format": "figmemento-local-commerce-migration-manifest/v1",
   "schema": "local_commerce",
   "projectId": "figmemento-local-commerce",
-  "schemaVersion": 41,
+  "schemaVersion": 42,
   "migrations": [
     {
       "version": 1,
@@ -331,6 +331,14 @@
       "checksum": "4cd5f3c224ab7d891b40e4834436ad68a33251e62e01c171855a40f1e365ac8f",
       "rollback": "For a disposable project only, preserve the accepted C03 function definition and ledger evidence before explicit project recreation. Never reset retained development data or rewrite immutable purchase facts.",
       "forwardFix": "Restores the existing Order allocation tax field literal after the 0040 compatibility correction; Checkout remains on its separate amountCents projection. Never edit 0039 or 0040."
+    },
+    {
+      "version": 42,
+      "migrationId": "local-commerce-customization-single-select",
+      "filename": "0042_local-commerce-customization-single-select.sql",
+      "checksum": "816fb8ab39352176c8c9a27010cb593af955b5726189d8097c6c32e99e3db3c2",
+      "rollback": "For a disposable project only, preserve the accepted C07 configuration and C03 pricing evidence before explicit project recreation. Never reset retained development data or rewrite immutable purchase facts.",
+      "forwardFix": "Extends the accepted C03 pricing validator and Order commit snapshot path to recognize server-resolved single-select values and detach choice facts; never edit 0039–0041 and do not add per-choice pricing semantics."
     }
   ]
 }

@@ -97,6 +97,10 @@ function valueIsPresent(
 ): boolean {
   if (!value || value.fieldId !== field.id || value.fieldCode !== field.code || value.kind !== field.kind) return false;
   if (value.kind === "image") return value.images.length > 0;
+  if (value.kind === "single_select") {
+    return field.kind === "single_select"
+      && field.constraints.choices.some((choice) => choice.id === value.choiceId && choice.isActive);
+  }
   return value.value.trim().length > 0;
 }
 

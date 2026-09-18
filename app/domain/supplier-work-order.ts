@@ -24,6 +24,7 @@ import type { LocalFulfillmentState } from "./local-fulfillment.ts";
 import type {
   CustomizationCropRegion,
   CustomizationImageValue,
+  CustomizationSingleSelectValue,
   CustomizationTextValue,
   CustomizationValues,
 } from "./customization-value.ts";
@@ -216,7 +217,9 @@ function cloneCustomizationValues(values: CustomizationValues): CustomizationVal
         })),
       } satisfies CustomizationImageValue;
     }
-    return { ...value } satisfies CustomizationTextValue;
+    return value.kind === "single_select"
+      ? { ...value } satisfies CustomizationSingleSelectValue
+      : { ...value } satisfies CustomizationTextValue;
   });
 }
 

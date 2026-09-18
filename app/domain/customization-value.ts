@@ -25,6 +25,13 @@ export interface CustomizationTextValue {
   value: string;
 }
 
+export interface CustomizationSingleSelectValue {
+  fieldId: string;
+  fieldCode: string;
+  kind: "single_select";
+  choiceId: string;
+}
+
 /**
  * Provider-neutral opaque identity with optional non-destructive customer-input
  * crop metadata. It contains no storage or rendered-output authority.
@@ -41,7 +48,7 @@ export interface CustomizationImageValue {
   images: readonly CustomizationImageReceiptReference[];
 }
 
-export type CustomizationValue = CustomizationTextValue | CustomizationImageValue;
+export type CustomizationValue = CustomizationTextValue | CustomizationImageValue | CustomizationSingleSelectValue;
 export type CustomizationValues = readonly CustomizationValue[];
 
 function collectFieldIdentityIssues(value: Record<string, unknown>): CatalogValidationIssue[] {
@@ -192,6 +199,24 @@ export function parseCustomizationValue(
           fieldCode: value.fieldCode as string,
           kind: "image",
           images,
+        });
+  }
+
+  if (value.kind === "single_select") {
+    const issues = [
+      ...unknownFieldIssues(value, ["fieldId", "fieldCode", "kind", "choiceId"]),
+      ...collectFieldIdentityIssues(value),
+    ];
+    if (!isIdentifier(value.choiceId)) {
+      issues.push(validationIssue("$.choiceId", "invalid_format", "Single-select choice ID is invalid."));
+    }
+    return issues.length > 0
+      ? validationFailure(...issues)
+      : validationSuccess({
+          fieldId: value.fieldId as string,
+          fieldCode: value.fieldCode as string,
+          kind: "single_select",
+          choiceId: value.choiceId as string,
         });
   }
 

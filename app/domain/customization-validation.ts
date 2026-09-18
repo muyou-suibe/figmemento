@@ -19,6 +19,8 @@ export type CustomizationValidationIssueCode =
   | "inactive_field"
   | "field_code_mismatch"
   | "field_kind_mismatch"
+  | "unknown_choice"
+  | "inactive_choice"
   | "duplicate_field_value"
   | "required_field_missing"
   | "required_field_empty"
@@ -144,9 +146,9 @@ function normalizeImageValue(value: CustomizationImageValue): CustomizationImage
  * shape; callers must preserve those boundaries separately.
  */
 export function normalizeCustomizationValue(value: CustomizationValue): CustomizationValue {
-  return value.kind === "image"
-    ? normalizeImageValue(value)
-    : { ...value, value: value.value.trim() };
+  if (value.kind === "image") return normalizeImageValue(value);
+  if (value.kind === "single_select") return { ...value };
+  return { ...value, value: value.value.trim() };
 }
 
 function collectAuthoritativeFieldIssues(
@@ -310,7 +312,15 @@ export function validateCustomizationValuesAgainstFields(
     const normalized = normalizeCustomizationValue(value);
     if (field.kind === "image" && normalized.kind === "image") {
       issues.push(...validateImageValue(normalized, field, metadataIndex.byReceiptId, valuePath));
-    } else if (field.kind !== "image" && normalized.kind !== "image") {
+    } else if (field.kind === "single_select" && normalized.kind === "single_select") {
+      const choice = field.constraints.choices.find((candidate) => candidate.id === normalized.choiceId);
+      if (!choice) {
+        issues.push(issue(`${valuePath}.choiceId`, "unknown_choice", "Single-select choice is not configured for this field."));
+      } else if (!choice.isActive) {
+        issues.push(issue(`${valuePath}.choiceId`, "inactive_choice", "Inactive single-select choices cannot be selected."));
+      }
+    } else if ((field.kind === "short_text" || field.kind === "long_text")
+      && (normalized.kind === "short_text" || normalized.kind === "long_text")) {
       if (normalized.value.length > field.constraints.maxLength) {
         issues.push(issue(`${valuePath}.value`, "text_too_long", "Text value exceeds the configured maximum length."));
       }

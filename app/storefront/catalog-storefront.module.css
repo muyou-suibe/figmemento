@@ -734,7 +734,9 @@
 .skuLine { display: flex; font-size: 0.75rem; gap: 12px; justify-content: space-between; margin-top: 7px; }
 
 .customizationTextField,
+.customizationSingleSelectField,
 .customizationImageField { display: grid; gap: 10px; margin-top: 20px; }
+.customizationSingleSelectField { border: 0; min-width: 0; padding: 0; }
 .customizationFieldLabel { align-items: baseline; display: flex; font-size: 0.78rem; font-weight: 400; gap: 8px; justify-content: space-between; }
 .customizationRequirement,
 .customizationFieldMeta,
@@ -755,6 +757,11 @@
 .customizationTextarea { min-height: 116px; resize: vertical; }
 .customizationTextInput[aria-invalid="true"], .customizationTextarea[aria-invalid="true"] { border-color: var(--color-accent); }
 .customizationImageSlot { border: 1px solid var(--color-border); display: grid; gap: 10px; padding: 14px; }
+.customizationChoiceList { display: grid; gap: 8px; }
+.customizationChoiceOption { align-items: center; background: var(--color-card); border: 1px solid var(--color-border); border-radius: var(--radius-sm); cursor: pointer; display: flex; gap: 10px; min-height: 44px; padding: 10px 12px; }
+.customizationChoiceOption:has(input:checked) { border-color: var(--color-accent); box-shadow: 0 0 0 1px var(--color-accent); }
+.customizationChoiceOption input { accent-color: var(--color-accent); }
+.customizationChoiceClear { justify-self: start; }
 .customizationImageSlotList { display: grid; gap: 14px; }
 .customizationImageSlotHeader { align-items: center; display: flex; gap: 10px; justify-content: space-between; }
 .customizationImageSlotHeader h3 { font-size: 0.75rem; margin: 0; }
@@ -2560,10 +2567,25 @@
 }
 
 .fusionPdp .customizationTextField,
+.fusionPdp .customizationSingleSelectField,
 .fusionPdp .customizationImageField {
   background: color-mix(in srgb, var(--fusion-cream) 42%, transparent);
   border-left: 2px solid var(--fusion-gold);
   padding: 15px;
+}
+
+.fusionPdp .customizationChoiceOption {
+  background: var(--fusion-paper);
+  border-color: var(--fusion-line);
+  border-radius: var(--fusion-radius-control);
+  color: var(--fusion-ink);
+  font-family: var(--fusion-font-hand);
+  min-height: 46px;
+}
+
+.fusionPdp .customizationChoiceOption:has(input:checked) {
+  border-color: var(--fusion-terra);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--fusion-gold) 42%, transparent);
 }
 
 .fusionPdp .customizationFieldLabel {

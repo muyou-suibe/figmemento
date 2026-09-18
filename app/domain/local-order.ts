@@ -10,6 +10,7 @@ import type { SelectedOptionValue } from "./catalog/variant.ts";
 import type {
   CustomizationCropRegion,
   CustomizationImageValue,
+  CustomizationSingleSelectValue,
   CustomizationTextValue,
   CustomizationValues,
 } from "./customization-value.ts";
@@ -40,6 +41,18 @@ export type LocalOrderParseResult<T> =
 export interface LocalOrderCustomizationSnapshot {
   readonly configurationRevision: string;
   readonly values: CustomizationValues;
+  /** Server-resolved C07 facts detached from the mutable current Catalog. */
+  readonly singleSelectChoiceFacts?: readonly LocalOrderSingleSelectChoiceFact[];
+}
+
+export interface LocalOrderSingleSelectChoiceFact {
+  readonly fieldId: string;
+  readonly fieldCode: string;
+  readonly fieldLabel: string;
+  readonly choiceId: string;
+  readonly choiceCode: string;
+  readonly choiceLabel: string;
+  readonly position: number;
 }
 
 export interface LocalOrderLineSnapshot {
@@ -99,6 +112,10 @@ export interface LocalOrderSnapshot extends LocalOrderSnapshotInput {
 
 export type LocalOrderPublicCustomizationValue =
   | Pick<CustomizationTextValue, "fieldId" | "fieldCode" | "kind" | "value">
+  | (Pick<CustomizationSingleSelectValue, "fieldId" | "fieldCode" | "kind" | "choiceId"> & {
+      readonly choiceCode?: string;
+      readonly choiceLabel?: string;
+    })
   | {
       readonly fieldId: string;
       readonly fieldCode: string;
@@ -202,7 +219,9 @@ function cloneCustomizationValues(values: CustomizationValues): CustomizationVal
         })),
       } satisfies CustomizationImageValue;
     }
-    return { ...value } satisfies CustomizationTextValue;
+    return value.kind === "single_select"
+      ? { ...value } satisfies CustomizationSingleSelectValue
+      : { ...value } satisfies CustomizationTextValue;
   });
 }
 
@@ -215,6 +234,9 @@ function cloneLine(line: LocalOrderLineSnapshot): LocalOrderLineSnapshot {
           customization: {
             configurationRevision: line.customization.configurationRevision,
             values: cloneCustomizationValues(line.customization.values),
+            ...(line.customization.singleSelectChoiceFacts
+              ? { singleSelectChoiceFacts: line.customization.singleSelectChoiceFacts.map((fact) => ({ ...fact })) }
+              : {}),
           },
         }
       : {}),
@@ -319,7 +341,11 @@ export function cloneLocalOrderSnapshot(snapshot: LocalOrderSnapshot): LocalOrde
   });
 }
 
-function projectCustomizationValues(values: CustomizationValues): readonly LocalOrderPublicCustomizationValue[] {
+function projectCustomizationValues(
+  values: CustomizationValues,
+  singleSelectChoiceFacts: readonly LocalOrderSingleSelectChoiceFact[] = [],
+): readonly LocalOrderPublicCustomizationValue[] {
+  const factsByChoiceId = new Map(singleSelectChoiceFacts.map((fact) => [fact.choiceId, fact]));
   return values.map((value) => {
     if (value.kind === "image") {
       return {
@@ -329,12 +355,20 @@ function projectCustomizationValues(values: CustomizationValues): readonly Local
         imageCount: value.images.length,
       };
     }
-    return {
-      fieldId: value.fieldId,
-      fieldCode: value.fieldCode,
-      kind: value.kind,
-      value: value.value,
-    };
+    return value.kind === "single_select"
+      ? {
+          fieldId: value.fieldId,
+          fieldCode: value.fieldCode,
+          kind: "single_select",
+          choiceId: value.choiceId,
+          ...(factsByChoiceId.has(value.choiceId)
+            ? {
+                choiceCode: factsByChoiceId.get(value.choiceId)?.choiceCode,
+                choiceLabel: factsByChoiceId.get(value.choiceId)?.choiceLabel,
+              }
+            : {}),
+        }
+      : { fieldId: value.fieldId, fieldCode: value.fieldCode, kind: value.kind, value: value.value };
   });
 }
 
@@ -358,7 +392,7 @@ export function projectLocalOrderSnapshot(snapshot: LocalOrderSnapshot): LocalOr
       currency: line.currency,
       lineSubtotalCents: line.lineSubtotalCents,
       ...(line.customization
-        ? { customization: projectCustomizationValues(line.customization.values) }
+        ? { customization: projectCustomizationValues(line.customization.values, line.customization.singleSelectChoiceFacts) }
         : {}),
     })),
   };
