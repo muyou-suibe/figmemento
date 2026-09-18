@@ -25,7 +25,7 @@ import {
 } from "./local-admin-catalog-runtime.server.ts";
 import { createDevelopmentCustomizationFieldFixtures } from "../customization/development-customization-field-fixtures.ts";
 import type { CatalogValidationIssue } from "../../domain/catalog/index.ts";
-import { parseCustomizationField, type CustomizationField, type SingleSelectCustomizationFieldConstraints } from "../../domain/customization-field.ts";
+import { parseCustomizationField, type CustomizationField, type SingleSelectCustomizationFieldConstraints, type MultiSelectCustomizationFieldConstraints } from "../../domain/customization-field.ts";
 
 export { LocalAdminCatalogState } from "./local-admin-catalog-runtime.server.ts";
 
@@ -130,7 +130,7 @@ function registerChoiceIdentityHistory(
   configuration: ProductCustomizationFieldConfiguration,
 ): void {
   for (const field of configuration.fields) {
-    if (field.kind !== "single_select") continue;
+    if (field.kind !== "single_select" && field.kind !== "multi_select") continue;
     const key = choiceIdentityHistoryKey(configuration.productId, field.id);
     const bindings = history.get(key) ?? new Map<string, string>();
     for (const choice of field.constraints.choices) bindings.set(choice.id, choice.code);
@@ -150,13 +150,13 @@ function cloneCustomizationField(field: CustomizationField): CustomizationField 
             ? { recommendedDimensions: { ...field.constraints.recommendedDimensions } }
             : {}),
         }
-      : field.kind === "single_select"
+      : field.kind === "single_select" || field.kind === "multi_select"
         ? { ...field.constraints, choices: field.constraints.choices.map((choice) => ({ ...choice })) }
         : { ...field.constraints },
   } as CustomizationField;
 }
 
-function materializeSingleSelectConstraints(
+function materializeChoiceConstraints(
   replacement: AdminCustomizationFieldReplacement,
   productId: string,
   fieldId: string,
@@ -164,14 +164,14 @@ function materializeSingleSelectConstraints(
   currentField: CustomizationField | undefined,
   historicalBindings: ReadonlyMap<string, string>,
 ): AdminCustomizationFieldReplacement | null {
-  if (replacement.kind !== "single_select") return replacement;
-  const singleSelect = replacement.constraints as SingleSelectCustomizationFieldConstraints;
-  const currentChoices = currentField?.kind === "single_select"
+  if (replacement.kind !== "single_select" && replacement.kind !== "multi_select") return replacement;
+  const choiceSelect = replacement.constraints as SingleSelectCustomizationFieldConstraints | MultiSelectCustomizationFieldConstraints;
+  const currentChoices = currentField?.kind === "single_select" || currentField?.kind === "multi_select"
     ? new Map(currentField.constraints.choices.map((choice) => [choice.id, choice]))
     : new Map();
   const historicalIdsByCode = new Map([...historicalBindings].map(([id, code]) => [code, id]));
   const seenIds = new Set<string>();
-  const choices = singleSelect.choices.map((choice) => {
+  const choices = choiceSelect.choices.map((choice) => {
     if (choice.id.startsWith("new:")) {
       if (historicalIdsByCode.has(choice.code)) return null;
       const generatedId = `local-customization-choice-${createHash("sha256")
@@ -294,7 +294,7 @@ class LocalAdminCustomizationRepository
       if (seenIds.has(fieldId)) {
         return { status: "invalid_configuration", issues: [issue("$.fields", "duplicate", "Customization field identity is duplicated.")] };
       }
-      const materializedReplacement = materializeSingleSelectConstraints(
+      const materializedReplacement = materializeChoiceConstraints(
         replacement,
         intent.productId,
         fieldId,
@@ -305,7 +305,7 @@ class LocalAdminCustomizationRepository
       if (!materializedReplacement) {
         return {
           status: "invalid_configuration",
-          issues: [issue("$.fields.constraints.choices", "ownership", "Single-select choice identity is unavailable or has been rebound.")],
+          issues: [issue("$.fields.constraints.choices", "ownership", "Choice identity is unavailable or has been rebound.")],
         };
       }
       const field = customizationFieldFromReplacement(

@@ -11,6 +11,7 @@ import styles from "./catalog-storefront.module.css";
 import { ProductCustomizationImageField } from "./ProductCustomizationImageField.tsx";
 import { ProductCustomizationTextField } from "./ProductCustomizationTextField.tsx";
 import { ProductCustomizationSingleSelectField } from "./ProductCustomizationSingleSelectField.tsx";
+import { ProductCustomizationMultiSelectField } from "./ProductCustomizationMultiSelectField.tsx";
 import { useReferenceLanguage } from "./ReferenceLanguageProvider";
 import type { BrowserRestoredDraft, PersistentCustomizationDraftController } from "../client/local-persistent-draft.ts";
 
@@ -66,6 +67,13 @@ export function ProductCustomizationFormShell(props: ProductCustomizationFormShe
           />
         ) : field.kind === "single_select" ? (
           <ProductCustomizationSingleSelectField
+            key={field.id}
+            field={field}
+            draft={props.draft}
+            onDraftAction={dispatchAction}
+          />
+        ) : field.kind === "multi_select" ? (
+          <ProductCustomizationMultiSelectField
             key={field.id}
             field={field}
             draft={props.draft}

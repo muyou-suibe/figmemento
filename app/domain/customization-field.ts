@@ -9,7 +9,7 @@ import {
   type CatalogValidationResult,
 } from "./catalog/validation.ts";
 
-export type CustomizationFieldKind = "image" | "short_text" | "long_text" | "single_select";
+export type CustomizationFieldKind = "image" | "short_text" | "long_text" | "single_select" | "multi_select";
 export type AllowedImageMimeType = "image/jpeg" | "image/png" | "image/webp";
 
 export interface CustomizationDimensions {
@@ -22,7 +22,7 @@ export interface TextCustomizationFieldConstraints {
   helpText?: string;
 }
 
-export interface CustomizationSingleSelectChoice {
+export interface CustomizationChoice {
   id: string;
   code: string;
   label: string;
@@ -30,8 +30,18 @@ export interface CustomizationSingleSelectChoice {
   isActive: boolean;
 }
 
+/** Backwards-compatible C07 name; C07 and C08 share one identity authority. */
+export type CustomizationSingleSelectChoice = CustomizationChoice;
+
 export interface SingleSelectCustomizationFieldConstraints {
-  choices: readonly CustomizationSingleSelectChoice[];
+  choices: readonly CustomizationChoice[];
+  helpText?: string;
+}
+
+export interface MultiSelectCustomizationFieldConstraints {
+  choices: readonly CustomizationChoice[];
+  minSelections: number;
+  maxSelections: number;
   helpText?: string;
 }
 
@@ -74,6 +84,10 @@ export type CustomizationField =
   | (CustomizationFieldCore & {
       kind: "single_select";
       constraints: SingleSelectCustomizationFieldConstraints;
+    })
+  | (CustomizationFieldCore & {
+      kind: "multi_select";
+      constraints: MultiSelectCustomizationFieldConstraints;
     });
 
 export interface CustomizationFieldDefinition {
@@ -83,7 +97,7 @@ export interface CustomizationFieldDefinition {
   required: boolean;
   isActive: boolean;
   position: number;
-  constraints: TextCustomizationFieldConstraints | ImageCustomizationFieldConstraints | SingleSelectCustomizationFieldConstraints;
+  constraints: TextCustomizationFieldConstraints | ImageCustomizationFieldConstraints | SingleSelectCustomizationFieldConstraints | MultiSelectCustomizationFieldConstraints;
 }
 
 const FIELD_KINDS: readonly CustomizationFieldKind[] = [
@@ -91,6 +105,7 @@ const FIELD_KINDS: readonly CustomizationFieldKind[] = [
   "short_text",
   "long_text",
   "single_select",
+  "multi_select",
 ];
 
 function isNonBlankString(value: unknown): value is string {
@@ -308,6 +323,63 @@ function parseSingleSelectConstraints(
   });
 }
 
+function parseMultiSelectConstraints(
+  value: unknown,
+  path: string,
+  fieldIsActive: boolean,
+  required: boolean,
+): CatalogValidationResult<MultiSelectCustomizationFieldConstraints> {
+  if (!isRecord(value)) return validationFailure(validationIssue(path, "invalid_type", "Multi-select constraints must be an object."));
+  const issues = unknownFieldIssues(value, ["choices", "minSelections", "maxSelections", "helpText"], path);
+  if (!Array.isArray(value.choices) || value.choices.length < 1 || value.choices.length > 50) {
+    issues.push(validationIssue(`${path}.choices`, "invalid_value", "Multi-select fields require between 1 and 50 choices."));
+  }
+  if (!isNonNegativeInteger(value.minSelections) || value.minSelections > 50) {
+    issues.push(validationIssue(`${path}.minSelections`, "invalid_value", "Minimum selections must be an integer from 0 to 50."));
+  }
+  if (!isPositiveInteger(value.maxSelections) || value.maxSelections > 50) {
+    issues.push(validationIssue(`${path}.maxSelections`, "invalid_value", "Maximum selections must be an integer from 1 to 50."));
+  }
+  if (isNonNegativeInteger(value.minSelections) && isPositiveInteger(value.maxSelections) && value.minSelections > value.maxSelections) {
+    issues.push(validationIssue(`${path}.minSelections`, "invalid_value", "Minimum selections cannot exceed maximum selections."));
+  }
+  if (required && isNonNegativeInteger(value.minSelections) && value.minSelections < 1) {
+    issues.push(validationIssue(`${path}.minSelections`, "invalid_value", "Required multi-select fields need at least one selection."));
+  }
+  if (!required && value.minSelections !== 0) {
+    issues.push(validationIssue(`${path}.minSelections`, "invalid_value", "Optional multi-select fields must have a minimum of zero."));
+  }
+  if (value.helpText !== undefined && !isSafePlainText(value.helpText, 240)) {
+    issues.push(validationIssue(`${path}.helpText`, "invalid_value", "Help text must be non-empty, safe plain text of at most 240 characters."));
+  }
+  const choices: CustomizationChoice[] = [];
+  const ids = new Set<string>(); const codes = new Set<string>(); const positions = new Set<number>();
+  let activeChoiceCount = 0;
+  if (Array.isArray(value.choices)) value.choices.forEach((candidate, index) => {
+    const choicePath = `${path}.choices[${index}]`;
+    if (!isRecord(candidate)) { issues.push(validationIssue(choicePath, "invalid_type", "Multi-select choice must be an object.")); return; }
+    issues.push(...unknownFieldIssues(candidate, ["id", "code", "label", "position", "isActive"], choicePath));
+    if (!isIdentifier(candidate.id)) issues.push(validationIssue(`${choicePath}.id`, "invalid_format", "Multi-select choice ID is invalid."));
+    else if (ids.has(candidate.id)) issues.push(validationIssue(`${choicePath}.id`, "duplicate", "Multi-select choice IDs must be unique within a field."));
+    if (!isCode(candidate.code)) issues.push(validationIssue(`${choicePath}.code`, "invalid_format", "Multi-select choice code is invalid."));
+    else if (codes.has(candidate.code)) issues.push(validationIssue(`${choicePath}.code`, "duplicate", "Multi-select choice codes must be unique within a field."));
+    if (!isSafePlainText(candidate.label, 160)) issues.push(validationIssue(`${choicePath}.label`, "invalid_value", "Multi-select choice label must be safe, non-empty plain text of at most 160 characters."));
+    if (!isNonNegativeInteger(candidate.position)) issues.push(validationIssue(`${choicePath}.position`, "invalid_value", "Multi-select choice position must be a non-negative integer."));
+    else if (positions.has(candidate.position)) issues.push(validationIssue(`${choicePath}.position`, "duplicate", "Multi-select choice positions must be unique within a field."));
+    if (typeof candidate.isActive !== "boolean") issues.push(validationIssue(`${choicePath}.isActive`, "invalid_type", "Multi-select choice isActive must be boolean."));
+    else if (candidate.isActive) activeChoiceCount += 1;
+    if (isIdentifier(candidate.id) && !ids.has(candidate.id)) ids.add(candidate.id);
+    if (isCode(candidate.code) && !codes.has(candidate.code)) codes.add(candidate.code);
+    if (isNonNegativeInteger(candidate.position) && !positions.has(candidate.position)) positions.add(candidate.position);
+    if (isIdentifier(candidate.id) && isCode(candidate.code) && isSafePlainText(candidate.label, 160) && isNonNegativeInteger(candidate.position) && typeof candidate.isActive === "boolean") {
+      choices.push({ id: candidate.id, code: candidate.code, label: candidate.label.trim(), position: candidate.position, isActive: candidate.isActive });
+    }
+  });
+  if (fieldIsActive && isNonNegativeInteger(value.minSelections) && value.minSelections > activeChoiceCount) issues.push(validationIssue(`${path}.minSelections`, "invalid_value", "Active choices cannot satisfy the configured minimum."));
+  if (fieldIsActive && isPositiveInteger(value.maxSelections) && value.maxSelections > activeChoiceCount) issues.push(validationIssue(`${path}.maxSelections`, "invalid_value", "Maximum selections cannot exceed active choices."));
+  return issues.length > 0 ? validationFailure(...issues) : validationSuccess({ choices: choices.toSorted((a, b) => a.position - b.position || a.id.localeCompare(b.id)), minSelections: value.minSelections as number, maxSelections: value.maxSelections as number, ...(typeof value.helpText === "string" ? { helpText: value.helpText.trim() } : {}) });
+}
+
 export function parseCustomizationFieldCore(
   value: unknown,
 ): CatalogValidationResult<CustomizationFieldCore> {
@@ -425,6 +497,8 @@ export function parseCustomizationFieldDefinition(
     ? parseImageConstraints(value.constraints, "$.constraints")
     : value.kind === "single_select"
       ? parseSingleSelectConstraints(value.constraints, "$.constraints", value.isActive === true)
+      : value.kind === "multi_select"
+        ? parseMultiSelectConstraints(value.constraints, "$.constraints", value.isActive === true, value.required === true)
       : parseTextConstraints(value.constraints, "$.constraints");
   if (!constraints.ok) return validationFailure(...constraints.issues);
   return validationSuccess({

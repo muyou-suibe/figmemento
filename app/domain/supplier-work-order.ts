@@ -217,7 +217,9 @@ function cloneCustomizationValues(values: CustomizationValues): CustomizationVal
         })),
       } satisfies CustomizationImageValue;
     }
-    return value.kind === "single_select"
+    return value.kind === "multi_select"
+      ? { ...value, choiceIds: [...value.choiceIds] }
+      : value.kind === "single_select"
       ? { ...value } satisfies CustomizationSingleSelectValue
       : { ...value } satisfies CustomizationTextValue;
   });

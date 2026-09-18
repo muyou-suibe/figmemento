@@ -543,6 +543,8 @@ export function LocalOrderSuccessExperience({
                   ? <span key={`${value.fieldId}-image`}>{value.fieldCode}: {value.imageCount} {t(value.imageCount === 1 ? "image" : "images")}</span>
                   : value.kind === "single_select"
                     ? <span key={value.fieldId}>{value.fieldCode}: {value.choiceLabel ?? value.choiceId}</span>
+                    : value.kind === "multi_select"
+                      ? <span key={value.fieldId}>{value.fieldCode}: {(value.selectedChoices ?? []).map((choice) => choice.choiceLabel).join(", ") || value.choiceIds.join(", ")}</span>
                     : <span key={value.fieldId}>{value.fieldCode}: {value.value}</span>)}
               </div>
               <strong>{formatCurrencyCents(line.lineSubtotalCents, line.currency)}</strong>

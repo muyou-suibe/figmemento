@@ -2,7 +2,7 @@
   "format": "figmemento-local-commerce-migration-manifest/v1",
   "schema": "local_commerce",
   "projectId": "figmemento-local-commerce",
-  "schemaVersion": 42,
+  "schemaVersion": 43,
   "migrations": [
     {
       "version": 1,
@@ -339,6 +339,14 @@
       "checksum": "816fb8ab39352176c8c9a27010cb593af955b5726189d8097c6c32e99e3db3c2",
       "rollback": "For a disposable project only, preserve the accepted C07 configuration and C03 pricing evidence before explicit project recreation. Never reset retained development data or rewrite immutable purchase facts.",
       "forwardFix": "Extends the accepted C03 pricing validator and Order commit snapshot path to recognize server-resolved single-select values and detach choice facts; never edit 0039–0041 and do not add per-choice pricing semantics."
+    },
+    {
+      "version": 43,
+      "migrationId": "local-commerce-customization-multi-select",
+      "filename": "0043_local-commerce-customization-multi-select.sql",
+      "checksum": "73e4b9102061c32dba1e28827d1e38b9f14f001c90a5c0f8ad5dbb8697be0537",
+      "rollback": "For a disposable project only, preserve the accepted C08 configuration and Order snapshot evidence before explicit project recreation. Never reset retained development data or rewrite immutable purchase facts.",
+      "forwardFix": "Extends the accepted C03 pricing and existing choice snapshot helper for validated multi-select values without adding tables, per-choice pricing, tax, shipping, coupon, payment, fulfillment, or Supplier semantics."
     }
   ]
 }

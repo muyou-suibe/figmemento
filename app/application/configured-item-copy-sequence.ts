@@ -10,6 +10,7 @@ function cloneCustomizationValues(
   values: ConfiguredItemHandoff["customizationValues"],
 ): ConfiguredItemHandoff["customizationValues"] {
   return values.map((value) => {
+    if (value.kind === "multi_select") return { ...value, choiceIds: [...value.choiceIds] };
     if (value.kind !== "image") return { ...value };
     return {
       ...value,

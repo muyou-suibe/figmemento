@@ -11,6 +11,7 @@ import type {
   CustomizationCropRegion,
   CustomizationImageValue,
   CustomizationSingleSelectValue,
+  CustomizationMultiSelectValue,
   CustomizationTextValue,
   CustomizationValues,
 } from "./customization-value.ts";
@@ -43,6 +44,8 @@ export interface LocalOrderCustomizationSnapshot {
   readonly values: CustomizationValues;
   /** Server-resolved C07 facts detached from the mutable current Catalog. */
   readonly singleSelectChoiceFacts?: readonly LocalOrderSingleSelectChoiceFact[];
+  /** Server-resolved C08 facts detached from the mutable current Catalog. */
+  readonly multiSelectChoiceFacts?: readonly LocalOrderMultiSelectChoiceFact[];
 }
 
 export interface LocalOrderSingleSelectChoiceFact {
@@ -53,6 +56,13 @@ export interface LocalOrderSingleSelectChoiceFact {
   readonly choiceCode: string;
   readonly choiceLabel: string;
   readonly position: number;
+}
+
+export interface LocalOrderMultiSelectChoiceFact {
+  readonly fieldId: string;
+  readonly fieldCode: string;
+  readonly fieldLabel: string;
+  readonly selectedChoices: readonly LocalOrderSingleSelectChoiceFact[];
 }
 
 export interface LocalOrderLineSnapshot {
@@ -115,6 +125,9 @@ export type LocalOrderPublicCustomizationValue =
   | (Pick<CustomizationSingleSelectValue, "fieldId" | "fieldCode" | "kind" | "choiceId"> & {
       readonly choiceCode?: string;
       readonly choiceLabel?: string;
+    })
+  | (Pick<CustomizationMultiSelectValue, "fieldId" | "fieldCode" | "kind" | "choiceIds"> & {
+      readonly selectedChoices?: readonly Pick<LocalOrderSingleSelectChoiceFact, "choiceId" | "choiceCode" | "choiceLabel">[];
     })
   | {
       readonly fieldId: string;
@@ -219,7 +232,9 @@ function cloneCustomizationValues(values: CustomizationValues): CustomizationVal
         })),
       } satisfies CustomizationImageValue;
     }
-    return value.kind === "single_select"
+    return value.kind === "multi_select"
+      ? { ...value, choiceIds: [...value.choiceIds] } satisfies CustomizationMultiSelectValue
+      : value.kind === "single_select"
       ? { ...value } satisfies CustomizationSingleSelectValue
       : { ...value } satisfies CustomizationTextValue;
   });
@@ -236,6 +251,9 @@ function cloneLine(line: LocalOrderLineSnapshot): LocalOrderLineSnapshot {
             values: cloneCustomizationValues(line.customization.values),
             ...(line.customization.singleSelectChoiceFacts
               ? { singleSelectChoiceFacts: line.customization.singleSelectChoiceFacts.map((fact) => ({ ...fact })) }
+              : {}),
+            ...(line.customization.multiSelectChoiceFacts
+              ? { multiSelectChoiceFacts: line.customization.multiSelectChoiceFacts.map((fact) => ({ ...fact, selectedChoices: fact.selectedChoices.map((choice) => ({ ...choice })) })) }
               : {}),
           },
         }
@@ -344,8 +362,10 @@ export function cloneLocalOrderSnapshot(snapshot: LocalOrderSnapshot): LocalOrde
 function projectCustomizationValues(
   values: CustomizationValues,
   singleSelectChoiceFacts: readonly LocalOrderSingleSelectChoiceFact[] = [],
+  multiSelectChoiceFacts: readonly LocalOrderMultiSelectChoiceFact[] = [],
 ): readonly LocalOrderPublicCustomizationValue[] {
   const factsByChoiceId = new Map(singleSelectChoiceFacts.map((fact) => [fact.choiceId, fact]));
+  const factsByFieldId = new Map(multiSelectChoiceFacts.map((fact) => [fact.fieldId, fact]));
   return values.map((value) => {
     if (value.kind === "image") {
       return {
@@ -353,6 +373,16 @@ function projectCustomizationValues(
         fieldCode: value.fieldCode,
         kind: "image" as const,
         imageCount: value.images.length,
+      };
+    }
+    if (value.kind === "multi_select") {
+      const facts = factsByFieldId.get(value.fieldId)?.selectedChoices;
+      return {
+        fieldId: value.fieldId,
+        fieldCode: value.fieldCode,
+        kind: "multi_select",
+        choiceIds: [...value.choiceIds],
+        ...(facts ? { selectedChoices: facts.map((fact) => ({ choiceId: fact.choiceId, choiceCode: fact.choiceCode, choiceLabel: fact.choiceLabel })) } : {}),
       };
     }
     return value.kind === "single_select"
@@ -392,7 +422,7 @@ export function projectLocalOrderSnapshot(snapshot: LocalOrderSnapshot): LocalOr
       currency: line.currency,
       lineSubtotalCents: line.lineSubtotalCents,
       ...(line.customization
-        ? { customization: projectCustomizationValues(line.customization.values, line.customization.singleSelectChoiceFacts) }
+        ? { customization: projectCustomizationValues(line.customization.values, line.customization.singleSelectChoiceFacts, line.customization.multiSelectChoiceFacts) }
         : {}),
     })),
   };

@@ -32,7 +32,7 @@ export type ProductCustomizationSummaryRow =
   | {
       /** Stable internal field identity; never shown to the customer. */
       readonly renderKey: string;
-      readonly kind: "short_text" | "long_text" | "single_select";
+      readonly kind: "short_text" | "long_text" | "single_select" | "multi_select";
       readonly label: string;
       readonly state: "provided" | "not_provided" | "not_provided_yet";
       readonly value?: string;
@@ -192,6 +192,14 @@ export function createProductCustomizationSummary(input: {
       return choice
         ? { renderKey: field.id, kind: "single_select", label: field.label, state: "provided", value: choice.label }
         : { renderKey: field.id, kind: "single_select", label: field.label, state: missingState(field.required) };
+    }
+    if (normalized.kind === "multi_select") {
+      const choices = field.kind === "multi_select"
+        ? field.constraints.choices.filter((choice) => choice.isActive && normalized.choiceIds.includes(choice.id)).sort((a, b) => a.position - b.position)
+        : [];
+      return choices.length > 0
+        ? { renderKey: field.id, kind: "multi_select", label: field.label, state: "provided", value: choices.map((choice) => choice.label).join(", ") }
+        : { renderKey: field.id, kind: "multi_select", label: field.label, state: missingState(field.required) };
     }
     return normalized.value.length > 0
       ? { renderKey: field.id, kind: normalized.kind, label: field.label, state: "provided", value: normalized.value }

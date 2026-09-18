@@ -56,7 +56,16 @@ function configurationIssue(
 }
 
 function publicCustomizationField(field: CustomizationField): CustomizationField {
-  if (field.kind !== "single_select") return field;
+  if (field.kind === "single_select") {
+    return {
+      ...field,
+      constraints: {
+        ...field.constraints,
+        choices: field.constraints.choices.filter((choice) => choice.isActive).map((choice) => ({ ...choice })),
+      },
+    };
+  }
+  if (field.kind !== "multi_select") return field;
   return {
     ...field,
     constraints: {

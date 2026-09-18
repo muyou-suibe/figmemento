@@ -32,6 +32,13 @@ export interface CustomizationSingleSelectValue {
   choiceId: string;
 }
 
+export interface CustomizationMultiSelectValue {
+  fieldId: string;
+  fieldCode: string;
+  kind: "multi_select";
+  choiceIds: readonly string[];
+}
+
 /**
  * Provider-neutral opaque identity with optional non-destructive customer-input
  * crop metadata. It contains no storage or rendered-output authority.
@@ -48,7 +55,7 @@ export interface CustomizationImageValue {
   images: readonly CustomizationImageReceiptReference[];
 }
 
-export type CustomizationValue = CustomizationTextValue | CustomizationImageValue | CustomizationSingleSelectValue;
+export type CustomizationValue = CustomizationTextValue | CustomizationImageValue | CustomizationSingleSelectValue | CustomizationMultiSelectValue;
 export type CustomizationValues = readonly CustomizationValue[];
 
 function collectFieldIdentityIssues(value: Record<string, unknown>): CatalogValidationIssue[] {
@@ -218,6 +225,30 @@ export function parseCustomizationValue(
           kind: "single_select",
           choiceId: value.choiceId as string,
         });
+  }
+
+  if (value.kind === "multi_select") {
+    const issues = [
+      ...unknownFieldIssues(value, ["fieldId", "fieldCode", "kind", "choiceIds"]),
+      ...collectFieldIdentityIssues(value),
+    ];
+    if (!Array.isArray(value.choiceIds)) {
+      issues.push(validationIssue("$.choiceIds", "invalid_type", "Multi-select choice IDs must be an array."));
+    }
+    const choiceIds: string[] = [];
+    if (Array.isArray(value.choiceIds)) {
+      value.choiceIds.forEach((choiceId, index) => {
+        if (!isIdentifier(choiceId)) issues.push(validationIssue(`$.choiceIds[${index}]`, "invalid_format", "Multi-select choice ID is invalid."));
+        else choiceIds.push(choiceId);
+      });
+      if (new Set(choiceIds).size !== choiceIds.length) issues.push(validationIssue("$.choiceIds", "duplicate", "Multi-select choice IDs must be unique."));
+    }
+    return issues.length > 0 ? validationFailure(...issues) : validationSuccess({
+      fieldId: value.fieldId as string,
+      fieldCode: value.fieldCode as string,
+      kind: "multi_select",
+      choiceIds,
+    });
   }
 
   return validationFailure(

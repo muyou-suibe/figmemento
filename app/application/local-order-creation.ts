@@ -14,8 +14,8 @@ import {
 } from "../domain/local-order.ts";
 import type { LocalCheckoutIssue } from "../domain/local-checkout.ts";
 import type { ConfiguredItemHandoff } from "../domain/configured-item.ts";
-import type { LocalOrderSingleSelectChoiceFact } from "../domain/local-order.ts";
-import type { CustomizationSingleSelectValue } from "../domain/customization-value.ts";
+import type { LocalOrderMultiSelectChoiceFact, LocalOrderSingleSelectChoiceFact } from "../domain/local-order.ts";
+import type { CustomizationMultiSelectValue, CustomizationSingleSelectValue } from "../domain/customization-value.ts";
 import type { CustomerPointsRepository } from "./customer-points.ts";
 
 export interface LocalOrderCreationDependencies extends LocalCheckoutEvaluatorDependencies {
@@ -73,7 +73,9 @@ function canonicalHandoff(handoff: ConfiguredItemHandoff): string {
             ...(image.crop ? { crop: { ...image.crop } } : {}),
           })),
         }
-      : value.kind === "single_select"
+      : value.kind === "multi_select"
+        ? { fieldId: value.fieldId, fieldCode: value.fieldCode, kind: value.kind, choiceIds: [...value.choiceIds] }
+        : value.kind === "single_select"
         ? {
             fieldId: value.fieldId,
             fieldCode: value.fieldCode,
@@ -146,6 +148,7 @@ function createSnapshotDraft(
   address: LocalOrderCreateRequest["address"],
   customerId: string | undefined,
   singleSelectChoiceFactsByLine: ReadonlyMap<string, readonly LocalOrderSingleSelectChoiceFact[]>,
+  multiSelectChoiceFactsByLine: ReadonlyMap<string, readonly LocalOrderMultiSelectChoiceFact[]>,
 ): LocalOrderSnapshotDraft {
   return {
     ...(customerId ? { customerId } : {}),
@@ -180,6 +183,9 @@ function createSnapshotDraft(
         ...(singleSelectChoiceFactsByLine.has(line.cartLine.lineId)
           ? { singleSelectChoiceFacts: singleSelectChoiceFactsByLine.get(line.cartLine.lineId) }
           : {}),
+        ...(multiSelectChoiceFactsByLine.has(line.cartLine.lineId)
+          ? { multiSelectChoiceFacts: multiSelectChoiceFactsByLine.get(line.cartLine.lineId) }
+          : {}),
       },
     })),
   };
@@ -187,6 +193,10 @@ function createSnapshotDraft(
 
 type SingleSelectChoiceFactsResolution =
   | { readonly status: "resolved"; readonly byLine: ReadonlyMap<string, readonly LocalOrderSingleSelectChoiceFact[]> }
+  | { readonly status: "unavailable" };
+
+type MultiSelectChoiceFactsResolution =
+  | { readonly status: "resolved"; readonly byLine: ReadonlyMap<string, readonly LocalOrderMultiSelectChoiceFact[]> }
   | { readonly status: "unavailable" };
 
 async function resolveSingleSelectChoiceFacts(
@@ -242,6 +252,34 @@ async function resolveSingleSelectChoiceFacts(
   return { status: "resolved", byLine };
 }
 
+async function resolveMultiSelectChoiceFacts(
+  evaluated: Extract<FreshLocalCheckoutAuthorityResult, { status: "accepted" }>,
+  repository: LocalOrderCreationDependencies["customizationFieldRepository"],
+): Promise<MultiSelectChoiceFactsResolution> {
+  const configurations = new Map<string, Awaited<ReturnType<typeof repository.getCustomizationFieldsForProduct>>>();
+  const byLine = new Map<string, readonly LocalOrderMultiSelectChoiceFact[]>();
+  for (const line of evaluated.lines) {
+    const values = line.handoff.customizationValues.filter((value): value is CustomizationMultiSelectValue => value.kind === "multi_select");
+    if (values.length === 0) continue;
+    let configuration = configurations.get(line.handoff.productId);
+    if (!configuration) {
+      try { configuration = await repository.getCustomizationFieldsForProduct(line.handoff.productId); } catch { return { status: "unavailable" }; }
+      configurations.set(line.handoff.productId, configuration);
+    }
+    if (configuration.status !== "found" || configuration.value.productId !== line.handoff.productId || configuration.value.configurationRevision !== line.handoff.configurationRevision) return { status: "unavailable" };
+    const facts: LocalOrderMultiSelectChoiceFact[] = [];
+    for (const value of values) {
+      const field = configuration.value.fields.find((candidate) => candidate.id === value.fieldId && candidate.code === value.fieldCode && candidate.kind === "multi_select" && candidate.isActive);
+      if (!field || field.kind !== "multi_select") return { status: "unavailable" };
+      const selectedChoices = value.choiceIds.map((choiceId) => field.constraints.choices.find((choice) => choice.id === choiceId && choice.isActive));
+      if (selectedChoices.some((choice) => !choice)) return { status: "unavailable" };
+      facts.push({ fieldId: field.id, fieldCode: field.code, fieldLabel: field.label, selectedChoices: selectedChoices.map((choice) => ({ fieldId: field.id, fieldCode: field.code, fieldLabel: field.label, choiceId: choice!.id, choiceCode: choice!.code, choiceLabel: choice!.label, position: choice!.position })) });
+    }
+    byLine.set(line.cartLine.lineId, facts);
+  }
+  return { status: "resolved", byLine };
+}
+
 /**
  * Fresh server-side Local Order creation. It owns the only transition from
  * current Cart authority to the process-memory repository and never accepts a
@@ -285,11 +323,14 @@ export class LocalOrderCreationService {
     if (choiceFacts.status !== "resolved") {
       return { status: "unavailable", issues: [{ code: "CHECKOUT_UNAVAILABLE", message: "Local Order cannot be evaluated right now." }] };
     }
+    const multiChoiceFacts = await resolveMultiSelectChoiceFacts(evaluated, this.dependencies.customizationFieldRepository);
+    if (multiChoiceFacts.status !== "resolved") return { status: "unavailable", issues: [{ code: "CHECKOUT_UNAVAILABLE", message: "Local Order cannot be evaluated right now." }] };
     const snapshot = createSnapshotDraft(
       evaluated,
       request.address,
       this.dependencies.customerId,
       choiceFacts.byLine,
+      multiChoiceFacts.byLine,
     );
     let result: LocalOrderCreationResult;
     try {

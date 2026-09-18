@@ -6,6 +6,7 @@ import {
 import type { AllowedImageMimeType, CustomizationField } from "./customization-field.ts";
 import type {
   CustomizationImageValue,
+  CustomizationMultiSelectValue,
   CustomizationValue,
   CustomizationValues,
 } from "./customization-value.ts";
@@ -21,6 +22,8 @@ export type CustomizationValidationIssueCode =
   | "field_kind_mismatch"
   | "unknown_choice"
   | "inactive_choice"
+  | "selection_count_too_low"
+  | "selection_count_too_high"
   | "duplicate_field_value"
   | "required_field_missing"
   | "required_field_empty"
@@ -140,6 +143,17 @@ function normalizeImageValue(value: CustomizationImageValue): CustomizationImage
   };
 }
 
+function normalizeMultiSelectValue(
+  value: CustomizationMultiSelectValue,
+  field: Extract<CustomizationField, { kind: "multi_select" }>,
+): CustomizationMultiSelectValue {
+  const positions = new Map(field.constraints.choices.map((choice) => [choice.id, choice.position]));
+  return {
+    ...value,
+    choiceIds: [...value.choiceIds].sort((left, right) => (positions.get(left) ?? Number.MAX_SAFE_INTEGER) - (positions.get(right) ?? Number.MAX_SAFE_INTEGER)),
+  };
+}
+
 /**
  * Normalizes an already parsed domain value. This does not validate field
  * authority, ownership, configuration revision, receipt lifecycle, or input
@@ -148,6 +162,7 @@ function normalizeImageValue(value: CustomizationImageValue): CustomizationImage
 export function normalizeCustomizationValue(value: CustomizationValue): CustomizationValue {
   if (value.kind === "image") return normalizeImageValue(value);
   if (value.kind === "single_select") return { ...value };
+  if (value.kind === "multi_select") return { ...value, choiceIds: [...value.choiceIds] };
   return { ...value, value: value.value.trim() };
 }
 
@@ -319,6 +334,23 @@ export function validateCustomizationValuesAgainstFields(
       } else if (!choice.isActive) {
         issues.push(issue(`${valuePath}.choiceId`, "inactive_choice", "Inactive single-select choices cannot be selected."));
       }
+    } else if (field.kind === "multi_select" && normalized.kind === "multi_select") {
+      const choiceIds = normalized.choiceIds;
+      if (new Set(choiceIds).size !== choiceIds.length) issues.push(issue(`${valuePath}.choiceIds`, "duplicate_field_value", "Multi-select choice IDs must be unique."));
+      for (const choiceId of choiceIds) {
+        const choice = field.constraints.choices.find((candidate) => candidate.id === choiceId);
+        if (!choice) issues.push(issue(`${valuePath}.choiceIds`, "unknown_choice", "Multi-select choice is not configured for this field."));
+        else if (!choice.isActive) issues.push(issue(`${valuePath}.choiceIds`, "inactive_choice", "Inactive multi-select choices cannot be selected."));
+      }
+      const effectiveMinimum = Math.max(field.required ? 1 : 0, field.constraints.minSelections);
+      if (choiceIds.length < effectiveMinimum) issues.push(issue(`${valuePath}.choiceIds`, "selection_count_too_low", "Selection count is below the configured minimum."));
+      if (choiceIds.length > field.constraints.maxSelections) issues.push(issue(`${valuePath}.choiceIds`, "selection_count_too_high", "Selection count exceeds the configured maximum."));
+      if (choiceIds.length === 0 && effectiveMinimum === 0) {
+        valuesByFieldId.delete(value.fieldId);
+      } else {
+        normalizedValues.push(normalizeMultiSelectValue(normalized, field));
+      }
+      return;
     } else if ((field.kind === "short_text" || field.kind === "long_text")
       && (normalized.kind === "short_text" || normalized.kind === "long_text")) {
       if (normalized.value.length > field.constraints.maxLength) {

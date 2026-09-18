@@ -21,6 +21,7 @@ import {
 import {
   parseCustomizationValue,
   type CustomizationImageValue,
+  type CustomizationMultiSelectValue,
   type CustomizationSingleSelectValue,
   type CustomizationTextValue,
   type CustomizationValue,
@@ -122,6 +123,7 @@ export type ProductCustomizationDraftAction =
   | { readonly type: "set_text_value"; readonly value: CustomizationTextValue }
   | { readonly type: "set_image_value"; readonly value: CustomizationImageValue }
   | { readonly type: "set_single_select_value"; readonly value: CustomizationSingleSelectValue }
+  | { readonly type: "set_multi_select_value"; readonly value: CustomizationMultiSelectValue }
   | { readonly type: "remove_customization_value"; readonly fieldId: string }
   | { readonly type: "record_accepted_receipt"; readonly receipt: CustomerUploadReceipt }
   | { readonly type: "upload_started"; readonly operation: ProductCustomizationActiveUpload }
@@ -134,6 +136,7 @@ const INCOMPLETE_VALIDATION_CODES = new Set([
   "required_field_missing",
   "required_field_empty",
   "image_count_too_low",
+  "selection_count_too_low",
   "variant_required",
 ]);
 
@@ -165,7 +168,14 @@ function cloneValue(value: CustomizationValue): CustomizationValue {
           kind: "single_select",
           choiceId: value.choiceId,
         }
-      : {
+      : value.kind === "multi_select"
+        ? {
+            fieldId: value.fieldId,
+            fieldCode: value.fieldCode,
+            kind: "multi_select",
+            choiceIds: [...value.choiceIds],
+          }
+        : {
         fieldId: value.fieldId,
         fieldCode: value.fieldCode,
         kind: value.kind,
@@ -307,6 +317,14 @@ export function reduceProductCustomizationDraft(
       const parsed = parseCustomizationValue(action.value);
       return parsed.ok && parsed.value.kind === "single_select"
         ? { ...next, values: upsertValue(next.values, parsed.value) }
+        : next;
+    }
+    case "set_multi_select_value": {
+      const parsed = parseCustomizationValue(action.value);
+      return parsed.ok && parsed.value.kind === "multi_select"
+        ? parsed.value.choiceIds.length === 0
+          ? { ...next, values: next.values.filter((value) => value.fieldId !== parsed.value.fieldId).map(cloneValue) }
+          : { ...next, values: upsertValue(next.values, parsed.value) }
         : next;
     }
     case "remove_customization_value":

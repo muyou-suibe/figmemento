@@ -101,6 +101,11 @@ function valueIsPresent(
     return field.kind === "single_select"
       && field.constraints.choices.some((choice) => choice.id === value.choiceId && choice.isActive);
   }
+  if (value.kind === "multi_select") {
+    return field.kind === "multi_select"
+      && value.choiceIds.length > 0
+      && value.choiceIds.every((choiceId) => field.constraints.choices.some((choice) => choice.id === choiceId && choice.isActive));
+  }
   return value.value.trim().length > 0;
 }
 
