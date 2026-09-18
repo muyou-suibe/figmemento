@@ -18,7 +18,11 @@ export function ProductCustomizationGenericFileField({ field, draft, onDraftActi
     const form = new FormData();
     form.append("file", file);
     try {
-      const response = await fetch(`/api/uploads?productId=${encodeURIComponent(draft.productId)}&fieldId=${encodeURIComponent(field.id)}`, { method: "POST", body: form });
+      const response = await fetch(`/api/uploads?productId=${encodeURIComponent(draft.productId)}&fieldId=${encodeURIComponent(field.id)}`, {
+        method: "POST",
+        headers: { "Idempotency-Key": crypto.randomUUID() },
+        body: form,
+      });
       if (!response.ok) return;
       const body: unknown = await response.json();
       if (!body || typeof body !== "object" || !("receipt" in body)) return;

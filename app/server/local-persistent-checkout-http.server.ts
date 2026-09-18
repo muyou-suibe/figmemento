@@ -30,11 +30,12 @@ export async function persistentCheckoutHttp(request: Request, body: unknown, en
     const catalog = new LocalCatalogAuthority(environment);
     const baseline = await catalog.readSnapshot(expectedVersions as Record<string, number> | undefined);
     if (baseline.status !== "found") return fail("STALE_CATALOG");
-    const hasImages = cart.record.lines.some(line => line.handoff.customizationValues.some(field => field.kind === "image" && field.images.length));
+    const hasPrivateFiles = cart.record.lines.some(line => line.handoff.customizationValues.some(field =>
+      (field.kind === "image" && field.images.length) || (field.kind === "generic_file" && field.files.length)));
     const dependencies = { catalogRepository: catalog.repository, customizationFieldRepository: catalog,
       verifiedOwnerId: cart.owner.ownerId,
       pricingResolver: (pricingInput: Parameters<LocalCatalogAuthority["resolveCustomizationPricing"]>[0]) => catalog.resolveCustomizationPricing(pricingInput),
-      ...(hasImages ? { receiptRepository: persistentPurchaseReceipts(environment, cart.verifyOwner, cart.record.lines.map(line => line.handoff)) } : {}) };
+      ...(hasPrivateFiles ? { receiptRepository: persistentPurchaseReceipts(environment, cart.verifyOwner, cart.record.lines.map(line => line.handoff)) } : {}) };
     const results = await Promise.all(cart.record.lines.map(line => evaluateLocalCheckoutLine(line, dependencies, new Date().toISOString())));
     for (const result of results) if (result.status !== "resolved") return fail(result.issue.code, result.status === "unavailable" ? 503 : 409);
     const lines = results.flatMap(result => result.status === "resolved" ? [result.summary] : []);

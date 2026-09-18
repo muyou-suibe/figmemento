@@ -59,11 +59,12 @@ async function createPersistentPurchase(request: Request, input: PersistentOrder
   const catalog = new LocalCatalogAuthority(environment);
   const baseline = await catalog.readSnapshot();
   if (baseline.status !== "found") return fail();
-  const hasImages = cart.record.lines.some(line => line.handoff.customizationValues.some(f => f.kind === "image" && f.images.length));
+  const hasPrivateFiles = cart.record.lines.some(line => line.handoff.customizationValues.some(f =>
+    (f.kind === "image" && f.images.length) || (f.kind === "generic_file" && f.files.length)));
   const resolved = await Promise.all(cart.record.lines.map(line => evaluateLocalCheckoutLine(line, {
     catalogRepository: catalog.repository, customizationFieldRepository: catalog, verifiedOwnerId: cart.owner.ownerId,
     pricingResolver: pricingInput => catalog.resolveCustomizationPricing(pricingInput),
-    ...(hasImages ? { receiptRepository: persistentPurchaseReceipts(environment, cart.verifyOwner, cart.record.lines.map(l => l.handoff)) } : {}),
+    ...(hasPrivateFiles ? { receiptRepository: persistentPurchaseReceipts(environment, cart.verifyOwner, cart.record.lines.map(l => l.handoff)) } : {}),
   }, new Date().toISOString())));
   if (resolved.some(line => line.status !== "resolved")) return fail(409);
   const lines = resolved.flatMap((line, index) => line.status === "resolved" ? [{ ...line, cartLine: cart.record.lines[index] }] : []);

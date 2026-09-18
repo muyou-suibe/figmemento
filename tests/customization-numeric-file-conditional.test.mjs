@@ -112,4 +112,10 @@ test("Phase 1 customization migration 0044 is ordered and checksum-bound", async
   assert.doesNotMatch(migration, /^\s*(begin|commit)\s*;\s*$/im);
   assert.match(migration, /generic_file/);
   assert.match(migration, /numeric/);
+  assert.match(migration, /create table local_commerce\.generic_file_receipts/);
+  assert.match(migration, /create table local_commerce\.order_item_generic_file_receipt_bindings/);
+  assert.match(migration, /alter table local_commerce\.generic_file_receipts enable row level security/);
+  assert.match(migration, /revoke all on local_commerce\.generic_file_receipts from public, anon, authenticated/);
+  assert.match(migration, /create or replace function local_commerce\.generic_file_command/);
+  assert.match(migration, /grant execute on function local_commerce\.generic_file_command/);
 });

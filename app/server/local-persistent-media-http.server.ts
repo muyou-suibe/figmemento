@@ -4,11 +4,13 @@ import { resolveGuestResourceOwner } from "../application/guest-resource-ownersh
 import { createLocalPersistentCustomerAuthProvider } from "../application/customer-auth-persistent-provider.server.ts";
 import { createConfiguredGuestDraftOwnerService, getGuestDraftOwnerCookieName } from "../lib/guest-draft-owner.ts";
 import { createLocalPersistentMediaAuthority, type MediaOwnerVerifier } from "../infrastructure/local-commerce/local-persistent-media-authority.server.ts";
+import { createLocalPersistentGenericFileReceiptAuthority } from "../infrastructure/local-commerce/local-persistent-generic-file-receipts.server.ts";
 import { createLocalPersistentDraftPort } from "../infrastructure/local-commerce/local-persistent-draft-adapter.server.ts";
 import { createServerCustomerUploadFieldResolver } from "./customer-upload-field-resolution.server.ts";
 import { isSameOriginCustomerAuthMutation, readCustomerAuthSessionId } from "./customer-auth-http.server.ts";
 import { readBoundedSingleImage } from "./local-commerce-image-processing.server.ts";
 import { parseCustomizationCropRegion } from "../domain/customization-value.ts";
+import { inspectCustomerGenericFileBytes } from "../domain/customer-generic-file-inspection.ts";
 
 const failure = (status: number) => Response.json({ error: "Customer media is unavailable." }, { status, headers: { "cache-control": "no-store" } });
 
@@ -78,10 +80,14 @@ export async function persistentMediaHttp(request: Request, operation: "upload" 
         ? Response.json({ receipt: result.receipt }, { status: 201, headers: { "cache-control": "no-store" } })
         : failure(result.status === "conflict" ? 409 : result.status === "rejected" ? 400 : 503);
     }
-    // Draft IDs must already have been issued by the canonical Draft command.
-    // No implicit grouping, owner/Product quota, or public Draft creation here.
+    // Draft IDs must already have been issued by the canonical Draft command
+    // for image media. Generic files have their own immutable receipt row and
+    // do not enter the image slot/crop aggregate; they still use this same
+    // upload endpoint and the same fresh owner verification.
     if ([...query.keys()].some(k => !["productId", "fieldId", "draftId", "expectedVersion"].includes(k))
-      || ["productId", "fieldId", "draftId", "expectedVersion"].some(k => query.getAll(k).length !== 1)) return failure(400);
+      || ["productId", "fieldId"].some(k => query.getAll(k).length !== 1)
+      || (query.has("draftId") !== query.has("expectedVersion"))
+      || (query.has("draftId") && (query.getAll("draftId").length !== 1 || query.getAll("expectedVersion").length !== 1))) return failure(400);
     const requestKey = request.headers.get("idempotency-key");
     const recovery = request.headers.get("x-upload-recovery");
     const release = request.headers.get("x-upload-release");
@@ -90,6 +96,33 @@ export async function persistentMediaHttp(request: Request, operation: "upload" 
       || (recovery === "1" && release === "1")) return failure(400);
     const policy = await createServerCustomerUploadFieldResolver(environment, environment.NODE_ENV)(request);
     if (policy.status !== "found") return failure(policy.status === "source_failure" ? 503 : 404);
+    if (policy.kind === "generic_file") {
+      if (query.has("draftId") || recovery === "1" || release === "1") return failure(400);
+      const configurationRevision = Number(policy.configurationRevision);
+      if (!Number.isSafeInteger(configurationRevision) || configurationRevision < 1) return failure(503);
+      const contentType = request.headers.get("content-type")?.toLowerCase() ?? "";
+      if (!contentType.startsWith("multipart/form-data")) return failure(400);
+      const form = await request.formData();
+      const fileEntries = [...form.entries()].filter(([, value]) => value instanceof File);
+      if (fileEntries.length !== 1 || [...form.keys()].some(key => key !== "file")) return failure(400);
+      const file = fileEntries[0]?.[1];
+      if (!(file instanceof File) || file.size <= 0 || file.size > policy.constraints.maxBytes) return failure(400);
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      const inspected = inspectCustomerGenericFileBytes({ bytes, constraints: policy.constraints,
+        originalFilename: file.name, declaredContentType: file.type });
+      if (!inspected.accepted) return Response.json({ issues: inspected.issues, warnings: inspected.warnings }, { status: 400, headers: { "cache-control": "no-store" } });
+      const owner = await verifyOwner();
+      if (!owner) return failure(404);
+      const authority = createLocalPersistentGenericFileReceiptAuthority(environment, verifyOwner);
+      const accepted = await authority.accept({ productId: query.get("productId")!, fieldId: query.get("fieldId")!,
+        configurationRevision, constraints: policy.constraints,
+        bytes, contentType: inspected.file.contentType,
+        ...(inspected.file.safeOriginalFilename ? { originalFilename: inspected.file.safeOriginalFilename } : {}) });
+      return accepted.status === "found"
+        ? Response.json({ receipt: accepted.receipt, warnings: inspected.warnings }, { status: 201, headers: { "cache-control": "no-store" } })
+        : failure(accepted.status === "conflict" ? 409 : accepted.status === "rejected" ? 400 : 503);
+    }
+    if (!query.has("draftId")) return failure(400);
     const draft = await createLocalPersistentDraftPort({ environment, verifyOwner });
     if (draft.status !== "ready") return failure(404);
     const d = await draft.port.read({ authority: draft.authority, draftId: query.get("draftId")! });

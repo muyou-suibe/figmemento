@@ -29,6 +29,7 @@ export type LocalCommerceRelation =
   | "media_derivatives"
   | "draft_media_links"
   | "media_copy_bindings"
+  | "generic_file_receipts"
   | "orders"
   | "order_creation_bindings"
   | "order_purchase_snapshots"
@@ -69,6 +70,7 @@ export const LOCAL_COMMERCE_RELATIONS: ReadonlySet<LocalCommerceRelation> = new 
   "media_derivatives",
   "draft_media_links",
   "media_copy_bindings",
+  "generic_file_receipts",
   "orders",
   "order_creation_bindings",
   "order_purchase_snapshots",
@@ -113,6 +115,7 @@ export const LOCAL_COMMERCE_RPC_FUNCTIONS = [
   "read_order_history",
   "order_commit",
   "media_upload_command",
+  "generic_file_command",
   "media_copy_command",
   "media_cleanup_command",
   "media_operation_command",
@@ -348,6 +351,16 @@ interface LocalCommerceRpcArguments {
     readonly p_draft_id: string; readonly p_product_id: string;
     readonly p_expected_version: number; readonly p_key_digest: string;
     readonly p_fingerprint: string; readonly p_recovery_only: boolean; readonly p_input: unknown;
+  };
+  generic_file_command: {
+    readonly p_project_id: string; readonly p_marker_digest: string;
+    readonly p_owner_kind: "guest" | "customer"; readonly p_owner_selector: string;
+    readonly p_customer_id: string | null; readonly p_authority_expires_at: string;
+    readonly p_command: "begin" | "publish" | "read" | "remove";
+    readonly p_receipt_reference: string | null; readonly p_product_id: string | null;
+    readonly p_field_key: string | null; readonly p_configuration_revision: number | null;
+    readonly p_original_filename: string | null; readonly p_content_type: string | null;
+    readonly p_byte_size: number | null; readonly p_content_digest: string | null;
   };
   media_cleanup_command: {
     readonly p_project_id: string; readonly p_marker_digest: string;

@@ -62,8 +62,10 @@ export function createServerCustomerUploadFieldResolver(
     if (!field || field.productId !== productResult.value.product.id || !field.isActive) {
       return { status: "not_found" };
     }
-    if (field.kind === "image") return { status: "found", kind: "image", constraints: field.constraints };
-    if (field.kind === "generic_file") return { status: "found", kind: "generic_file", constraints: field.constraints };
+    const configurationRevision = configuration.value.configurationRevision;
+    if (typeof configurationRevision !== "string" || configurationRevision.trim().length === 0) return { status: "source_failure" };
+    if (field.kind === "image") return { status: "found", kind: "image", constraints: field.constraints, configurationRevision };
+    if (field.kind === "generic_file") return { status: "found", kind: "generic_file", constraints: field.constraints, configurationRevision };
     return { status: "not_found" };
   };
 }

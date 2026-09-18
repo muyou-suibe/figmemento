@@ -352,9 +352,9 @@
       "version": 44,
       "migrationId": "local-commerce-customization-numeric-file-rules",
       "filename": "0044_local-commerce-customization-numeric-file-rules.sql",
-      "checksum": "80a27baa46506202e299ce223ded9a5a522d077de50a3ded418e79df68a48352",
+      "checksum": "dee3525ee79c09fd6528de9c69fe438a20136d4867994f4ffa61c2ffd96b38cd",
       "rollback": "For a disposable project only, preserve the accepted Phase 1 customization and ledger evidence before explicit project recreation. Never reset retained development data or rewrite immutable purchase facts.",
-      "forwardFix": "Extends only the existing server-owned customization pricing seam for bounded numeric and generic-file value shapes. Never edit 0001–0043; later corrections use 0045+ and retain private receipt ownership and configuration revision checks."
+      "forwardFix": "Extends the existing server-owned customization pricing seam and adds the isolated generic-file receipt/command boundary for bounded numeric and generic-file value shapes. Never edit 0001–0043; later corrections use 0045+ and retain private receipt ownership and configuration revision checks."
     }
   ]
 }

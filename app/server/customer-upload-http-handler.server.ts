@@ -25,8 +25,8 @@ import {
 import { isSameOriginCustomerUploadMutation } from "./customer-upload-ownership.server.ts";
 
 export type CustomerUploadFieldResolution =
-  | { readonly status: "found"; readonly kind: "image"; readonly constraints: ImageCustomizationFieldConstraints }
-  | { readonly status: "found"; readonly kind: "generic_file"; readonly constraints: GenericFileCustomizationFieldConstraints }
+  | { readonly status: "found"; readonly kind: "image"; readonly constraints: ImageCustomizationFieldConstraints; readonly configurationRevision?: string | number }
+  | { readonly status: "found"; readonly kind: "generic_file"; readonly constraints: GenericFileCustomizationFieldConstraints; readonly configurationRevision?: string | number }
   | { readonly status: "not_found" }
   | { readonly status: "source_failure" };
 

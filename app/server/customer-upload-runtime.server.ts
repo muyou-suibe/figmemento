@@ -28,7 +28,8 @@ export interface LocalCustomerUploadReceiptAuthority {
 export function hasPrivateImageReceiptValue(value: unknown): boolean {
   const parsed = parseConfiguredItemHandoff(value);
   return parsed.ok && parsed.value.customizationValues.some(
-    (entry) => entry.kind === "image" && entry.images.length > 0,
+    (entry) => (entry.kind === "image" && entry.images.length > 0)
+      || (entry.kind === "generic_file" && entry.files.length > 0),
   );
 }
 
