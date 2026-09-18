@@ -21,7 +21,9 @@ import {
 import {
   parseCustomizationValue,
   type CustomizationImageValue,
+  type CustomizationGenericFileValue,
   type CustomizationMultiSelectValue,
+  type CustomizationNumericValue,
   type CustomizationSingleSelectValue,
   type CustomizationTextValue,
   type CustomizationValue,
@@ -124,6 +126,8 @@ export type ProductCustomizationDraftAction =
   | { readonly type: "set_image_value"; readonly value: CustomizationImageValue }
   | { readonly type: "set_single_select_value"; readonly value: CustomizationSingleSelectValue }
   | { readonly type: "set_multi_select_value"; readonly value: CustomizationMultiSelectValue }
+  | { readonly type: "set_numeric_value"; readonly value: CustomizationNumericValue }
+  | { readonly type: "set_generic_file_value"; readonly value: CustomizationGenericFileValue }
   | { readonly type: "remove_customization_value"; readonly fieldId: string }
   | { readonly type: "record_accepted_receipt"; readonly receipt: CustomerUploadReceipt }
   | { readonly type: "upload_started"; readonly operation: ProductCustomizationActiveUpload }
@@ -175,12 +179,11 @@ function cloneValue(value: CustomizationValue): CustomizationValue {
             kind: "multi_select",
             choiceIds: [...value.choiceIds],
           }
-        : {
-        fieldId: value.fieldId,
-        fieldCode: value.fieldCode,
-        kind: value.kind,
-        value: value.value,
-      };
+        : value.kind === "numeric"
+          ? { fieldId: value.fieldId, fieldCode: value.fieldCode, kind: "numeric", value: value.value }
+          : value.kind === "generic_file"
+            ? { fieldId: value.fieldId, fieldCode: value.fieldCode, kind: "generic_file", files: value.files.map((file) => ({ ...file })) }
+            : { fieldId: value.fieldId, fieldCode: value.fieldCode, kind: value.kind, value: value.value };
 }
 
 function cloneReceipt(receipt: CustomerUploadReceipt): CustomerUploadReceipt {
@@ -189,7 +192,7 @@ function cloneReceipt(receipt: CustomerUploadReceipt): CustomerUploadReceipt {
     ...(receipt.originalFilename ? { originalFilename: receipt.originalFilename } : {}),
     contentType: receipt.contentType,
     byteSize: receipt.byteSize,
-    dimensions: { ...receipt.dimensions },
+    ...(receipt.dimensions ? { dimensions: { ...receipt.dimensions } } : {}),
     createdAt: receipt.createdAt,
     expiresAt: receipt.expiresAt,
     lifecycle: receipt.lifecycle,
@@ -323,6 +326,20 @@ export function reduceProductCustomizationDraft(
       const parsed = parseCustomizationValue(action.value);
       return parsed.ok && parsed.value.kind === "multi_select"
         ? parsed.value.choiceIds.length === 0
+          ? { ...next, values: next.values.filter((value) => value.fieldId !== parsed.value.fieldId).map(cloneValue) }
+          : { ...next, values: upsertValue(next.values, parsed.value) }
+        : next;
+    }
+    case "set_numeric_value": {
+      const parsed = parseCustomizationValue(action.value);
+      return parsed.ok && parsed.value.kind === "numeric"
+        ? { ...next, values: upsertValue(next.values, parsed.value) }
+        : next;
+    }
+    case "set_generic_file_value": {
+      const parsed = parseCustomizationValue(action.value);
+      return parsed.ok && parsed.value.kind === "generic_file"
+        ? parsed.value.files.length === 0
           ? { ...next, values: next.values.filter((value) => value.fieldId !== parsed.value.fieldId).map(cloneValue) }
           : { ...next, values: upsertValue(next.values, parsed.value) }
         : next;
@@ -471,10 +488,10 @@ export function evaluateProductCustomizationDraft(
     if (!parsed.ok || parsed.value.lifecycle !== "active" || hasCustomerUploadExpiryElapsed(parsed.value, observedAt)) return;
     resolvedImageMetadata.push({
       receiptId: parsed.value.receiptId,
-      mimeType: parsed.value.contentType,
+      mimeType: parsed.value.contentType as CustomizationResolvedImageMetadata["mimeType"],
       fileSizeBytes: parsed.value.byteSize,
-      width: parsed.value.dimensions.width,
-      height: parsed.value.dimensions.height,
+      width: parsed.value.dimensions?.width ?? 0,
+      height: parsed.value.dimensions?.height ?? 0,
     });
   });
 

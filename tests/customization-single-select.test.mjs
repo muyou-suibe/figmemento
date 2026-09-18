@@ -356,9 +356,9 @@ test("C07 Order projection exposes server-resolved choice facts without changing
 test("C07 persistence contract is additive, ordered, and keeps immutable configuration facts in the existing Order snapshot", async () => {
   const manifest = JSON.parse(await readFile(new URL("../local/commerce/migrations/manifest.json", import.meta.url), "utf8"));
   const migration = await readFile(new URL("../local/commerce/migrations/0042_local-commerce-customization-single-select.sql", import.meta.url), "utf8");
-  assert.equal(manifest.schemaVersion, 43);
-  assert.equal(manifest.migrations.length, 43);
-  assert.equal(manifest.migrations.at(-2).version, 42);
+  assert.equal(manifest.schemaVersion, 44);
+  assert.equal(manifest.migrations.length, 44);
+  assert.equal(manifest.migrations.find((entry) => entry.version === 42).version, 42);
   assert.equal(manifest.migrations.find((entry) => entry.version === 42).checksum, createHash("sha256").update(migration).digest("hex"));
   assert.match(migration, /single_select/);
   assert.match(migration, /choiceId/);

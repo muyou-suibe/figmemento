@@ -12,6 +12,9 @@ import { ProductCustomizationImageField } from "./ProductCustomizationImageField
 import { ProductCustomizationTextField } from "./ProductCustomizationTextField.tsx";
 import { ProductCustomizationSingleSelectField } from "./ProductCustomizationSingleSelectField.tsx";
 import { ProductCustomizationMultiSelectField } from "./ProductCustomizationMultiSelectField.tsx";
+import { ProductCustomizationNumericField } from "./ProductCustomizationNumericField.tsx";
+import { ProductCustomizationGenericFileField } from "./ProductCustomizationGenericFileField.tsx";
+import { isCustomizationFieldVisible } from "../domain/customization-validation.ts";
 import { useReferenceLanguage } from "./ReferenceLanguageProvider";
 import type { BrowserRestoredDraft, PersistentCustomizationDraftController } from "../client/local-persistent-draft.ts";
 
@@ -43,7 +46,7 @@ export function ProductCustomizationFormShell(props: ProductCustomizationFormShe
   const markTouched = useCallback((fieldId: string) => {
     setTouchedFieldIds((current) => current.has(fieldId) ? current : new Set([...current, fieldId]));
   }, []);
-  const activeFields = props.fields.filter((field) => field.isActive);
+  const activeFields = props.fields.filter((field) => field.isActive && isCustomizationFieldVisible(field, props.draft.values));
 
   return (
     <section
@@ -79,7 +82,11 @@ export function ProductCustomizationFormShell(props: ProductCustomizationFormShe
             draft={props.draft}
             onDraftAction={dispatchAction}
           />
-        ) : (
+        ) : field.kind === "numeric" ? (
+          <ProductCustomizationNumericField key={field.id} field={field} draft={props.draft} onDraftAction={dispatchAction} />
+        ) : field.kind === "generic_file" ? (
+          <ProductCustomizationGenericFileField key={field.id} field={field} draft={props.draft} onDraftAction={dispatchAction} />
+        ) : field.kind === "image" ? (
           <ProductCustomizationImageField
             key={`${field.id}:${props.restoredDraft?.draft.draftId ?? "local"}:${props.restoredDraft?.draft.confirmedRevision ?? 0}`}
             field={field}
@@ -91,7 +98,7 @@ export function ProductCustomizationFormShell(props: ProductCustomizationFormShe
               receipt: props.restoredDraft?.receipts.find(receipt => receipt.slotId === slot.slotId)?.receipt,
             }))}
           />
-        )
+        ) : null
       )) : (
         <p>{t("Product-specific customization controls will appear here.")}</p>
       )}

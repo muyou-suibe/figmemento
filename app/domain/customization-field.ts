@@ -9,8 +9,9 @@ import {
   type CatalogValidationResult,
 } from "./catalog/validation.ts";
 
-export type CustomizationFieldKind = "image" | "short_text" | "long_text" | "single_select" | "multi_select";
+export type CustomizationFieldKind = "image" | "short_text" | "long_text" | "single_select" | "multi_select" | "numeric" | "generic_file";
 export type AllowedImageMimeType = "image/jpeg" | "image/png" | "image/webp";
+export type AllowedGenericFileMimeType = "application/pdf" | "text/plain" | "application/zip" | "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
 export interface CustomizationDimensions {
   width: number;
@@ -55,6 +56,31 @@ export interface ImageCustomizationFieldConstraints {
   cropEnabled: boolean;
 }
 
+export interface NumericCustomizationFieldConstraints {
+  min: number;
+  max: number;
+  step: number;
+  helpText?: string;
+}
+
+export interface GenericFileCustomizationFieldConstraints {
+  allowedMimeTypes: readonly AllowedGenericFileMimeType[];
+  maxBytes: number;
+  minFileCount: number;
+  maxFileCount: number;
+  helpText?: string;
+}
+
+export type CustomizationPredicate =
+  | { kind: "field_present"; fieldId: string }
+  | { kind: "choice_selected"; fieldId: string; choiceId: string }
+  | { kind: "numeric_comparison"; fieldId: string; operator: "eq" | "neq" | "gte" | "lte"; value: number };
+
+export interface CustomizationFieldRules {
+  requiredWhen?: CustomizationPredicate;
+  visibleWhen?: CustomizationPredicate;
+}
+
 /**
  * Core field configuration only. Kind-specific constraints are added by Task 2.2.
  * A string revision is intentionally provider-neutral and carries no timestamp or
@@ -70,24 +96,39 @@ export interface CustomizationFieldCore {
   isActive: boolean;
   position: number;
   configurationRevision: string;
+  rules?: CustomizationFieldRules;
 }
 
 export type CustomizationField =
   | (CustomizationFieldCore & {
       kind: "image";
       constraints: ImageCustomizationFieldConstraints;
+      rules?: CustomizationFieldRules;
     })
   | ((CustomizationFieldCore & {
       kind: "short_text" | "long_text";
       constraints: TextCustomizationFieldConstraints;
+      rules?: CustomizationFieldRules;
     }))
   | (CustomizationFieldCore & {
       kind: "single_select";
       constraints: SingleSelectCustomizationFieldConstraints;
+      rules?: CustomizationFieldRules;
     })
   | (CustomizationFieldCore & {
       kind: "multi_select";
       constraints: MultiSelectCustomizationFieldConstraints;
+      rules?: CustomizationFieldRules;
+    })
+  | (CustomizationFieldCore & {
+      kind: "numeric";
+      constraints: NumericCustomizationFieldConstraints;
+      rules?: CustomizationFieldRules;
+    })
+  | (CustomizationFieldCore & {
+      kind: "generic_file";
+      constraints: GenericFileCustomizationFieldConstraints;
+      rules?: CustomizationFieldRules;
     });
 
 export interface CustomizationFieldDefinition {
@@ -97,7 +138,8 @@ export interface CustomizationFieldDefinition {
   required: boolean;
   isActive: boolean;
   position: number;
-  constraints: TextCustomizationFieldConstraints | ImageCustomizationFieldConstraints | SingleSelectCustomizationFieldConstraints | MultiSelectCustomizationFieldConstraints;
+  constraints: TextCustomizationFieldConstraints | ImageCustomizationFieldConstraints | SingleSelectCustomizationFieldConstraints | MultiSelectCustomizationFieldConstraints | NumericCustomizationFieldConstraints | GenericFileCustomizationFieldConstraints;
+  rules?: CustomizationFieldRules;
 }
 
 const FIELD_KINDS: readonly CustomizationFieldKind[] = [
@@ -106,6 +148,8 @@ const FIELD_KINDS: readonly CustomizationFieldKind[] = [
   "long_text",
   "single_select",
   "multi_select",
+  "numeric",
+  "generic_file",
 ];
 
 function isNonBlankString(value: unknown): value is string {
@@ -243,6 +287,99 @@ function parseImageConstraints(
     minImageCount: value.minImageCount as number,
     maxImageCount: value.maxImageCount as number,
     cropEnabled: value.cropEnabled as boolean,
+  });
+}
+
+function parseNumericConstraints(
+  value: unknown,
+  path: string,
+): CatalogValidationResult<NumericCustomizationFieldConstraints> {
+  if (!isRecord(value)) return validationFailure(validationIssue(path, "invalid_type", "Numeric constraints must be an object."));
+  const issues = unknownFieldIssues(value, ["min", "max", "step", "helpText"], path);
+  const validNumber = (candidate: unknown): candidate is number => typeof candidate === "number" && Number.isFinite(candidate);
+  if (!validNumber(value.min)) issues.push(validationIssue(`${path}.min`, "invalid_value", "Numeric minimum must be finite."));
+  if (!validNumber(value.max)) issues.push(validationIssue(`${path}.max`, "invalid_value", "Numeric maximum must be finite."));
+  if (!validNumber(value.step) || value.step <= 0) issues.push(validationIssue(`${path}.step`, "invalid_value", "Numeric step must be a positive finite number."));
+  if (validNumber(value.min) && validNumber(value.max) && value.min > value.max) issues.push(validationIssue(`${path}.min`, "invalid_value", "Numeric minimum cannot exceed maximum."));
+  if (value.helpText !== undefined && !isSafePlainText(value.helpText, 240)) issues.push(validationIssue(`${path}.helpText`, "invalid_value", "Help text must be safe plain text of at most 240 characters."));
+  if (validNumber(value.min) && Math.abs(value.min) > 1_000_000_000) issues.push(validationIssue(`${path}.min`, "invalid_value", "Numeric bounds are outside the approved range."));
+  if (validNumber(value.max) && Math.abs(value.max) > 1_000_000_000) issues.push(validationIssue(`${path}.max`, "invalid_value", "Numeric bounds are outside the approved range."));
+  return issues.length > 0 ? validationFailure(...issues) : validationSuccess({
+    min: value.min as number,
+    max: value.max as number,
+    step: value.step as number,
+    ...(typeof value.helpText === "string" ? { helpText: value.helpText.trim() } : {}),
+  });
+}
+
+const ALLOWED_GENERIC_FILE_MIME_TYPES: readonly AllowedGenericFileMimeType[] = [
+  "application/pdf",
+  "text/plain",
+  "application/zip",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+];
+
+function parseGenericFileConstraints(
+  value: unknown,
+  path: string,
+): CatalogValidationResult<GenericFileCustomizationFieldConstraints> {
+  if (!isRecord(value)) return validationFailure(validationIssue(path, "invalid_type", "Generic-file constraints must be an object."));
+  const issues = unknownFieldIssues(value, ["allowedMimeTypes", "maxBytes", "minFileCount", "maxFileCount", "helpText"], path);
+  if (!Array.isArray(value.allowedMimeTypes) || value.allowedMimeTypes.length === 0) {
+    issues.push(validationIssue(`${path}.allowedMimeTypes`, "invalid_value", "At least one allowed generic-file MIME type is required."));
+  } else {
+    if (value.allowedMimeTypes.some((mimeType) => !ALLOWED_GENERIC_FILE_MIME_TYPES.includes(mimeType as AllowedGenericFileMimeType))) issues.push(validationIssue(`${path}.allowedMimeTypes`, "invalid_value", "Generic-file MIME type is not allowlisted."));
+    if (new Set(value.allowedMimeTypes).size !== value.allowedMimeTypes.length) issues.push(validationIssue(`${path}.allowedMimeTypes`, "duplicate", "Generic-file MIME types must be unique."));
+  }
+  if (!isPositiveInteger(value.maxBytes)) issues.push(validationIssue(`${path}.maxBytes`, "invalid_value", "Maximum generic-file bytes must be a positive integer."));
+  if (!isNonNegativeInteger(value.minFileCount) || value.minFileCount > 10) issues.push(validationIssue(`${path}.minFileCount`, "invalid_value", "Minimum generic-file count must be from 0 to 10."));
+  if (!isPositiveInteger(value.maxFileCount) || value.maxFileCount > 10) issues.push(validationIssue(`${path}.maxFileCount`, "invalid_value", "Maximum generic-file count must be from 1 to 10."));
+  if (isNonNegativeInteger(value.minFileCount) && isPositiveInteger(value.maxFileCount) && value.minFileCount > value.maxFileCount) issues.push(validationIssue(`${path}.minFileCount`, "invalid_value", "Minimum generic-file count cannot exceed maximum."));
+  if (value.helpText !== undefined && !isSafePlainText(value.helpText, 240)) issues.push(validationIssue(`${path}.helpText`, "invalid_value", "Help text must be safe plain text of at most 240 characters."));
+  return issues.length > 0 ? validationFailure(...issues) : validationSuccess({
+    allowedMimeTypes: [...(value.allowedMimeTypes as AllowedGenericFileMimeType[])],
+    maxBytes: value.maxBytes as number,
+    minFileCount: value.minFileCount as number,
+    maxFileCount: value.maxFileCount as number,
+    ...(typeof value.helpText === "string" ? { helpText: value.helpText.trim() } : {}),
+  });
+}
+
+function parsePredicate(value: unknown, path: string): CatalogValidationResult<CustomizationPredicate> {
+  if (!isRecord(value)) return validationFailure(validationIssue(path, "invalid_type", "Customization predicate must be an object."));
+  const fieldIdOk = isIdentifier(value.fieldId);
+  const issues = fieldIdOk ? [] : [validationIssue(`${path}.fieldId`, "invalid_format", "Predicate field ID is invalid.")];
+  if (value.kind === "field_present") {
+    issues.push(...unknownFieldIssues(value, ["kind", "fieldId"], path));
+    return issues.length > 0 ? validationFailure(...issues) : validationSuccess({ kind: "field_present", fieldId: value.fieldId as string });
+  }
+  if (value.kind === "choice_selected") {
+    issues.push(...unknownFieldIssues(value, ["kind", "fieldId", "choiceId"], path));
+    if (!isIdentifier(value.choiceId)) issues.push(validationIssue(`${path}.choiceId`, "invalid_format", "Predicate choice ID is invalid."));
+    return issues.length > 0 ? validationFailure(...issues) : validationSuccess({ kind: "choice_selected", fieldId: value.fieldId as string, choiceId: value.choiceId as string });
+  }
+  if (value.kind === "numeric_comparison") {
+    issues.push(...unknownFieldIssues(value, ["kind", "fieldId", "operator", "value"], path));
+    if (!["eq", "neq", "gte", "lte"].includes(value.operator as string)) issues.push(validationIssue(`${path}.operator`, "invalid_value", "Numeric predicate operator is not approved."));
+    if (typeof value.value !== "number" || !Number.isFinite(value.value)) issues.push(validationIssue(`${path}.value`, "invalid_value", "Numeric predicate value must be finite."));
+    return issues.length > 0 ? validationFailure(...issues) : validationSuccess({ kind: "numeric_comparison", fieldId: value.fieldId as string, operator: value.operator as "eq" | "neq" | "gte" | "lte", value: value.value as number });
+  }
+  issues.push(validationIssue(`${path}.kind`, "invalid_value", "Predicate kind is not approved."));
+  return validationFailure(...issues);
+}
+
+function parseFieldRules(value: unknown, path: string): CatalogValidationResult<CustomizationFieldRules | undefined> {
+  if (value === undefined) return validationSuccess(undefined);
+  if (!isRecord(value)) return validationFailure(validationIssue(path, "invalid_type", "Customization field rules must be an object."));
+  const issues = unknownFieldIssues(value, ["requiredWhen", "visibleWhen"], path);
+  const requiredWhen = value.requiredWhen === undefined ? validationSuccess<CustomizationPredicate | undefined>(undefined) : parsePredicate(value.requiredWhen, `${path}.requiredWhen`);
+  const visibleWhen = value.visibleWhen === undefined ? validationSuccess<CustomizationPredicate | undefined>(undefined) : parsePredicate(value.visibleWhen, `${path}.visibleWhen`);
+  if (!requiredWhen.ok) issues.push(...requiredWhen.issues);
+  if (!visibleWhen.ok) issues.push(...visibleWhen.issues);
+  if (!requiredWhen.ok || !visibleWhen.ok) return validationFailure(...issues);
+  return issues.length > 0 ? validationFailure(...issues) : validationSuccess({
+    ...(requiredWhen.value ? { requiredWhen: requiredWhen.value } : {}),
+    ...(visibleWhen.value ? { visibleWhen: visibleWhen.value } : {}),
   });
 }
 
@@ -399,6 +536,7 @@ export function parseCustomizationFieldCore(
     "isActive",
     "position",
     "configurationRevision",
+    "rules",
   ]);
 
   if (!isIdentifier(value.id)) {
@@ -433,6 +571,8 @@ export function parseCustomizationFieldCore(
   if (!isNonBlankString(value.configurationRevision)) {
     issues.push(validationIssue("$.configurationRevision", "invalid_value", "Customization field configuration revision must not be blank."));
   }
+  const rules = parseFieldRules(value.rules, "$.rules");
+  if (!rules.ok) issues.push(...rules.issues);
 
   if (issues.length > 0) {
     return validationFailure(...issues);
@@ -448,6 +588,7 @@ export function parseCustomizationFieldCore(
     isActive: value.isActive as boolean,
     position: value.position as number,
     configurationRevision: value.configurationRevision as string,
+    ...(rules.ok && rules.value ? { rules: rules.value } : {}),
   });
 }
 
@@ -466,7 +607,7 @@ export function parseCustomizationFieldDefinition(
     );
   }
   const issues = unknownFieldIssues(value, [
-    "code", "label", "kind", "required", "isActive", "position", "constraints",
+    "code", "label", "kind", "required", "isActive", "position", "constraints", "rules",
   ]);
   if (!isCode(value.code)) {
     issues.push(validationIssue("$.code", "invalid_format", "Customization field code is invalid."));
@@ -499,8 +640,14 @@ export function parseCustomizationFieldDefinition(
       ? parseSingleSelectConstraints(value.constraints, "$.constraints", value.isActive === true)
       : value.kind === "multi_select"
         ? parseMultiSelectConstraints(value.constraints, "$.constraints", value.isActive === true, value.required === true)
+      : value.kind === "numeric"
+        ? parseNumericConstraints(value.constraints, "$.constraints")
+      : value.kind === "generic_file"
+        ? parseGenericFileConstraints(value.constraints, "$.constraints")
       : parseTextConstraints(value.constraints, "$.constraints");
   if (!constraints.ok) return validationFailure(...constraints.issues);
+  const rules = parseFieldRules(value.rules, "$.rules");
+  if (!rules.ok) return validationFailure(...rules.issues);
   return validationSuccess({
     code: value.code as string,
     label: value.label as string,
@@ -509,6 +656,7 @@ export function parseCustomizationFieldDefinition(
     isActive: value.isActive as boolean,
     position: value.position as number,
     constraints: constraints.value,
+    ...(rules.value ? { rules: rules.value } : {}),
   });
 }
 
@@ -523,6 +671,7 @@ export function parseCustomizationField(
   const issues = unknownFieldIssues(value, [
     "id", "productId", "code", "label", "kind", "required", "isActive",
     "position", "configurationRevision", "constraints",
+    "rules",
   ]);
   const coreInput = { ...value };
   delete coreInput.constraints;
@@ -543,10 +692,12 @@ export function parseCustomizationField(
     isActive: value.isActive,
     position: value.position,
     constraints: value.constraints,
+    rules: value.rules,
   });
   if (!definition.ok) return validationFailure(...definition.issues);
   return validationSuccess({
     ...core.value,
     constraints: definition.value.constraints,
+    ...(definition.value.rules ? { rules: definition.value.rules } : {}),
   } as CustomizationField);
 }

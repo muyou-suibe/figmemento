@@ -82,6 +82,10 @@ function canonicalHandoff(handoff: ConfiguredItemHandoff): string {
             kind: value.kind,
             choiceId: value.choiceId,
           }
+        : value.kind === "numeric"
+          ? { fieldId: value.fieldId, fieldCode: value.fieldCode, kind: value.kind, value: value.value }
+        : value.kind === "generic_file"
+          ? { fieldId: value.fieldId, fieldCode: value.fieldCode, kind: value.kind, files: value.files.map((file) => ({ ...file })) }
         : {
             fieldId: value.fieldId,
             fieldCode: value.fieldCode,

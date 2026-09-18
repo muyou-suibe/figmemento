@@ -4,28 +4,29 @@ import {
   type CustomerUploadAcceptanceDependencies,
   type CustomerUploadAcceptanceResult,
 } from "../application/customer-upload-acceptance-service.ts";
-import type {
-  CustomerImageValidationIssue,
-  CustomerImageWarning,
-} from "../domain/customer-image-inspection.ts";
+import {
+  acceptCustomerGenericFileUpload,
+  type AcceptCustomerGenericFileUploadInput,
+  type CustomerGenericFileAcceptanceResult,
+} from "../application/customer-generic-file-acceptance-service.ts";
 import {
   parseCustomerUploadReceipt,
   type CustomerUploadReceipt,
 } from "../domain/customer-upload.ts";
 import type { ImageCustomizationFieldConstraints } from "../domain/customization-field.ts";
+import type { GenericFileCustomizationFieldConstraints } from "../domain/customization-field.ts";
 import { getGuestDraftOwnerCookieName, type GuestDraftOwnerService } from "../lib/guest-draft-owner.ts";
 import {
   createCustomerInputSafeObservability,
   customerInputFailureMessage,
-  safeCustomerImageIssues,
-  safeCustomerImageWarnings,
   type CustomerInputFailureCategory,
   type CustomerInputSafeObservability,
 } from "./customer-input-safe-failure.server.ts";
 import { isSameOriginCustomerUploadMutation } from "./customer-upload-ownership.server.ts";
 
 export type CustomerUploadFieldResolution =
-  | { readonly status: "found"; readonly constraints: ImageCustomizationFieldConstraints }
+  | { readonly status: "found"; readonly kind: "image"; readonly constraints: ImageCustomizationFieldConstraints }
+  | { readonly status: "found"; readonly kind: "generic_file"; readonly constraints: GenericFileCustomizationFieldConstraints }
   | { readonly status: "not_found" }
   | { readonly status: "source_failure" };
 
@@ -53,12 +54,16 @@ export interface CustomerUploadHttpHandlerDependencies {
     input: AcceptCustomerImageUploadInput,
     dependencies: CustomerUploadAcceptanceDependencies,
   ) => Promise<CustomerUploadAcceptanceResult>;
+  readonly acceptGenericFileUpload?: (
+    input: AcceptCustomerGenericFileUploadInput,
+    dependencies: CustomerUploadAcceptanceDependencies,
+  ) => Promise<CustomerGenericFileAcceptanceResult>;
   readonly runtimeMode?: string;
   readonly observability?: CustomerInputSafeObservability;
 }
 
-type SafeUploadIssue = Pick<CustomerImageValidationIssue, "code" | "message">;
-type SafeUploadWarning = Pick<CustomerImageWarning, "code" | "message">;
+type SafeUploadIssue = { readonly code: string; readonly message: string };
+type SafeUploadWarning = { readonly code: string; readonly message: string };
 
 /**
  * A technical request-safety allowance for multipart boundaries and per-part
@@ -112,17 +117,38 @@ function readCookie(request: Request, name: string): string | null {
   }
 }
 
-function safeIssues(issues: readonly CustomerImageValidationIssue[]): readonly SafeUploadIssue[] {
-  return safeCustomerImageIssues(issues);
+function safeIssues(issues: readonly { readonly code: string; readonly message: string }[]): readonly SafeUploadIssue[] {
+  const messages: Record<string, string> = {
+    unsupported_type: "Choose a supported image type for this field.",
+    invalid_image: "Choose a valid supported image file.",
+    too_large: "Image byte size exceeds the configured maximum.",
+    dimensions_too_small: "Image dimensions are below the configured minimum.",
+    invalid_filename: "Filename is not a safe display value.",
+    count_too_low: "Image count is below the configured minimum.",
+    count_too_high: "Image count exceeds the configured maximum.",
+    file_count_too_low: "File count is below the configured minimum.",
+    file_count_too_high: "File count exceeds the configured maximum.",
+    file_metadata_missing: "Private file metadata is unavailable.",
+    file_mime_not_allowed: "Private file type is not allowed for this field.",
+    file_too_large: "Private file size exceeds the configured maximum.",
+    invalid_file_metadata: "Private file metadata is invalid.",
+  };
+  return issues.flatMap(({ code }) => messages[code] ? [{ code, message: messages[code] }] : []);
 }
 
-function safeWarnings(warnings: readonly CustomerImageWarning[]): readonly SafeUploadWarning[] {
-  return safeCustomerImageWarnings(warnings);
+function safeWarnings(warnings: readonly { readonly code: string; readonly message: string }[]): readonly SafeUploadWarning[] {
+  const messages: Record<string, string> = {
+    below_recommended_dimensions: "Image dimensions are below the configured recommendation.",
+    declared_mime_mismatch: "Declared image type does not match the detected image bytes.",
+    declared_byte_size_mismatch: "Declared image size does not match the received image bytes.",
+    declared_mime_ignored: "The browser MIME claim was ignored; the file bytes were inspected.",
+  };
+  return warnings.flatMap(({ code }) => messages[code] ? [{ code, message: messages[code] }] : []);
 }
 
 function safeAcceptedResponse(
   receiptValue: unknown,
-  warnings: readonly CustomerImageWarning[],
+  warnings: readonly { readonly code: string; readonly message: string }[],
 ): SafeAcceptedCustomerUploadResponse | null {
   const parsed = parseCustomerUploadReceipt(receiptValue);
   if (!parsed.ok) return null;
@@ -133,7 +159,7 @@ function safeAcceptedResponse(
       ...(receipt.originalFilename ? { originalFilename: receipt.originalFilename } : {}),
       contentType: receipt.contentType,
       byteSize: receipt.byteSize,
-      dimensions: { width: receipt.dimensions.width, height: receipt.dimensions.height },
+      ...(receipt.dimensions ? { dimensions: { width: receipt.dimensions.width, height: receipt.dimensions.height } } : {}),
       createdAt: receipt.createdAt,
       expiresAt: receipt.expiresAt,
       lifecycle: receipt.lifecycle,
@@ -184,6 +210,7 @@ export function createCustomerUploadHttpHandler(
   dependencies: CustomerUploadHttpHandlerDependencies,
 ): (request: Request) => Promise<Response> {
   const accept = dependencies.acceptImageUpload ?? acceptCustomerImageUpload;
+  const acceptGeneric = dependencies.acceptGenericFileUpload ?? acceptCustomerGenericFileUpload;
   const observability = dependencies.observability ?? createCustomerInputSafeObservability();
 
   function failure(category: CustomerInputFailureCategory, status: number): Response {
@@ -303,16 +330,25 @@ export function createCustomerUploadHttpHandler(
       );
     }
 
-    let result: CustomerUploadAcceptanceResult;
+    let result: CustomerUploadAcceptanceResult | CustomerGenericFileAcceptanceResult;
     try {
-      result = await accept({
-        verifiedOwnerId,
-        fieldConstraints: resolution.constraints,
-        bytes,
-        originalFilename: upload.file.name,
-        declaredContentType: upload.file.type,
-        declaredByteSize: upload.file.size,
-      }, dependencies.createAcceptanceDependencies());
+      const acceptanceDependencies = dependencies.createAcceptanceDependencies();
+      result = resolution.kind === "generic_file"
+        ? await acceptGeneric({
+            verifiedOwnerId,
+            fieldConstraints: resolution.constraints,
+            bytes,
+            originalFilename: upload.file.name,
+            declaredContentType: upload.file.type,
+          }, acceptanceDependencies)
+        : await accept({
+            verifiedOwnerId,
+            fieldConstraints: resolution.constraints,
+            bytes,
+            originalFilename: upload.file.name,
+            declaredContentType: upload.file.type,
+            declaredByteSize: upload.file.size,
+          }, acceptanceDependencies);
     } catch {
       observability.record("upload", "temporary_failure");
       return responseWithIssuedOwnerCookie(

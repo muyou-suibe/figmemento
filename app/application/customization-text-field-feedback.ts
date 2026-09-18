@@ -1,6 +1,7 @@
 import type { CustomizationField } from "../domain/customization-field.ts";
 import type {
   CustomizationValidationIssue,
+  CustomizationResolvedImageMetadata,
 } from "../domain/customization-validation.ts";
 import { validateCustomizationValuesAgainstFields } from "../domain/customization-validation.ts";
 import type {
@@ -24,10 +25,10 @@ const INCOMPLETE_ISSUE_CODES = new Set([
 function toResolvedImageMetadata(draft: ProductCustomizationDraft) {
   return draft.acceptedReceipts.map((receipt) => ({
     receiptId: receipt.receiptId,
-    mimeType: receipt.contentType,
+    mimeType: receipt.contentType as CustomizationResolvedImageMetadata["mimeType"],
     fileSizeBytes: receipt.byteSize,
-    width: receipt.dimensions.width,
-    height: receipt.dimensions.height,
+    width: receipt.dimensions?.width ?? 0,
+    height: receipt.dimensions?.height ?? 0,
   }));
 }
 

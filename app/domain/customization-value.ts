@@ -39,6 +39,13 @@ export interface CustomizationMultiSelectValue {
   choiceIds: readonly string[];
 }
 
+export interface CustomizationNumericValue {
+  fieldId: string;
+  fieldCode: string;
+  kind: "numeric";
+  value: number;
+}
+
 /**
  * Provider-neutral opaque identity with optional non-destructive customer-input
  * crop metadata. It contains no storage or rendered-output authority.
@@ -55,7 +62,18 @@ export interface CustomizationImageValue {
   images: readonly CustomizationImageReceiptReference[];
 }
 
-export type CustomizationValue = CustomizationTextValue | CustomizationImageValue | CustomizationSingleSelectValue | CustomizationMultiSelectValue;
+export interface CustomizationFileReceiptReference {
+  receiptId: string;
+}
+
+export interface CustomizationGenericFileValue {
+  fieldId: string;
+  fieldCode: string;
+  kind: "generic_file";
+  files: readonly CustomizationFileReceiptReference[];
+}
+
+export type CustomizationValue = CustomizationTextValue | CustomizationImageValue | CustomizationSingleSelectValue | CustomizationMultiSelectValue | CustomizationNumericValue | CustomizationGenericFileValue;
 export type CustomizationValues = readonly CustomizationValue[];
 
 function collectFieldIdentityIssues(value: Record<string, unknown>): CatalogValidationIssue[] {
@@ -146,6 +164,13 @@ function parseImageReceiptReference(
         receiptId: value.receiptId as string,
         ...(crop && crop.ok ? { crop: crop.value } : {}),
       });
+}
+
+function parseFileReceiptReference(value: unknown, path: string): CatalogValidationResult<CustomizationFileReceiptReference> {
+  if (!isRecord(value)) return validationFailure(validationIssue(path, "invalid_type", "File receipt reference must be an object."));
+  const issues = unknownFieldIssues(value, ["receiptId"], path);
+  if (!isIdentifier(value.receiptId)) issues.push(validationIssue(`${path}.receiptId`, "invalid_format", "File receipt ID is invalid."));
+  return issues.length > 0 ? validationFailure(...issues) : validationSuccess({ receiptId: value.receiptId as string });
 }
 
 export function parseCustomizationValue(
@@ -248,6 +273,40 @@ export function parseCustomizationValue(
       fieldCode: value.fieldCode as string,
       kind: "multi_select",
       choiceIds,
+    });
+  }
+
+  if (value.kind === "numeric") {
+    const issues = [
+      ...unknownFieldIssues(value, ["fieldId", "fieldCode", "kind", "value"]),
+      ...collectFieldIdentityIssues(value),
+    ];
+    if (typeof value.value !== "number" || !Number.isFinite(value.value)) issues.push(validationIssue("$.value", "invalid_value", "Numeric customization value must be finite."));
+    return issues.length > 0 ? validationFailure(...issues) : validationSuccess({
+      fieldId: value.fieldId as string,
+      fieldCode: value.fieldCode as string,
+      kind: "numeric",
+      value: value.value as number,
+    });
+  }
+
+  if (value.kind === "generic_file") {
+    const issues = [
+      ...unknownFieldIssues(value, ["fieldId", "fieldCode", "kind", "files"]),
+      ...collectFieldIdentityIssues(value),
+    ];
+    if (!Array.isArray(value.files)) issues.push(validationIssue("$.files", "invalid_type", "Generic-file value files must be an array."));
+    const files: CustomizationFileReceiptReference[] = [];
+    if (Array.isArray(value.files)) value.files.forEach((candidate, index) => {
+      const parsed = parseFileReceiptReference(candidate, `$.files[${index}]`);
+      if (!parsed.ok) issues.push(...parsed.issues); else files.push(parsed.value);
+    });
+    if (new Set(files.map((file) => file.receiptId)).size !== files.length) issues.push(validationIssue("$.files", "duplicate", "Generic-file receipt references must be unique within one field."));
+    return issues.length > 0 ? validationFailure(...issues) : validationSuccess({
+      fieldId: value.fieldId as string,
+      fieldCode: value.fieldCode as string,
+      kind: "generic_file",
+      files,
     });
   }
 

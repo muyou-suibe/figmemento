@@ -28,7 +28,7 @@ export interface SafeCartCustomizationSummary {
 
 export type SafeCartCustomizationRow =
   | {
-      readonly kind: "short_text" | "long_text" | "single_select" | "multi_select";
+      readonly kind: "short_text" | "long_text" | "single_select" | "multi_select" | "numeric" | "generic_file";
       readonly label: string;
       readonly state: "provided" | "not_provided" | "not_provided_yet";
       readonly value?: string;

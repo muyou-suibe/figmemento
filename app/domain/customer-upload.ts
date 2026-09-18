@@ -7,7 +7,7 @@ import {
   validationSuccess,
   type CatalogValidationResult,
 } from "./catalog/validation.ts";
-import type { AllowedImageMimeType, CustomizationDimensions } from "./customization-field.ts";
+import type { AllowedGenericFileMimeType, AllowedImageMimeType, CustomizationDimensions } from "./customization-field.ts";
 import { normalizeCustomerUploadFilename } from "./customer-image-inspection.ts";
 
 /**
@@ -28,6 +28,7 @@ export type CustomerUploadLifecycle =
   | "cleanup_completed";
 
 export type CustomerUploadTimestamp = string;
+export type CustomerUploadContentType = AllowedImageMimeType | AllowedGenericFileMimeType;
 
 /**
  * Safe, server-derived receipt data. It contains no owner credential, object
@@ -37,9 +38,9 @@ export type CustomerUploadTimestamp = string;
 export interface CustomerUploadReceipt {
   receiptId: CustomerUploadReceiptId;
   originalFilename?: string;
-  contentType: AllowedImageMimeType;
+  contentType: CustomerUploadContentType;
   byteSize: number;
-  dimensions: CustomizationDimensions;
+  dimensions?: CustomizationDimensions;
   createdAt: CustomerUploadTimestamp;
   expiresAt: CustomerUploadTimestamp;
   lifecycle: CustomerUploadLifecycle;
@@ -64,6 +65,12 @@ const IMAGE_CONTENT_TYPES: readonly AllowedImageMimeType[] = [
   "image/jpeg",
   "image/png",
   "image/webp",
+];
+const GENERIC_FILE_CONTENT_TYPES: readonly AllowedGenericFileMimeType[] = [
+  "application/pdf",
+  "text/plain",
+  "application/zip",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ];
 
 const TIMESTAMP_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$/;
@@ -126,14 +133,19 @@ function parseCustomerUploadReceiptFields(
   if (value.originalFilename !== undefined && !isSafeOriginalFilename(value.originalFilename)) {
     issues.push(validationIssue("$.originalFilename", "invalid_value", "Original filename must be a safe normalized display value."));
   }
-  if (!IMAGE_CONTENT_TYPES.includes(value.contentType as AllowedImageMimeType)) {
-    issues.push(validationIssue("$.contentType", "invalid_value", "Only JPEG, PNG, and WebP customer uploads are allowed."));
+  const contentType = value.contentType as CustomerUploadContentType;
+  const isImage = IMAGE_CONTENT_TYPES.includes(contentType as AllowedImageMimeType);
+  const isGenericFile = GENERIC_FILE_CONTENT_TYPES.includes(contentType as AllowedGenericFileMimeType);
+  if (!isImage && !isGenericFile) {
+    issues.push(validationIssue("$.contentType", "invalid_value", "Customer upload MIME type is not allowed."));
   }
   if (!isPositiveInteger(value.byteSize)) {
     issues.push(validationIssue("$.byteSize", "invalid_value", "Customer upload byte size must be a positive integer."));
   }
-  const dimensions = parseDimensions(value.dimensions, "$.dimensions");
-  if (!dimensions.ok) issues.push(...dimensions.issues);
+  const dimensions = isImage ? parseDimensions(value.dimensions, "$.dimensions") : validationSuccess<CustomizationDimensions | undefined>(undefined);
+  if (isGenericFile && value.dimensions !== undefined) {
+    issues.push(validationIssue("$.dimensions", "invalid_value", "Generic file receipts must not contain image dimensions."));
+  }
   if (!isTimestamp(value.createdAt)) {
     issues.push(validationIssue("$.createdAt", "invalid_format", "Customer upload creation time is invalid."));
   }
@@ -155,9 +167,9 @@ function parseCustomerUploadReceiptFields(
   const receipt: CustomerUploadReceipt = {
     receiptId: value.receiptId as CustomerUploadReceiptId,
     ...(typeof value.originalFilename === "string" ? { originalFilename: value.originalFilename } : {}),
-    contentType: value.contentType as AllowedImageMimeType,
+    contentType,
     byteSize: value.byteSize as number,
-    dimensions: dimensions.value,
+    ...(dimensions.value ? { dimensions: dimensions.value } : {}),
     createdAt: value.createdAt as CustomerUploadTimestamp,
     expiresAt: value.expiresAt as CustomerUploadTimestamp,
     lifecycle: value.lifecycle as CustomerUploadLifecycle,

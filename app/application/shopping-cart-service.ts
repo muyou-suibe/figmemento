@@ -68,6 +68,10 @@ function draftFromAcceptedHandoff(input: {
           ? { type: "set_single_select_value", value }
           : value.kind === "multi_select"
             ? { type: "set_multi_select_value", value }
+          : value.kind === "numeric"
+            ? { type: "set_numeric_value", value }
+          : value.kind === "generic_file"
+            ? { type: "set_generic_file_value", value }
           : { type: "set_text_value", value });
   }
   return draft;

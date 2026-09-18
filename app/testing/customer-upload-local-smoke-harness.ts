@@ -192,7 +192,7 @@ export async function runLocalCustomerUploadSmoke(
       if (url.searchParams.get("productId") !== FIXTURE_PRODUCT_ID || url.searchParams.get("fieldId") !== imageField.id) {
         return { status: "not_found" };
       }
-      return { status: "found", constraints: imageField.constraints };
+      return { status: "found", kind: "image", constraints: imageField.constraints };
     },
     createAcceptanceDependencies() {
       return {

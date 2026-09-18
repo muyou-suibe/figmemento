@@ -59,9 +59,11 @@ export function createServerCustomerUploadFieldResolver(
       return configuration.status === "not_found" ? { status: "not_found" } : { status: "source_failure" };
     }
     const field = configuration.value.fields.find((candidate) => candidate.id === selector.fieldId);
-    if (!field || field.productId !== productResult.value.product.id || field.kind !== "image" || !field.isActive) {
+    if (!field || field.productId !== productResult.value.product.id || !field.isActive) {
       return { status: "not_found" };
     }
-    return { status: "found", constraints: field.constraints };
+    if (field.kind === "image") return { status: "found", kind: "image", constraints: field.constraints };
+    if (field.kind === "generic_file") return { status: "found", kind: "generic_file", constraints: field.constraints };
+    return { status: "not_found" };
   };
 }

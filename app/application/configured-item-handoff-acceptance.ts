@@ -22,6 +22,7 @@ import {
 } from "../domain/configured-item.ts";
 import {
   validateCustomizationValuesAgainstFields,
+  type CustomizationResolvedFileMetadata,
   type CustomizationResolvedImageMetadata,
 } from "../domain/customization-validation.ts";
 import {
@@ -120,11 +121,11 @@ function selectionsMatch(
     && requested.length === authoritative.length;
 }
 
-function imageReceiptIds(handoff: ConfiguredItemHandoff): readonly string[] {
+function privateReceiptIds(handoff: ConfiguredItemHandoff): readonly string[] {
   const receiptIds: string[] = [];
   for (const value of handoff.customizationValues) {
-    if (value.kind !== "image") continue;
-    for (const image of value.images) receiptIds.push(image.receiptId);
+    if (value.kind === "image") for (const image of value.images) receiptIds.push(image.receiptId);
+    if (value.kind === "generic_file") for (const file of value.files) receiptIds.push(file.receiptId);
   }
   return receiptIds;
 }
@@ -136,18 +137,25 @@ function hasDuplicateReceiptIds(receiptIds: readonly string[]): boolean {
 function hasOnlyExpectedMissingMetadata(
   issues: readonly { code: string }[],
 ): boolean {
-  return issues.every((issue) => issue.code === "image_metadata_missing");
+  return issues.every((issue) => issue.code === "image_metadata_missing" || issue.code === "file_metadata_missing");
 }
 
 function metadataFromReceipt(
   receipt: CustomerUploadReceipt,
-): CustomizationResolvedImageMetadata {
+): CustomizationResolvedImageMetadata | CustomizationResolvedFileMetadata {
+  if (receipt.contentType === "application/pdf"
+    || receipt.contentType === "text/plain"
+    || receipt.contentType === "application/zip"
+    || receipt.contentType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+    return { receiptId: receipt.receiptId, mimeType: receipt.contentType, fileSizeBytes: receipt.byteSize };
+  }
+  if (!receipt.dimensions) throw new Error("Image receipt dimensions are required.");
   return {
     receiptId: receipt.receiptId,
-    mimeType: receipt.contentType,
+    mimeType: receipt.contentType as CustomizationResolvedImageMetadata["mimeType"],
     fileSizeBytes: receipt.byteSize,
-    width: receipt.dimensions.width,
-    height: receipt.dimensions.height,
+    width: receipt.dimensions!.width,
+    height: receipt.dimensions!.height,
   };
 }
 
@@ -281,7 +289,7 @@ export async function acceptConfiguredItemHandoff(
     return rejected("stale_configuration");
   }
 
-  const receiptIds = imageReceiptIds(handoff);
+  const receiptIds = privateReceiptIds(handoff);
   if (hasDuplicateReceiptIds(receiptIds)) return rejected("invalid_customization");
 
   const preReceiptValidation = validateCustomizationValuesAgainstFields({
@@ -315,7 +323,9 @@ export async function acceptConfiguredItemHandoff(
     resolvedReceipts.set(receiptId, receiptResult.value);
   }
 
-  const resolvedImageMetadata = [...resolvedReceipts.values()].map(metadataFromReceipt);
+  const resolvedMetadata = [...resolvedReceipts.values()].map(metadataFromReceipt);
+  const resolvedImageMetadata = resolvedMetadata.filter((entry): entry is CustomizationResolvedImageMetadata => "width" in entry);
+  const resolvedFileMetadata = resolvedMetadata.filter((entry): entry is CustomizationResolvedFileMetadata => !("width" in entry));
   const finalValidation = validateCustomizationValuesAgainstFields({
     productId: handoff.productId,
     configurationRevision: handoff.configurationRevision,
@@ -323,6 +333,7 @@ export async function acceptConfiguredItemHandoff(
     fields: configuration.fields,
     values: handoff.customizationValues,
     resolvedImageMetadata,
+    resolvedFileMetadata,
   });
   if (!finalValidation.ok) return rejected("invalid_customization");
 

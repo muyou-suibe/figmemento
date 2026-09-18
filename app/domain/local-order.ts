@@ -13,6 +13,8 @@ import type {
   CustomizationSingleSelectValue,
   CustomizationMultiSelectValue,
   CustomizationTextValue,
+  CustomizationNumericValue,
+  CustomizationGenericFileValue,
   CustomizationValues,
 } from "./customization-value.ts";
 
@@ -122,6 +124,8 @@ export interface LocalOrderSnapshot extends LocalOrderSnapshotInput {
 
 export type LocalOrderPublicCustomizationValue =
   | Pick<CustomizationTextValue, "fieldId" | "fieldCode" | "kind" | "value">
+  | Pick<CustomizationNumericValue, "fieldId" | "fieldCode" | "kind" | "value">
+  | Pick<CustomizationGenericFileValue, "fieldId" | "fieldCode" | "kind" | "files">
   | (Pick<CustomizationSingleSelectValue, "fieldId" | "fieldCode" | "kind" | "choiceId"> & {
       readonly choiceCode?: string;
       readonly choiceLabel?: string;
@@ -236,7 +240,11 @@ function cloneCustomizationValues(values: CustomizationValues): CustomizationVal
       ? { ...value, choiceIds: [...value.choiceIds] } satisfies CustomizationMultiSelectValue
       : value.kind === "single_select"
       ? { ...value } satisfies CustomizationSingleSelectValue
-      : { ...value } satisfies CustomizationTextValue;
+      : value.kind === "numeric"
+        ? { ...value } satisfies CustomizationNumericValue
+        : value.kind === "generic_file"
+          ? { ...value, files: value.files.map((file) => ({ ...file })) } satisfies CustomizationGenericFileValue
+          : { ...value } satisfies CustomizationTextValue;
   });
 }
 
@@ -398,7 +406,11 @@ function projectCustomizationValues(
               }
             : {}),
         }
-      : { fieldId: value.fieldId, fieldCode: value.fieldCode, kind: value.kind, value: value.value };
+      : value.kind === "numeric"
+        ? { fieldId: value.fieldId, fieldCode: value.fieldCode, kind: value.kind, value: value.value }
+        : value.kind === "generic_file"
+          ? { fieldId: value.fieldId, fieldCode: value.fieldCode, kind: value.kind, files: value.files.map((file) => ({ ...file })) }
+          : { fieldId: value.fieldId, fieldCode: value.fieldCode, kind: value.kind, value: value.value };
   });
 }
 

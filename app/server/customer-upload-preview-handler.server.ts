@@ -194,13 +194,13 @@ export function createCustomerUploadPreviewHttpHandler(
 
         const content = objectResult.value.content;
         if (
-          !IMAGE_CONTENT_TYPES.includes(content.contentType) ||
+          !IMAGE_CONTENT_TYPES.includes(content.contentType as (typeof IMAGE_CONTENT_TYPES)[number]) ||
           content.contentType !== receipt.contentType ||
           !isAsyncIterableBytes(content.bytes)
         ) {
           return { status: "source_failure" };
         }
-        return { status: "image", response: imageResponse(content.contentType, content.bytes) };
+        return { status: "image", response: imageResponse(content.contentType as (typeof IMAGE_CONTENT_TYPES)[number], content.bytes) };
       },
     );
 

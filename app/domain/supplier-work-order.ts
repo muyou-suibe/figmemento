@@ -26,6 +26,8 @@ import type {
   CustomizationImageValue,
   CustomizationSingleSelectValue,
   CustomizationTextValue,
+  CustomizationNumericValue,
+  CustomizationGenericFileValue,
   CustomizationValues,
 } from "./customization-value.ts";
 
@@ -221,7 +223,11 @@ function cloneCustomizationValues(values: CustomizationValues): CustomizationVal
       ? { ...value, choiceIds: [...value.choiceIds] }
       : value.kind === "single_select"
       ? { ...value } satisfies CustomizationSingleSelectValue
-      : { ...value } satisfies CustomizationTextValue;
+      : value.kind === "numeric"
+        ? { ...value } satisfies CustomizationNumericValue
+        : value.kind === "generic_file"
+          ? { ...value, files: value.files.map((file) => ({ ...file })) } satisfies CustomizationGenericFileValue
+          : { ...value } satisfies CustomizationTextValue;
   });
 }
 

@@ -156,7 +156,8 @@ test("Task 7.4 UI source keeps selection local and Task 10.5 restores only exact
     readFile(new URL("../app/storefront/ProductCustomizationTextField.tsx", import.meta.url), "utf8"),
   ]);
 
-  assert.match(shell, /const activeFields = props\.fields\.filter\(\(field\) => field\.isActive\)/);
+  assert.match(shell, /const activeFields = props\.fields\.filter\(\(field\) => field\.isActive && isCustomizationFieldVisible\(field, props\.draft\.values\)\)/);
+  assert.match(shell, /isCustomizationFieldVisible/);
   assert.match(shell, /activeFields\.length > 0 \? activeFields\.map/);
   assert.match(shell, /<ProductCustomizationImageField/);
   assert.doesNotMatch(shell, /textFields/);

@@ -2,7 +2,7 @@
   "format": "figmemento-local-commerce-migration-manifest/v1",
   "schema": "local_commerce",
   "projectId": "figmemento-local-commerce",
-  "schemaVersion": 43,
+  "schemaVersion": 44,
   "migrations": [
     {
       "version": 1,
@@ -347,6 +347,14 @@
       "checksum": "73e4b9102061c32dba1e28827d1e38b9f14f001c90a5c0f8ad5dbb8697be0537",
       "rollback": "For a disposable project only, preserve the accepted C08 configuration and Order snapshot evidence before explicit project recreation. Never reset retained development data or rewrite immutable purchase facts.",
       "forwardFix": "Extends the accepted C03 pricing and existing choice snapshot helper for validated multi-select values without adding tables, per-choice pricing, tax, shipping, coupon, payment, fulfillment, or Supplier semantics."
+    },
+    {
+      "version": 44,
+      "migrationId": "local-commerce-customization-numeric-file-rules",
+      "filename": "0044_local-commerce-customization-numeric-file-rules.sql",
+      "checksum": "80a27baa46506202e299ce223ded9a5a522d077de50a3ded418e79df68a48352",
+      "rollback": "For a disposable project only, preserve the accepted Phase 1 customization and ledger evidence before explicit project recreation. Never reset retained development data or rewrite immutable purchase facts.",
+      "forwardFix": "Extends only the existing server-owned customization pricing seam for bounded numeric and generic-file value shapes. Never edit 0001–0043; later corrections use 0045+ and retain private receipt ownership and configuration revision checks."
     }
   ]
 }

@@ -1,19 +1,19 @@
 import type {
+  CustomerUploadContentType,
   CustomerUploadReceiptId,
   CustomerUploadTimestamp,
 } from "../domain/customer-upload.ts";
-import type { AllowedImageMimeType } from "../domain/customization-field.ts";
 
 export interface CustomerUploadObjectContent {
   readonly bytes: AsyncIterable<Uint8Array>;
-  readonly contentType: AllowedImageMimeType;
+  readonly contentType: CustomerUploadContentType;
 }
 
 export interface CustomerUploadObjectInspection {
-  readonly contentType: AllowedImageMimeType;
+  readonly contentType: CustomerUploadContentType;
   readonly byteSize: number;
-  readonly width: number;
-  readonly height: number;
+  readonly width?: number;
+  readonly height?: number;
 }
 
 export type CustomerUploadObjectStoreResult<T> =

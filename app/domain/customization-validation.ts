@@ -3,10 +3,12 @@ import {
   isRecord,
   unknownFieldIssues,
 } from "./catalog/validation.ts";
-import type { AllowedImageMimeType, CustomizationField } from "./customization-field.ts";
+import type { AllowedGenericFileMimeType, AllowedImageMimeType, CustomizationField, CustomizationPredicate } from "./customization-field.ts";
 import type {
+  CustomizationGenericFileValue,
   CustomizationImageValue,
   CustomizationMultiSelectValue,
+  CustomizationNumericValue,
   CustomizationValue,
   CustomizationValues,
 } from "./customization-value.ts";
@@ -36,7 +38,19 @@ export type CustomizationValidationIssueCode =
   | "image_mime_not_allowed"
   | "image_too_large"
   | "image_dimensions_too_small"
-  | "crop_not_allowed";
+  | "crop_not_allowed"
+  | "numeric_out_of_range"
+  | "numeric_step_mismatch"
+  | "file_count_too_low"
+  | "file_count_too_high"
+  | "file_metadata_missing"
+  | "file_mime_not_allowed"
+  | "file_too_large"
+  | "duplicate_file_metadata"
+  | "invalid_file_metadata"
+  | "conditional_required"
+  | "hidden_value"
+  | "invalid_rule_graph";
 
 export interface CustomizationValidationIssue {
   path: string;
@@ -56,6 +70,12 @@ export interface CustomizationResolvedImageMetadata {
   height: number;
 }
 
+export interface CustomizationResolvedFileMetadata {
+  receiptId: string;
+  mimeType: AllowedGenericFileMimeType;
+  fileSizeBytes: number;
+}
+
 export interface ValidateCustomizationValuesInput {
   productId: string;
   /** Browser/draft claim, which must be compared against current authority. */
@@ -65,6 +85,7 @@ export interface ValidateCustomizationValuesInput {
   fields: readonly CustomizationField[];
   values: CustomizationValues;
   resolvedImageMetadata: readonly CustomizationResolvedImageMetadata[];
+  resolvedFileMetadata?: readonly CustomizationResolvedFileMetadata[];
 }
 
 function issue(
@@ -93,6 +114,13 @@ const IMAGE_MIME_TYPES: readonly AllowedImageMimeType[] = [
   "image/jpeg",
   "image/png",
   "image/webp",
+];
+
+const GENERIC_FILE_MIME_TYPES: readonly AllowedGenericFileMimeType[] = [
+  "application/pdf",
+  "text/plain",
+  "application/zip",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ];
 
 export function parseCustomizationResolvedImageMetadata(
@@ -133,6 +161,17 @@ export function parseCustomizationResolvedImageMetadata(
       });
 }
 
+export function parseCustomizationResolvedFileMetadata(
+  value: unknown,
+): CustomizationValidationResult<CustomizationResolvedFileMetadata> {
+  if (!isRecord(value)) return failure(issue("$", "invalid_file_metadata", "Resolved file metadata must be an object."));
+  const issues = unknownFieldIssues(value, ["receiptId", "mimeType", "fileSizeBytes"]).map((entry) => issue(entry.path, "invalid_file_metadata", entry.message));
+  if (!isIdentifier(value.receiptId)) issues.push(issue("$.receiptId", "invalid_file_metadata", "Resolved file receipt ID is invalid."));
+  if (!GENERIC_FILE_MIME_TYPES.includes(value.mimeType as AllowedGenericFileMimeType)) issues.push(issue("$.mimeType", "invalid_file_metadata", "Resolved generic-file MIME type is not allowlisted."));
+  if (!isPositiveFiniteInteger(value.fileSizeBytes)) issues.push(issue("$.fileSizeBytes", "invalid_file_metadata", "Resolved file size must be a positive finite integer."));
+  return issues.length > 0 ? failure(...issues) : success({ receiptId: value.receiptId as string, mimeType: value.mimeType as AllowedGenericFileMimeType, fileSizeBytes: value.fileSizeBytes as number });
+}
+
 function normalizeImageValue(value: CustomizationImageValue): CustomizationImageValue {
   return {
     ...value,
@@ -141,6 +180,12 @@ function normalizeImageValue(value: CustomizationImageValue): CustomizationImage
       ...(image.crop ? { crop: { ...image.crop } } : {}),
     })),
   };
+}
+
+function normalizeNumericValue(value: CustomizationNumericValue, field: Extract<CustomizationField, { kind: "numeric" }>): CustomizationNumericValue {
+  const decimals = Math.max(0, Math.min(6, (field.constraints.step.toString().split(".")[1] ?? "").length));
+  const factor = 10 ** decimals;
+  return { ...value, value: Math.round(value.value * factor) / factor };
 }
 
 function normalizeMultiSelectValue(
@@ -163,6 +208,8 @@ export function normalizeCustomizationValue(value: CustomizationValue): Customiz
   if (value.kind === "image") return normalizeImageValue(value);
   if (value.kind === "single_select") return { ...value };
   if (value.kind === "multi_select") return { ...value, choiceIds: [...value.choiceIds] };
+  if (value.kind === "numeric") return { ...value };
+  if (value.kind === "generic_file") return { ...value, files: value.files.map((file) => ({ ...file })) };
   return { ...value, value: value.value.trim() };
 }
 
@@ -206,6 +253,110 @@ function collectAuthoritativeFieldIssues(
   };
 }
 
+function predicateReferences(predicate: CustomizationPredicate | undefined): string[] {
+  return predicate ? [predicate.fieldId] : [];
+}
+
+/** Validates the bounded, non-expression predicate graph before it is used. */
+export function validateCustomizationRuleGraph(
+  fields: readonly CustomizationField[],
+): CustomizationValidationResult<true> {
+  const issues: CustomizationValidationIssue[] = [];
+  const byId = new Map(fields.map((field) => [field.id, field]));
+  const edges = new Map<string, string[]>();
+  for (const field of fields) {
+    const refs = [
+      ...predicateReferences(field.rules?.requiredWhen),
+      ...predicateReferences(field.rules?.visibleWhen),
+    ];
+    for (const ref of refs) {
+      if (!byId.has(ref)) issues.push(issue(`$.fields[${fields.indexOf(field)}].rules`, "invalid_rule_graph", "Rule references an unknown field."));
+      if (ref === field.id) issues.push(issue(`$.fields[${fields.indexOf(field)}].rules`, "invalid_rule_graph", "A field rule cannot reference itself."));
+    }
+    edges.set(field.id, refs);
+  }
+  const visiting = new Set<string>();
+  const visited = new Set<string>();
+  const visit = (id: string): void => {
+    if (visiting.has(id)) { issues.push(issue("$.fields", "invalid_rule_graph", "Customization rule dependencies cannot contain cycles.")); return; }
+    if (visited.has(id)) return;
+    visiting.add(id);
+    for (const next of edges.get(id) ?? []) if (byId.has(next)) visit(next);
+    visiting.delete(id); visited.add(id);
+  };
+  for (const field of fields) visit(field.id);
+  return issues.length > 0 ? failure(...issues) : success(true);
+}
+
+function valueIsPresent(value: CustomizationValue | undefined): boolean {
+  if (!value) return false;
+  if (value.kind === "image") return value.images.length > 0;
+  if (value.kind === "generic_file") return value.files.length > 0;
+  if (value.kind === "multi_select") return value.choiceIds.length > 0;
+  if (value.kind === "single_select") return value.choiceId.length > 0;
+  if (value.kind === "numeric") return Number.isFinite(value.value);
+  return value.value.trim().length > 0;
+}
+
+function predicateMatches(
+  predicate: CustomizationPredicate | undefined,
+  valuesByFieldId: ReadonlyMap<string, CustomizationValue>,
+): boolean {
+  if (!predicate) return false;
+  const value = valuesByFieldId.get(predicate.fieldId);
+  if (predicate.kind === "field_present") return valueIsPresent(value);
+  if (predicate.kind === "choice_selected") {
+    return value?.kind === "single_select"
+      ? value.choiceId === predicate.choiceId
+      : value?.kind === "multi_select" && value.choiceIds.includes(predicate.choiceId);
+  }
+  if (value?.kind !== "numeric") return false;
+  if (predicate.operator === "eq") return value.value === predicate.value;
+  if (predicate.operator === "neq") return value.value !== predicate.value;
+  if (predicate.operator === "gte") return value.value >= predicate.value;
+  return value.value <= predicate.value;
+}
+
+export function isCustomizationFieldVisible(
+  field: CustomizationField,
+  values: CustomizationValues,
+): boolean {
+  return !field.rules?.visibleWhen || predicateMatches(field.rules.visibleWhen, new Map(values.map((value) => [value.fieldId, value])));
+}
+
+function validateNumericValue(
+  value: CustomizationNumericValue,
+  field: Extract<CustomizationField, { kind: "numeric" }>,
+  path: string,
+): CustomizationValidationIssue[] {
+  const issues: CustomizationValidationIssue[] = [];
+  const { min, max, step } = field.constraints;
+  if (value.value < min || value.value > max) issues.push(issue(`${path}.value`, "numeric_out_of_range", "Numeric value is outside the configured range."));
+  const quotient = (value.value - min) / step;
+  if (Math.abs(quotient - Math.round(quotient)) > 1e-9) issues.push(issue(`${path}.value`, "numeric_step_mismatch", "Numeric value does not match the configured step."));
+  return issues;
+}
+
+function validateGenericFileValue(
+  value: CustomizationGenericFileValue,
+  field: Extract<CustomizationField, { kind: "generic_file" }>,
+  metadataByReceiptId: ReadonlyMap<string, CustomizationResolvedFileMetadata>,
+  path: string,
+): CustomizationValidationIssue[] {
+  const issues: CustomizationValidationIssue[] = [];
+  const minimum = Math.max(field.required ? 1 : 0, field.constraints.minFileCount);
+  if (value.files.length < minimum) issues.push(issue(`${path}.files`, "file_count_too_low", "File count is below the configured minimum."));
+  if (value.files.length > field.constraints.maxFileCount) issues.push(issue(`${path}.files`, "file_count_too_high", "File count exceeds the configured maximum."));
+  value.files.forEach((file, index) => {
+    const metadata = metadataByReceiptId.get(file.receiptId);
+    const filePath = `${path}.files[${index}]`;
+    if (!metadata) { issues.push(issue(`${filePath}.receiptId`, "file_metadata_missing", "Resolved file metadata is required.")); return; }
+    if (!field.constraints.allowedMimeTypes.includes(metadata.mimeType)) issues.push(issue(`${filePath}.receiptId`, "file_mime_not_allowed", "File MIME type is not allowed for this field."));
+    if (metadata.fileSizeBytes > field.constraints.maxBytes) issues.push(issue(`${filePath}.receiptId`, "file_too_large", "File byte size exceeds the configured maximum."));
+  });
+  return issues;
+}
+
 function collectMetadataIndex(
   metadata: readonly CustomizationResolvedImageMetadata[],
 ): { issues: CustomizationValidationIssue[]; byReceiptId: ReadonlyMap<string, CustomizationResolvedImageMetadata> } {
@@ -215,6 +366,18 @@ function collectMetadataIndex(
     if (byReceiptId.has(entry.receiptId)) {
       issues.push(issue(`$.resolvedImageMetadata[${index}].receiptId`, "duplicate_image_metadata", "Resolved image metadata receipt IDs must be unique."));
     }
+    byReceiptId.set(entry.receiptId, entry);
+  });
+  return { issues, byReceiptId };
+}
+
+function collectFileMetadataIndex(
+  metadata: readonly CustomizationResolvedFileMetadata[],
+): { issues: CustomizationValidationIssue[]; byReceiptId: ReadonlyMap<string, CustomizationResolvedFileMetadata> } {
+  const issues: CustomizationValidationIssue[] = [];
+  const byReceiptId = new Map<string, CustomizationResolvedFileMetadata>();
+  metadata.forEach((entry, index) => {
+    if (byReceiptId.has(entry.receiptId)) issues.push(issue(`$.resolvedFileMetadata[${index}].receiptId`, "duplicate_file_metadata", "Resolved file metadata receipt IDs must be unique."));
     byReceiptId.set(entry.receiptId, entry);
   });
   return { issues, byReceiptId };
@@ -281,7 +444,10 @@ export function validateCustomizationValuesAgainstFields(
     input.fields,
   );
   const metadataIndex = collectMetadataIndex(input.resolvedImageMetadata);
-  const issues = [...fieldAuthority.issues, ...metadataIndex.issues];
+  const fileMetadataIndex = collectFileMetadataIndex(input.resolvedFileMetadata ?? []);
+  const ruleGraph = validateCustomizationRuleGraph(input.fields);
+  const issues = [...fieldAuthority.issues, ...metadataIndex.issues, ...fileMetadataIndex.issues];
+  if (!ruleGraph.ok) issues.push(...ruleGraph.issues);
   if (
     !fieldAuthority.authoritativeRevision
     || input.configurationRevision.trim().length === 0
@@ -324,7 +490,9 @@ export function validateCustomizationValuesAgainstFields(
       return;
     }
 
-    const normalized = normalizeCustomizationValue(value);
+    const normalized = field.kind === "numeric" && value.kind === "numeric"
+      ? normalizeNumericValue(value, field)
+      : normalizeCustomizationValue(value);
     if (field.kind === "image" && normalized.kind === "image") {
       issues.push(...validateImageValue(normalized, field, metadataIndex.byReceiptId, valuePath));
     } else if (field.kind === "single_select" && normalized.kind === "single_select") {
@@ -351,6 +519,10 @@ export function validateCustomizationValuesAgainstFields(
         normalizedValues.push(normalizeMultiSelectValue(normalized, field));
       }
       return;
+    } else if (field.kind === "numeric" && normalized.kind === "numeric") {
+      issues.push(...validateNumericValue(normalized, field, valuePath));
+    } else if (field.kind === "generic_file" && normalized.kind === "generic_file") {
+      issues.push(...validateGenericFileValue(normalized, field, fileMetadataIndex.byReceiptId, valuePath));
     } else if ((field.kind === "short_text" || field.kind === "long_text")
       && (normalized.kind === "short_text" || normalized.kind === "long_text")) {
       if (normalized.value.length > field.constraints.maxLength) {
@@ -361,6 +533,19 @@ export function validateCustomizationValuesAgainstFields(
       }
     }
     normalizedValues.push(normalized);
+  });
+
+  const normalizedByFieldId = new Map(normalizedValues.map((value) => [value.fieldId, value]));
+  input.fields.forEach((field, index) => {
+    if (field.productId !== input.productId || !field.isActive) return;
+    const submitted = normalizedByFieldId.get(field.id);
+    if (field.rules?.visibleWhen && !predicateMatches(field.rules.visibleWhen, normalizedByFieldId) && submitted) {
+      issues.push(issue(`$.values[${index}]`, "hidden_value", "Hidden customization fields cannot submit a value."));
+    }
+    const conditionalRequired = field.rules?.requiredWhen && predicateMatches(field.rules.requiredWhen, normalizedByFieldId);
+    if (conditionalRequired && !valueIsPresent(submitted)) {
+      issues.push(issue(`$.fields[${index}].id`, "conditional_required", "Customization field is required when its condition is satisfied."));
+    }
   });
 
   input.fields.forEach((field, index) => {

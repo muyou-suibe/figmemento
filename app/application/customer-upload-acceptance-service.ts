@@ -89,8 +89,8 @@ function timestampsAreEqual(left: CustomerUploadReceipt, right: CustomerUploadRe
     && left.originalFilename === right.originalFilename
     && left.contentType === right.contentType
     && left.byteSize === right.byteSize
-    && left.dimensions.width === right.dimensions.width
-    && left.dimensions.height === right.dimensions.height
+    && left.dimensions?.width === right.dimensions?.width
+    && left.dimensions?.height === right.dimensions?.height
     && left.createdAt === right.createdAt
     && left.expiresAt === right.expiresAt
     && left.lifecycle === right.lifecycle

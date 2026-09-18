@@ -208,7 +208,8 @@ test("Task 7.3 text UI source enforces bounded local controls and accessibility 
     readFile(new URL("../app/application/customization-text-field-feedback.ts", import.meta.url), "utf8"),
   ]);
 
-  assert.match(shell, /const activeFields = props\.fields\.filter\(\(field\) => field\.isActive\)/);
+  assert.match(shell, /const activeFields = props\.fields\.filter\(\(field\) => field\.isActive && isCustomizationFieldVisible\(field, props\.draft\.values\)\)/);
+  assert.match(shell, /isCustomizationFieldVisible/);
   assert.match(shell, /isActiveTextCustomizationField\(field\)/);
   assert.match(shell, /<ProductCustomizationTextField/);
   assert.match(shell, /ReadonlySet<string>/);

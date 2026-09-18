@@ -153,6 +153,7 @@ function cloneCustomizationField(field: CustomizationField): CustomizationField 
       : field.kind === "single_select" || field.kind === "multi_select"
         ? { ...field.constraints, choices: field.constraints.choices.map((choice) => ({ ...choice })) }
         : { ...field.constraints },
+    ...(field.rules ? { rules: { ...field.rules } } : {}),
   } as CustomizationField;
 }
 
@@ -228,6 +229,7 @@ function customizationFieldFromReplacement(
     position: replacement.position,
     configurationRevision,
     constraints: replacement.constraints,
+    rules: replacement.rules,
   });
   return parsed.ok ? parsed.value : null;
 }

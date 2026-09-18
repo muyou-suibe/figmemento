@@ -545,7 +545,9 @@ export function LocalOrderSuccessExperience({
                     ? <span key={value.fieldId}>{value.fieldCode}: {value.choiceLabel ?? value.choiceId}</span>
                     : value.kind === "multi_select"
                       ? <span key={value.fieldId}>{value.fieldCode}: {(value.selectedChoices ?? []).map((choice) => choice.choiceLabel).join(", ") || value.choiceIds.join(", ")}</span>
-                    : <span key={value.fieldId}>{value.fieldCode}: {value.value}</span>)}
+                    : value.kind === "generic_file"
+                      ? <span key={value.fieldId}>{value.fieldCode}: {value.files.length} {t(value.files.length === 1 ? "file" : "files")}</span>
+                      : <span key={value.fieldId}>{value.fieldCode}: {value.value}</span>)}
               </div>
               <strong>{formatCurrencyCents(line.lineSubtotalCents, line.currency)}</strong>
             </article>

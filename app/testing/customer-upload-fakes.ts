@@ -96,7 +96,7 @@ interface ReceiptEntry {
 function cloneReceipt(receipt: CustomerUploadReceipt): CustomerUploadReceipt {
   return {
     ...receipt,
-    dimensions: { ...receipt.dimensions },
+    ...(receipt.dimensions ? { dimensions: { ...receipt.dimensions } } : {}),
   };
 }
 
@@ -106,7 +106,7 @@ function withoutOwner(receipt: OwnedCustomerUploadReceipt): CustomerUploadReceip
     ...(receipt.originalFilename !== undefined ? { originalFilename: receipt.originalFilename } : {}),
     contentType: receipt.contentType,
     byteSize: receipt.byteSize,
-    dimensions: { ...receipt.dimensions },
+    ...(receipt.dimensions ? { dimensions: { ...receipt.dimensions } } : {}),
     createdAt: receipt.createdAt,
     expiresAt: receipt.expiresAt,
     lifecycle: receipt.lifecycle,

@@ -55,7 +55,7 @@ interface ReceiptEntry {
 }
 
 function cloneReceipt(receipt: CustomerUploadReceipt): CustomerUploadReceipt {
-  return { ...receipt, dimensions: { ...receipt.dimensions } };
+  return { ...receipt, ...(receipt.dimensions ? { dimensions: { ...receipt.dimensions } } : {}) };
 }
 
 function cloneOwnedReceipt(receipt: OwnedCustomerUploadReceipt): OwnedCustomerUploadReceipt {
@@ -68,7 +68,7 @@ function withoutOwner(receipt: OwnedCustomerUploadReceipt): CustomerUploadReceip
     ...(receipt.originalFilename !== undefined ? { originalFilename: receipt.originalFilename } : {}),
     contentType: receipt.contentType,
     byteSize: receipt.byteSize,
-    dimensions: { ...receipt.dimensions },
+    ...(receipt.dimensions ? { dimensions: { ...receipt.dimensions } } : {}),
     createdAt: receipt.createdAt,
     expiresAt: receipt.expiresAt,
     lifecycle: receipt.lifecycle,

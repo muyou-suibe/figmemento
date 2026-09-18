@@ -9,13 +9,15 @@ import type {
   MultiSelectCustomizationFieldConstraints,
   SingleSelectCustomizationFieldConstraints,
   TextCustomizationFieldConstraints,
+  NumericCustomizationFieldConstraints,
+  GenericFileCustomizationFieldConstraints,
 } from "../domain/customization-field.ts";
 
 export type AdminCustomizationEditorField = AdminCustomizationFieldReplacement;
 
 export function defaultCustomizationConstraints(
   kind: CustomizationFieldKind,
-): TextCustomizationFieldConstraints | ImageCustomizationFieldConstraints | SingleSelectCustomizationFieldConstraints | MultiSelectCustomizationFieldConstraints {
+): TextCustomizationFieldConstraints | ImageCustomizationFieldConstraints | SingleSelectCustomizationFieldConstraints | MultiSelectCustomizationFieldConstraints | NumericCustomizationFieldConstraints | GenericFileCustomizationFieldConstraints {
   return kind === "image"
     ? {
         allowedMimeTypes: ["image/jpeg", "image/png", "image/webp"],
@@ -28,7 +30,11 @@ export function defaultCustomizationConstraints(
     : kind === "single_select"
       ? { choices: [{ id: "new:choice-1", code: "choice-1", label: "Choice 1", position: 0, isActive: true }] }
       : kind === "multi_select"
-        ? { choices: [{ id: "new:choice-1", code: "choice-1", label: "Choice 1", position: 0, isActive: true }], minSelections: 0, maxSelections: 1 }
+      ? { choices: [{ id: "new:choice-1", code: "choice-1", label: "Choice 1", position: 0, isActive: true }], minSelections: 0, maxSelections: 1 }
+      : kind === "numeric"
+        ? { min: 0, max: 100, step: 1 }
+      : kind === "generic_file"
+        ? { allowedMimeTypes: ["application/pdf", "text/plain"], maxBytes: 5_000_000, minFileCount: 0, maxFileCount: 1 }
       : { maxLength: 100 };
 }
 
@@ -62,7 +68,7 @@ export function addCustomizationEditorField(
     draftCounter: nextCounter,
     fields: normalizeCustomizationEditorPositions([...fields, {
       identity: { kind: "new", draftId: `new:field-${nextCounter}`, code: `field-${nextCounter}` },
-      label: kind === "image" ? "Photo" : kind === "short_text" ? "Text" : kind === "long_text" ? "Long text" : kind === "single_select" ? "Choose one" : "Choose many",
+      label: kind === "image" ? "Photo" : kind === "short_text" ? "Text" : kind === "long_text" ? "Long text" : kind === "single_select" ? "Choose one" : kind === "multi_select" ? "Choose many" : kind === "numeric" ? "Number" : "Attachment",
       kind,
       required: false,
       isActive: true,

@@ -1057,7 +1057,7 @@ export function ProductCustomizationImageField(props: ProductCustomizationImageF
                   {slot.decodedDimensions && <span>{slot.decodedDimensions.width} × {slot.decodedDimensions.height}px</span>}
                 </div>
               )}
-              {receipt && <p className={styles.customizationAcceptedMetadata}>{t("Server accepted")}: {receipt.contentType}, {receipt.byteSize} bytes, {receipt.dimensions.width} × {receipt.dimensions.height}px.</p>}
+              {receipt && receipt.dimensions && <p className={styles.customizationAcceptedMetadata}>{t("Server accepted")}: {receipt.contentType}, {receipt.byteSize} bytes, {receipt.dimensions.width} × {receipt.dimensions.height}px.</p>}
               {props.field.constraints.cropEnabled && slot.image && (
                 <div className={styles.customizationCropSection}>
                   {canEditCrop ? (

@@ -10,6 +10,7 @@
     "build": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext build",
     "start": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext start",
     "test": "npm run test:offline",
+    "test:phase1-customization": "node --experimental-strip-types --test tests/customization-numeric-file-conditional.test.mjs tests/customer-generic-file-upload.test.mjs",
     "build:pages-preview": "vite build --config preview/github-pages/vite.config.ts",
     "test:pages-preview:batch-a": "node --experimental-strip-types --test tests/github-pages-preview-foundation.test.mjs",
     "test:pages-preview:batch-b": "node --experimental-strip-types --test tests/github-pages-preview-batch-b.test.mjs",
@@ -29,7 +30,7 @@
   "test:rendered": "node --test tests/rendered-html.test.mjs tests/shopping-cart-rendered.test.mjs tests/local-fulfillment-rendered.test.mjs tests/local-tracking-rendered.test.mjs tests/figmemento-fusion-shell-rendered.test.mjs",
     "typecheck": "tsc --noEmit --incremental false",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
-    "verify": "npm run lint && npm run typecheck && npm run test:offline && npm run build && npm run test:rendered"
+    "verify": "npm run lint && npm run typecheck && npm run test:offline && npm run test:phase1-customization && npm run build && npm run test:rendered"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.0",

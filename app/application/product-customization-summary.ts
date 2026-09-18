@@ -32,7 +32,7 @@ export type ProductCustomizationSummaryRow =
   | {
       /** Stable internal field identity; never shown to the customer. */
       readonly renderKey: string;
-      readonly kind: "short_text" | "long_text" | "single_select" | "multi_select";
+      readonly kind: "short_text" | "long_text" | "single_select" | "multi_select" | "numeric" | "generic_file";
       readonly label: string;
       readonly state: "provided" | "not_provided" | "not_provided_yet";
       readonly value?: string;
@@ -172,7 +172,7 @@ export function createProductCustomizationSummary(input: {
               label: `Image ${index + 1}`,
               state: "available",
               ...(receipt.originalFilename ? { filename: receipt.originalFilename } : {}),
-              metadata: imageMetadata(receipt.contentType, receipt.dimensions.width, receipt.dimensions.height),
+              metadata: imageMetadata(receipt.contentType as "image/jpeg" | "image/png" | "image/webp", receipt.dimensions!.width, receipt.dimensions!.height),
               ...(image.crop ? { crop: summarizeCrop(image.crop) } : {}),
             }
           : { renderKey: `${field.id}:${index}`, label: `Image ${index + 1}`, state: "needs_review" };
@@ -200,6 +200,14 @@ export function createProductCustomizationSummary(input: {
       return choices.length > 0
         ? { renderKey: field.id, kind: "multi_select", label: field.label, state: "provided", value: choices.map((choice) => choice.label).join(", ") }
         : { renderKey: field.id, kind: "multi_select", label: field.label, state: missingState(field.required) };
+    }
+    if (normalized.kind === "numeric") {
+      return { renderKey: field.id, kind: "numeric", label: field.label, state: "provided", value: String(normalized.value) };
+    }
+    if (normalized.kind === "generic_file") {
+      return normalized.files.length > 0
+        ? { renderKey: field.id, kind: "generic_file", label: field.label, state: "provided", value: `${normalized.files.length} file${normalized.files.length === 1 ? "" : "s"}` }
+        : { renderKey: field.id, kind: "generic_file", label: field.label, state: missingState(field.required) };
     }
     return normalized.value.length > 0
       ? { renderKey: field.id, kind: normalized.kind, label: field.label, state: "provided", value: normalized.value }

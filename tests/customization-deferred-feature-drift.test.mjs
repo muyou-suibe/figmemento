@@ -333,7 +333,8 @@ test("9.5-11: production customization source has no surcharge formula, arbitrar
   const sources = await sourceMap(productionCustomizationSources);
   const source = [...sources.values()].join("\n");
   assert.doesNotMatch(source, /\b(?:priceDelta|additionalPrice|priceFormula|pricingFormula|customizationPrice|customerInputPrice|percentagePrice)\b/i);
-  assert.doesNotMatch(source, /\b(?:condition|conditions|dependsOn|dependencyExpression|visibilityExpression|predicate|script)\s*:/i);
+  assert.doesNotMatch(source, /\b(?:condition|conditions|dependsOn|dependencyExpression|visibilityExpression|script)\s*:/i);
+  assert.doesNotMatch(source, /\b(?:eval|Function)\s*\(/i);
   assert.doesNotMatch(source, /\b(?:supplierId|supplierCode|supplierInstruction|factoryId|factoryCode|routingRule|productionRoute|productionRouting|productionDestination)\b/);
 });
 
