@@ -1,5 +1,6 @@
 import sharp from "sharp";
 import { parseCustomizationCropRegion } from "../../../app/domain/customization-value.ts";
+import { classifyImageClarity, CLARITY_PROFILE_VERSION, measureImageClarity } from "./quality.mjs";
 
 // Technical resource bounds, not a per-owner/field upload quota. Never use
 // metadata() alone as proof that compressed image pixels can be decoded.
@@ -13,13 +14,14 @@ const exactKeys = (value, keys) => value && typeof value === "object"
 /** Stateless trusted processing only: no receipt, draft, slot, DB or URL I/O. */
 export async function processLocalImage(bytes, policy) {
   try {
-    if (!exactKeys(policy, ["allowedMimeTypes", "maxBytes", "minDimensions", "cropEnabled", "crop"])
+    if (!exactKeys(policy, ["allowedMimeTypes", "maxBytes", "minDimensions", "cropEnabled", "crop", "inspectClarity"])
       || !positiveInteger(policy.maxBytes) || policy.maxBytes > MAX_IMAGE_BYTES
       || !Array.isArray(policy.allowedMimeTypes) || !policy.allowedMimeTypes.length
       || policy.allowedMimeTypes.some((mime) => !Object.values(MIME).includes(mime))
       || !exactKeys(policy.minDimensions, ["width", "height"])
       || !positiveInteger(policy.minDimensions.width) || !positiveInteger(policy.minDimensions.height)
       || typeof policy.cropEnabled !== "boolean"
+      || (policy.inspectClarity !== undefined && policy.inspectClarity !== true)
       || !(bytes instanceof Uint8Array) || bytes.length === 0 || bytes.length > policy.maxBytes) {
       return { status: "rejected" };
     }
@@ -54,11 +56,21 @@ export async function processLocalImage(bytes, policy) {
     }
     const png = await sharp(decoded.data, { raw: { width, height, channels } })
       .extract(region).png().toBuffer();
+    let clarity;
+    if (policy.inspectClarity === true) {
+      try {
+        const measurement = await measureImageClarity(decoded.data, width, height, channels);
+        clarity = { profileVersion: CLARITY_PROFILE_VERSION, state: classifyImageClarity(measurement) };
+      } catch {
+        // Optional guidance must never turn a structurally valid upload into a rejection.
+        clarity = { profileVersion: CLARITY_PROFILE_VERSION, state: "unavailable" };
+      }
+    }
     return {
       status: "processed",
       contentType: MIME[metadata.format], byteSize: original.length,
       dimensions: { width, height }, outputDimensions: { width: region.width, height: region.height },
-      png,
+      png, ...(clarity ? { clarity } : {}),
     };
   } catch {
     // Decoder/codec/path diagnostics are never public protocol fields.

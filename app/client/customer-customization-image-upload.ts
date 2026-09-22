@@ -2,9 +2,10 @@ import {
   parseCustomerUploadReceipt,
   type CustomerUploadReceipt,
 } from "../domain/customer-upload.ts";
+import type { CustomerImageClarityGuidance } from "../domain/customer-image-clarity.ts";
 
 export type CustomerCustomizationImageUploadResult =
-  | { readonly status: "accepted"; readonly receipt: CustomerUploadReceipt }
+  | { readonly status: "accepted"; readonly receipt: CustomerUploadReceipt; readonly clarity?: CustomerImageClarityGuidance }
   | { readonly status: "released" }
   | { readonly status: "conflict" }
   | { readonly status: "invalid_request" }
@@ -30,16 +31,23 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function parseAcceptedUploadBody(value: unknown): CustomerUploadReceipt | null {
+function parseAcceptedUploadBody(value: unknown): { receipt: CustomerUploadReceipt; clarity?: CustomerImageClarityGuidance } | null {
   if (!isRecord(value)) return null;
   const keys = Object.keys(value);
   if (
     !keys.includes("receipt")
-    || keys.some((key) => key !== "receipt" && key !== "warnings")
+    || keys.some((key) => key !== "receipt" && key !== "warnings" && key !== "clarity")
     || (value.warnings !== undefined && !Array.isArray(value.warnings))
   ) return null;
+  let clarity: CustomerImageClarityGuidance | undefined;
+  if (value.clarity !== undefined) {
+    if (!isRecord(value.clarity) || Object.keys(value.clarity).some(key => key !== "state" && key !== "profileVersion")
+      || value.clarity.profileVersion !== "local-clarity-v1"
+      || !["clear", "soft_warning", "strong_warning", "inconclusive", "unavailable"].includes(String(value.clarity.state))) return null;
+    clarity = { profileVersion: "local-clarity-v1", state: value.clarity.state as CustomerImageClarityGuidance["state"] };
+  }
   const receipt = parseCustomerUploadReceipt(value.receipt);
-  return receipt.ok && receipt.value.lifecycle === "active" ? receipt.value : null;
+  return receipt.ok && receipt.value.lifecycle === "active" ? { receipt: receipt.value, ...(clarity ? { clarity } : {}) } : null;
 }
 
 /**
@@ -78,9 +86,9 @@ export async function uploadCustomerCustomizationImage(
   if (response.status !== 201) return { status: "temporarily_unavailable" };
 
   try {
-    const receipt = parseAcceptedUploadBody(await response.json());
-    return receipt
-      ? { status: "accepted", receipt }
+    const accepted = parseAcceptedUploadBody(await response.json());
+    return accepted
+      ? { status: "accepted", ...accepted }
       : { status: "malformed_success" };
   } catch {
     return { status: "malformed_success" };

@@ -3,6 +3,7 @@ import type { ImageCustomizationFieldConstraints, AllowedImageMimeType } from ".
 import type { CustomizationCropRegion } from "../domain/customization-value.ts";
 import { resolveLocalPersistentComposition } from "../application/local-persistent-commerce-composition.server.ts";
 import { createLocalPersistentSupabaseAdapter } from "../infrastructure/local-commerce/local-persistent-supabase-adapter.server.ts";
+import type { CustomerImageClarityGuidance } from "../domain/customer-image-clarity.ts";
 
 export const LOCAL_IMAGE_MAX_BYTES = 20 * 1024 * 1024;
 const MAX_RESPONSE_BYTES = 90 * 1024 * 1024;
@@ -50,6 +51,7 @@ export type LocalProcessedImage = {
   readonly dimensions: { readonly width: number; readonly height: number };
   readonly outputDimensions: { readonly width: number; readonly height: number };
   readonly png: Uint8Array;
+  readonly clarity?: CustomerImageClarityGuidance;
 } | { readonly status: "rejected" | "unavailable" };
 
 /** Worker-compatible HTTP client; no sharp/native module enters the app graph.
@@ -61,6 +63,7 @@ export async function processLocalCommerceImage(
   bytes: Uint8Array,
   constraints: ImageCustomizationFieldConstraints,
   crop?: CustomizationCropRegion,
+  inspectClarity = false,
 ): Promise<LocalProcessedImage> {
   try {
     const composition = resolveLocalPersistentComposition(environment, { requiredCapabilities: ["upload", "catalog"] });
@@ -81,7 +84,8 @@ export async function processLocalCommerceImage(
         "x-commerce-marker": composition.value.markerDigest,
         "x-image-policy": JSON.stringify({ allowedMimeTypes: constraints.allowedMimeTypes,
           maxBytes: Math.min(constraints.maxBytes, LOCAL_IMAGE_MAX_BYTES), minDimensions: constraints.minDimensions,
-          cropEnabled: constraints.cropEnabled, ...(crop === undefined ? {} : { crop }) }),
+          cropEnabled: constraints.cropEnabled, ...(crop === undefined ? {} : { crop }),
+          ...(inspectClarity ? { inspectClarity: true } : {}) }),
       }, body: bytes as BodyInit,
     });
     if (!response.ok) return { status: response.status === 400 || response.status === 413 ? "rejected" : "unavailable" };
@@ -96,8 +100,14 @@ export async function processLocalCommerceImage(
       || result.byteSize !== bytes.byteLength || !validDimensions(result.dimensions)
       || !validDimensions(result.outputDimensions) || typeof result.png !== "string"
       || !/^[A-Za-z0-9+/]+={0,2}$/.test(result.png)) return { status: "unavailable" };
+    const clarity = result.clarity && typeof result.clarity === "object"
+      && result.clarity.profileVersion === "local-clarity-v1"
+      && ["clear", "soft_warning", "strong_warning", "inconclusive", "unavailable"].includes(result.clarity.state)
+      ? { profileVersion: "local-clarity-v1" as const, state: result.clarity.state as CustomerImageClarityGuidance["state"] }
+      : { profileVersion: "local-clarity-v1" as const, state: "unavailable" as const };
     return { status: "processed", contentType: result.contentType, byteSize: result.byteSize,
       dimensions: result.dimensions, outputDimensions: result.outputDimensions,
-      png: Uint8Array.from(atob(result.png), (character) => character.charCodeAt(0)) };
+      png: Uint8Array.from(atob(result.png), (character) => character.charCodeAt(0)),
+      ...(inspectClarity ? { clarity } : {}) };
   } catch { return { status: "unavailable" }; }
 }

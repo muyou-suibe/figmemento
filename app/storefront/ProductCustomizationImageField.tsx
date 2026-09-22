@@ -74,6 +74,8 @@ import styles from "./catalog-storefront.module.css";
 import { cropPersistentCustomizationImage } from "../client/local-persistent-draft.ts";
 import { trackLocalAnalyticsEvent } from "../client/local-analytics.ts";
 import { useReferenceLanguage } from "./ReferenceLanguageProvider";
+import { isRenderablePublicAssetUrl, type PublicProductAssetView } from "../application/catalog-assets.ts";
+import type { CustomerImageClarityGuidance } from "../domain/customer-image-clarity.ts";
 
 type ImageCustomizationField = Extract<CustomizationField, { kind: "image" }>;
 type LocalImageStatus = "idle" | "decoding" | "ready" | "decode_failed" | "uploading"
@@ -88,6 +90,7 @@ interface PersistentSlotOperationContext {
   readonly receipt?: CustomerUploadReceipt;
   readonly saveKey?: string;
   readonly saveBase?: BrowserConfirmedDraft;
+  readonly clarity?: CustomerImageClarityGuidance;
 }
 
 interface ProductCustomizationImageSlotState extends ProductCustomizationImageSlot {
@@ -105,6 +108,7 @@ interface ProductCustomizationImageSlotState extends ProductCustomizationImageSl
   readonly cropEditor: { readonly values: ProductCustomizationCropEditorValues; readonly feedback: string | null } | null;
   readonly persistentOperation: PersistentSlotOperationContext | null;
   readonly restored: boolean;
+  readonly clarity?: CustomerImageClarityGuidance;
 }
 
 export interface RestoredProductCustomizationImageSlot {
@@ -123,6 +127,7 @@ export interface ProductCustomizationImageFieldProps {
   readonly createSlotId?: () => string;
   readonly persistentDraft?: PersistentCustomizationDraftController;
   readonly restoredSlots?: readonly RestoredProductCustomizationImageSlot[];
+  readonly exampleAssets?: readonly PublicProductAssetView[];
 }
 
 const DECODE_FAILURE = {
@@ -512,11 +517,11 @@ export function ProductCustomizationImageField(props: ProductCustomizationImageF
     }
 
     if (persistent) {
-      await confirmPersistentReceipt(operation, { ...persistent, receipt: result.receipt });
+      await confirmPersistentReceipt(operation, { ...persistent, receipt: result.receipt, clarity: result.clarity });
       return;
     }
 
-    acceptLocalReceipt(operation, result.receipt);
+    acceptLocalReceipt(operation, result.receipt, result.clarity);
   }
 
   function failCurrentOperation(operation: ProductCustomizationImageSlotOperation, message: string): void {
@@ -527,7 +532,8 @@ export function ProductCustomizationImageField(props: ProductCustomizationImageF
     if (failed.applied) writeSlots(failed.slots);
   }
 
-  function acceptLocalReceipt(operation: ProductCustomizationImageSlotOperation, receipt: CustomerUploadReceipt): void {
+  function acceptLocalReceipt(operation: ProductCustomizationImageSlotOperation, receipt: CustomerUploadReceipt,
+    clarity?: CustomerImageClarityGuidance): void {
     const operationId = operation.operationId;
     const slotId = operation.slotId;
 
@@ -553,7 +559,8 @@ export function ProductCustomizationImageField(props: ProductCustomizationImageF
       return;
     }
     const next = applySlotStructure(before, structure).map((current) => current.slotId === slotId
-      ? { ...current, activeOperationId: null, status: "accepted" as const, failureMessage: null, selectedFileAccepted: true }
+      ? { ...current, activeOperationId: null, status: "accepted" as const, failureMessage: null,
+        selectedFileAccepted: true, clarity }
       : current);
     writeSlots(next);
     const value = acceptedImageValue(props.field, next);
@@ -675,7 +682,7 @@ export function ProductCustomizationImageField(props: ProductCustomizationImageF
         : "The saved customization could not be confirmed. Retry this image.");
       return;
     }
-    acceptLocalReceipt(operation, context.receipt);
+    acceptLocalReceipt(operation, context.receipt, context.clarity);
     updateSlot(operation.slotId, slot => ({ ...slot, persistentOperation: null }));
   }
 
@@ -696,7 +703,7 @@ export function ProductCustomizationImageField(props: ProductCustomizationImageF
       if (result.status === "accepted") await releasePersistentOperation(context);
       return;
     }
-    if (result.status === "accepted") await confirmPersistentReceipt(context.operation, { ...context, receipt: result.receipt });
+    if (result.status === "accepted") await confirmPersistentReceipt(context.operation, { ...context, receipt: result.receipt, clarity: result.clarity });
     else if (["temporarily_unavailable", "malformed_success"].includes(result.status)) {
       updateSlot(slotId, current => ({ ...current, status: "server_pending",
         failureMessage: "Server confirmation is still pending." }));
@@ -903,12 +910,26 @@ export function ProductCustomizationImageField(props: ProductCustomizationImageF
         <span>{props.field.label}</span>
         <span className={styles.customizationRequirement}>{props.field.required ? t("Required") : t("Optional")}</span>
       </div>
-      <div className={styles.customizationImageRequirements}>
+      <div className={styles.customizationImageRequirements} id={`${bulkControlId}-requirements`}>
         <span>{t("Accepted formats")}: {formatAllowedFormats(props.field.constraints.allowedMimeTypes)}</span>
         <span>{t("Maximum file size")}: {formatBytes(props.field.constraints.maxBytes, t)}</span>
         <span>{t("Minimum dimensions")}: {props.field.constraints.minDimensions.width} × {props.field.constraints.minDimensions.height}px</span>
         {props.field.constraints.recommendedDimensions && <span>{t("Recommended dimensions")}: {props.field.constraints.recommendedDimensions.width} × {props.field.constraints.recommendedDimensions.height}px</span>}
+        <span>{t("Images required")}: {props.field.constraints.minImageCount}–{props.field.constraints.maxImageCount}</span>
+        <span>{t("Crop")}: {props.field.constraints.cropEnabled ? t("Available") : t("Unavailable")}</span>
       </div>
+      {props.field.constraints.helpText && <p className={styles.customizationHelpText} id={`${bulkControlId}-help`}>{props.field.constraints.helpText}</p>}
+      {(() => {
+        const examples = (props.exampleAssets ?? []).filter(asset => asset.productId === props.field.productId
+          && asset.role === "example" && asset.mediaType === "image" && isRenderablePublicAssetUrl(asset.source));
+        return examples.length > 0 ? <section className={styles.customizationExamples} aria-label={t("Example images")}>
+          {examples.map(asset => <figure key={asset.id}>
+            {/* eslint-disable-next-line @next/next/no-img-element -- provider-neutral public ProductAsset URL */}
+            <img src={asset.source.value} alt={asset.description} loading="lazy" />
+            <figcaption>{asset.description}</figcaption>
+          </figure>)}
+        </section> : null;
+      })()}
       <div
         className={styles.customizationImageDropZone}
         data-drag-active={isDropActive || undefined}
@@ -928,6 +949,7 @@ export function ProductCustomizationImageField(props: ProductCustomizationImageF
           type="file"
           multiple
           accept={props.field.constraints.allowedMimeTypes.join(",")}
+          aria-describedby={`${bulkControlId}-requirements${props.field.constraints.helpText ? ` ${bulkControlId}-help` : ""}`}
           disabled={remainingCapacity === 0}
           onChange={handleMultipleFileChange}
         />
@@ -984,7 +1006,7 @@ export function ProductCustomizationImageField(props: ProductCustomizationImageF
                 name={`customization-${props.field.id}-${slot.slotId}`}
                 type="file"
                 accept={props.field.constraints.allowedMimeTypes.join(",")}
-                aria-describedby={issues.length > 0 || warnings.length > 0 || slot.failureMessage ? feedbackId : undefined}
+                aria-describedby={`${bulkControlId}-requirements${props.field.constraints.helpText ? ` ${bulkControlId}-help` : ""}${issues.length > 0 || warnings.length > 0 || slot.failureMessage ? ` ${feedbackId}` : ""}`}
                 aria-required={props.field.required || undefined}
                 onChange={(event) => handleFileChange(slot.slotId, event)}
               />
@@ -1122,6 +1144,13 @@ export function ProductCustomizationImageField(props: ProductCustomizationImageF
               {slot.status === "accepted" && <p className={styles.customizationUploadSuccess} aria-live="polite">{slot.restored
                 ? t("Saved image restored. Unsaved selections or crop changes from another tab may be lost.")
                 : t("Image upload accepted.")}</p>}
+              {slot.status === "accepted" && slot.clarity && <p className={styles.customizationWarning} role="status">
+                {slot.clarity.state === "clear" ? t("Image clarity looks clear.")
+                  : slot.clarity.state === "soft_warning" ? t("This image may look slightly soft. Consider a sharper photo.")
+                  : slot.clarity.state === "strong_warning" ? t("This image may be blurry. A sharper photo is recommended.")
+                  : slot.clarity.state === "inconclusive" ? t("Image clarity could not be assessed reliably.")
+                  : t("Image clarity guidance is unavailable.")}
+              </p>}
               <div className={styles.customizationImageActions}>
                 <button className={styles.customizationUploadButton} type="button" disabled={uploadDisabled} onClick={() => void handleUpload(slot.slotId)}>{slot.status === "failed" ? t("Retry image") : t("Upload image")} {index + 1}</button>
                 {["server_pending", "draft_saving"].includes(slot.status) && <button className={styles.customizationUploadButton} type="button" onClick={() => void handleRecoverPersistent(slot.slotId)}>{t("Recover upload")} {index + 1}</button>}

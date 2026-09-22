@@ -2574,6 +2574,36 @@
   padding: 15px;
 }
 
+.customizationExamples {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+  max-width: 100%;
+}
+
+.customizationExamples figure {
+  background: var(--fusion-paper);
+  border: 1px solid var(--fusion-line);
+  margin: 0;
+  min-width: 0;
+  padding: 8px;
+}
+
+.customizationExamples img {
+  aspect-ratio: 4 / 3;
+  display: block;
+  height: auto;
+  object-fit: cover;
+  width: 100%;
+}
+
+.customizationExamples figcaption {
+  color: var(--fusion-ink-mute);
+  font-size: .76rem;
+  overflow-wrap: anywhere;
+  padding-top: 6px;
+}
+
 .fusionPdp .customizationChoiceOption {
   background: var(--fusion-paper);
   border-color: var(--fusion-line);

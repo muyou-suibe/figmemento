@@ -282,6 +282,7 @@ function ProductDetailExperienceForProduct(props: ProductDetailExperienceProps) 
               onDraftAction={handleCustomizationAction}
               persistentDraft={persistentDraftController}
               restoredDraft={restoredDraft}
+              exampleAssets={props.assets}
               onBeginCustomization={() => trackLocalAnalyticsEvent({ eventName: "begin_customization", productId: props.productId })}
             />
           )}

@@ -55,6 +55,7 @@ export interface ImageCustomizationFieldConstraints {
   minImageCount: number;
   maxImageCount: number;
   cropEnabled: boolean;
+  helpText?: string;
 }
 
 export interface NumericCustomizationFieldConstraints {
@@ -236,6 +237,7 @@ function parseImageConstraints(
     "minImageCount",
     "maxImageCount",
     "cropEnabled",
+    "helpText",
   ], path);
 
   if (!Array.isArray(value.allowedMimeTypes) || value.allowedMimeTypes.length === 0) {
@@ -279,6 +281,9 @@ function parseImageConstraints(
   if (typeof value.cropEnabled !== "boolean") {
     issues.push(validationIssue(`${path}.cropEnabled`, "invalid_type", "Crop enabled must be boolean."));
   }
+  if (value.helpText !== undefined && !isSafePlainText(value.helpText, 240)) {
+    issues.push(validationIssue(`${path}.helpText`, "invalid_value", "Help text must be safe plain text of at most 240 characters."));
+  }
 
   if (issues.length > 0 || !minDimensions.ok || !recommendedDimensions.ok) {
     return validationFailure(...issues);
@@ -291,6 +296,7 @@ function parseImageConstraints(
     minImageCount: value.minImageCount as number,
     maxImageCount: value.maxImageCount as number,
     cropEnabled: value.cropEnabled as boolean,
+    ...(typeof value.helpText === "string" ? { helpText: value.helpText.trim() } : {}),
   });
 }
 

@@ -17,6 +17,7 @@ import { ProductCustomizationGenericFileField } from "./ProductCustomizationGene
 import { isCustomizationFieldVisible } from "../domain/customization-validation.ts";
 import { useReferenceLanguage } from "./ReferenceLanguageProvider";
 import type { BrowserRestoredDraft, PersistentCustomizationDraftController } from "../client/local-persistent-draft.ts";
+import type { PublicProductAssetView } from "../application/catalog-assets.ts";
 
 /**
  * Product-owned sibling boundary. Field sequence remains the configuration's
@@ -30,6 +31,7 @@ export interface ProductCustomizationFormShellProps {
   readonly onBeginCustomization?: () => void;
   readonly persistentDraft?: PersistentCustomizationDraftController;
   readonly restoredDraft?: BrowserRestoredDraft | null;
+  readonly exampleAssets?: readonly PublicProductAssetView[];
 }
 
 export function ProductCustomizationFormShell(props: ProductCustomizationFormShellProps) {
@@ -97,6 +99,7 @@ export function ProductCustomizationFormShell(props: ProductCustomizationFormShe
               ...slot,
               receipt: props.restoredDraft?.receipts.find(receipt => receipt.slotId === slot.slotId)?.receipt,
             }))}
+            exampleAssets={props.exampleAssets}
           />
         ) : null
       )) : (

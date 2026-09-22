@@ -143,7 +143,8 @@ export async function persistentMediaHttp(request: Request, operation: "upload" 
     const r = await media.accept({ draftId: d.value.draftId, expectedVersion: version, fieldId: query.get("fieldId")!,
       bytes, requestKey, recoveryOnly: recovery === "1" });
     // No operation/slot, provider, owner or locator spread into browser JSON.
-    return r.status === "found" ? Response.json({ receipt: r.receipt, warnings: [] }, { status: 201, headers: { "cache-control": "no-store" } })
+    return r.status === "found" ? Response.json({ receipt: r.receipt, warnings: [],
+      ...(r.clarity ? { clarity: r.clarity } : {}) }, { status: 201, headers: { "cache-control": "no-store" } })
       : failure(r.status === "conflict" ? 409 : r.status === "rejected" ? 400 : 503);
   } catch { return failure(503); }
 }

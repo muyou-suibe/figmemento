@@ -172,6 +172,7 @@ function fieldInputFromDefinition(
           minImageCount: row.min_image_count,
           maxImageCount: row.max_image_count,
           cropEnabled: row.crop_enabled,
+          ...(row.help_text === null || row.help_text === undefined ? {} : { helpText: row.help_text }),
         }
       : {
           maxLength: row.max_length,

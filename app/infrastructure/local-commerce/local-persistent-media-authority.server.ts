@@ -9,6 +9,7 @@ import { createLocalPersistentSupabaseAdapter } from "./local-persistent-supabas
 import { createLocalPersistentDraftPort } from "./local-persistent-draft-adapter.server.ts";
 import { LocalCatalogAuthority } from "./local-catalog-authority.server.ts";
 import { cleanupPersistentMedia } from "./local-persistent-media-cleanup.server.ts";
+import type { CustomerImageClarityGuidance } from "../../domain/customer-image-clarity.ts";
 
 type Dimensions = { width: number; height: number };
 type Source = { kind: "upload" | "replace" | "crop" | "copy"; fieldId: string; configurationRevision: number;
@@ -22,7 +23,8 @@ type Operation = { id: string; project_id: string; draft_id: string; slot_id: st
 type Stored = { status: "found"; operation: Operation; receipt: { receiptId: string; createdAt: string; expiresAt: string; lifecycle: string } | null };
 type Failure = { status: "unavailable" | "conflict" | "rejected" };
 export type MediaResult = Failure | { status: "found"; receipt: CustomerUploadReceipt;
-  operationId: string; slotId: string; sourceGeneration: number; cropRevision: number };
+  operationId: string; slotId: string; sourceGeneration: number; cropRevision: number;
+  clarity?: CustomerImageClarityGuidance };
 export type MediaOwnerVerifier = () => Promise<{ owner: VerifiedResourceOwner; expiresAt: number } | null>;
 const unavailable = (): Failure => ({ status: "unavailable" });
 const uuid = (s: unknown): s is string => typeof s === "string" && /^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(s);
@@ -219,8 +221,10 @@ export function createLocalPersistentMediaAuthority(environment: RuntimeEnvironm
         bytes = original;
       }
       // Admission decode validates actual bytes; browser metadata is not used.
-      const decoded = await processLocalCommerceImage(environment, bytes, policy.constraints);
+      const decoded = await processLocalCommerceImage(environment, bytes, policy.constraints, undefined, !input.slotId && !input.originalReceiptId);
       if (decoded.status !== "processed") return { status: decoded.status };
+      const withGuidance = (result: MediaResult): MediaResult => result.status === "found" && decoded.clarity
+        ? { ...result, clarity: decoded.clarity } : result;
       const source: Source = { kind: input.originalReceiptId ? "crop" : input.slotId ? "replace" : "upload", fieldId: input.fieldId,
         configurationRevision: policy.revision, digest: await digest(bytes), contentType: decoded.contentType,
         byteSize: bytes.byteLength, dimensions: decoded.dimensions, ...(input.crop ? { crop: input.crop } : {}) };
@@ -228,9 +232,9 @@ export function createLocalPersistentMediaAuthority(environment: RuntimeEnvironm
         input.requestKey ? { productId: d.value.productId, key: input.requestKey, recoveryOnly: input.recoveryOnly === true } : undefined);
       if (begun.status !== "found") return begun;
       // A committed replay never writes either immutable object a second time.
-      if (begun.operation.lifecycle !== "pending") return await resume(begun);
+      if (begun.operation.lifecycle !== "pending") return withGuidance(await resume(begun));
       if (!input.originalReceiptId && !await writeVerified(begun.operation.original_locator, bytes, decoded.contentType, source)) return unavailable();
-      return await resume(begun);
+      return withGuidance(await resume(begun));
     } catch { return unavailable(); }
   };
   const remove = async (operationId: string): Promise<Failure | { status: "removed" }> => {

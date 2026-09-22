@@ -112,7 +112,7 @@ test("helper mode/credential configuration rejects before listen", () => {
     { LOCAL_COMMERCE_MARKER_DIGEST: "bad" }, { LOCAL_COMMERCE_PROJECT_ID: "other-project" }]) {
     assert.throws(() => createLocalImageHelper({ ...valid, ...patch }));
   }
-  assert.throws(() => createLocalImageHelper(catalogTestEnvironment()));
+  assert.throws(() => createLocalImageHelper(catalogTestEnvironment({ LOCAL_COMMERCE_IMAGE_HELPER_SECRET: undefined })));
 });
 
 test("application client rejects unsafe sources without a database/helper/network call", async () => {
@@ -156,6 +156,11 @@ test("real helper HTTP rejects browser/project/credential/path injection and pro
   const response = await fetch(`${env.LOCAL_COMMERCE_IMAGE_HELPER_URL}/process`, { method: "POST", headers, body: bytes });
   assert.equal(response.status, 200);
   assert.equal((await response.json()).status, "processed");
+  const clarityResponse = await fetch(`${env.LOCAL_COMMERCE_IMAGE_HELPER_URL}/process`, { method: "POST",
+    headers: { ...headers, "x-image-policy": JSON.stringify({ ...policy, inspectClarity: true }) }, body: bytes });
+  assert.equal(clarityResponse.status, 200);
+  assert.deepEqual((await clarityResponse.json()).clarity,
+    { profileVersion: "local-clarity-v1", state: "inconclusive" });
   const injected = await fetch(`${env.LOCAL_COMMERCE_IMAGE_HELPER_URL}/process`, { method: "POST",
     headers: { ...headers, "x-image-policy": JSON.stringify({ ...policy, path: "/private/file" }) }, body: bytes });
   assert.equal(injected.status, 400);
