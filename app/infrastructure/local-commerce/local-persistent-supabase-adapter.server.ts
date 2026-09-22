@@ -50,7 +50,11 @@ export type LocalCommerceRelation =
   | "digital_delivery_attempts"
   | "admin_settings"
   | "admin_settings_actions"
-  | "admin_customization_actions";
+  | "admin_customization_actions"
+  | "refund_aggregates"
+  | "refund_ledger"
+  | "refund_actions"
+  | "webhook_inbox";
 
 export const LOCAL_COMMERCE_RELATIONS: ReadonlySet<LocalCommerceRelation> = new Set([
   "migration_ledger",
@@ -93,9 +97,18 @@ export const LOCAL_COMMERCE_RELATIONS: ReadonlySet<LocalCommerceRelation> = new 
   "admin_settings",
   "admin_settings_actions",
   "admin_customization_actions",
+  "refund_aggregates",
+  "refund_ledger",
+  "refund_actions",
+  "webhook_inbox",
 ]);
 
 export const LOCAL_COMMERCE_RPC_FUNCTIONS = [
+  "webhook_inbox_ingest",
+  "webhook_inbox_claim",
+  "webhook_inbox_finalize",
+  "admin_webhook_inbox_read",
+  "admin_refund_command",
   "digital_download_stream_result",
   "digital_grant_revoke",
   "digital_download_prepare",
@@ -188,6 +201,33 @@ export type LocalPersistentCustomerSessionRpcResult =
   | { readonly status: "not_found" | "expired" | "revoked" };
 
 interface LocalCommerceRpcArguments {
+  webhook_inbox_ingest: {
+    readonly p_project_id: string; readonly p_marker_digest: string; readonly p_source: string;
+    readonly p_external_event_id: string; readonly p_payload_digest: string; readonly p_body_byte_size: number;
+    readonly p_event_type: string; readonly p_occurred_at: string | null;
+    readonly p_subject_kind: "payment" | "refund" | "unknown";
+    readonly p_subject_reference: string | null; readonly p_facts: Readonly<Record<string, string | number>>;
+  };
+  webhook_inbox_claim: {
+    readonly p_project_id: string; readonly p_marker_digest: string;
+    readonly p_source: string; readonly p_external_event_id: string;
+  };
+  webhook_inbox_finalize: {
+    readonly p_project_id: string; readonly p_marker_digest: string;
+    readonly p_source: string; readonly p_external_event_id: string;
+    readonly p_lease_token: string; readonly p_expected_version: number;
+  };
+  admin_webhook_inbox_read: {
+    readonly p_project_id: string; readonly p_marker_digest: string;
+    readonly p_actor_id: "configured-admin"; readonly p_source: string | null;
+    readonly p_external_event_id: string | null; readonly p_state: string | null; readonly p_limit: number;
+  };
+  admin_refund_command: {
+    readonly p_project_id: string; readonly p_marker_digest: string;
+    readonly p_actor_id: "configured-admin"; readonly p_payment_reference: string;
+    readonly p_action_key_digest: string; readonly p_amount_cents: number;
+    readonly p_expected_version: number;
+  };
   digital_download_stream_result: {
     readonly p_project_id: string; readonly p_marker_digest: string;
     readonly p_attempt_id: string; readonly p_result: "streamed" | "failed";

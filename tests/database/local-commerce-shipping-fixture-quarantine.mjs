@@ -8,7 +8,7 @@ const literal = (value) => `'${String(value).replaceAll("'", "''")}'`;
 export function quarantineSyntheticShippingRule({ sql, project, id, ruleKey, method }) {
   assert.match(project, /^figmemento-local-commerce-test-run-[a-f0-9]{8}$/);
   assert.match(id, /^[a-f0-9-]{36}$/);
-  assert.match(ruleKey, /^(?:c03|c07|c08|h03|phase1)-shipping-[a-f0-9]{32,36}$/);
+  assert.match(ruleKey, /^(?:c03|c07|c08|h03|phase1|phase3)-shipping-[a-f0-9]{32,36}$/);
   assert.match(method, /^[a-z][a-z0-9_]{0,63}$/);
   const target = `project_id=${literal(project)} and id=${literal(id)}::uuid`;
   const row = JSON.parse(sql(`select row_to_json(r) from (select id,rule_key,revision,definition,rule_status,version,lifecycle from local_commerce.catalog_pricing_rules where ${target}) r;`));

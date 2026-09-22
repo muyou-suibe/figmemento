@@ -13,7 +13,7 @@ const previewFaults=['preview-helper-failure','preview-storage-failure','preview
 const digitalFaults=['digital-storage-failure','digital-readback-mismatch','digital-response-loss','digital-trace'];
 const digitalDownloadFaults=['digital-download-missing-object','digital-download-storage-failure','digital-download-content-mismatch','digital-download-size-mismatch','digital-download-claim-delay','digital-download-claim-failure'];
 const digitalStreamFaults=['digital-stream-failure','digital-stream-delay','digital-stream-result-failure','digital-stream-crash-after-claim'];
-assert.ok(orderFault === undefined || ['before-probe','probe-loss','before-commit','commit-loss','catalog-unavailable','commit-race-window','preview-trace',...previewFaults,...digitalFaults,...digitalDownloadFaults,...digitalStreamFaults].includes(orderFault));
+assert.ok(orderFault === undefined || ['before-probe','probe-loss','before-commit','commit-loss','catalog-unavailable','commit-race-window','preview-trace','inbox-hang-after-claim',...previewFaults,...digitalFaults,...digitalDownloadFaults,...digitalStreamFaults].includes(orderFault));
 if (retained) assert.equal(process.env.LOCAL_COMMERCE_PROJECT_ID, 'figmemento-local-commerce');
 else assert.match(run ?? '', /^run-[a-f0-9]{8}$/);
 assert.equal(process.argv[3], retained ? '--confirm-retained' : '--confirm-disposable');
@@ -33,6 +33,11 @@ const modeProof = {
   name: 'local-commerce-acceptance-mode-proof',
   enforce: 'pre',
   transform(code, id) {
+    if (orderFault === 'inbox-hang-after-claim' && id.split('?')[0] === path.join(root,'app/server/local-payment-webhook-inbox.server.ts')) {
+      const needle = 'const claim = await connection.adapter.callRestrictedRpc<unknown>("webhook_inbox_claim", common);';
+      assert.equal(code.split(needle).length,2);
+      return {code:code.replace(needle,`${needle} if (claim.status === "found" && claim.value && typeof claim.value === "object" && claim.value.status === "claimed") { console.info("PHASE3_INBOX_CLAIMED_WAITING"); await new Promise(() => {}); }`),map:null};
+    }
     if (digitalStreamFaults.includes(orderFault) && id.split('?')[0] === path.join(root,'app/server/local-persistent-digital-download.server.ts')) {
       const point={
         'digital-stream-failure':['controller.enqueue(bytes);','console.info("DIGITAL_STREAM_FAILURE_AFTER_CLAIM"); throw new Error("injected post-claim stream failure"); controller.enqueue(bytes);'],
@@ -114,7 +119,7 @@ const modeProof = {
         return response;
       }},`),map:null};
     }
-    if (orderFault && !['probe-loss','preview-trace',...previewFaults,...digitalFaults,...digitalDownloadFaults,...digitalStreamFaults].includes(orderFault) && id.split('?')[0] === path.join(root, 'app/server/local-persistent-order-http.server.ts')) {
+    if (orderFault && !['probe-loss','preview-trace','inbox-hang-after-claim',...previewFaults,...digitalFaults,...digitalDownloadFaults,...digitalStreamFaults].includes(orderFault) && id.split('?')[0] === path.join(root, 'app/server/local-persistent-order-http.server.ts')) {
       if (orderFault === 'commit-race-window') {
         const needle='  const committed = await';
         assert.equal(code.split(needle).length,2);

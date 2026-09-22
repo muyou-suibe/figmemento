@@ -2,7 +2,7 @@
   "format": "figmemento-local-commerce-migration-manifest/v1",
   "schema": "local_commerce",
   "projectId": "figmemento-local-commerce",
-  "schemaVersion": 46,
+  "schemaVersion": 48,
   "migrations": [
     {
       "version": 1,
@@ -371,6 +371,22 @@
       "checksum": "8ef23981972a0b90a4469c505da7e2baf3d43db7fac551f84f80cb83067b9bec",
       "rollback": "Preserve the exact disposable project's accepted ledger and H03 evidence; an applied 0046 is immutable and must not be rolled back in place. Never reset retained development.",
       "forwardFix": "If applied 0046 needs correction, add 0047 or later without changing fixed field_present amount, currency, or canonical pricing authority."
+    },
+    {
+      "version": 47,
+      "migrationId": "local-commerce-refund-aggregate",
+      "filename": "0047_local-commerce-refund-aggregate.sql",
+      "checksum": "2d62b28ae76536e1dc4cc5c2c836fa350e531664df5c197d2126b47115dad5b7",
+      "rollback": "Before disposable apply, roll back only the ledger-owned test transaction. After application preserve immutable refund facts and disable the local refund command; never reset retained development.",
+      "forwardFix": "An applied 0047 is immutable. Add the next ordered migration for reviewed refund/security corrections without rewriting Payment, Order or refund ledger facts."
+    },
+    {
+      "version": 48,
+      "migrationId": "local-commerce-webhook-inbox",
+      "filename": "0048_local-commerce-webhook-inbox.sql",
+      "checksum": "a65b7f280482622893e24658f3d24199b0cb0e799efd3c4f44beddeb54640ecc",
+      "rollback": "Before disposable apply, roll back only the ledger-owned test transaction. After application preserve evidence digests and disable local intake; never reset retained development.",
+      "forwardFix": "An applied 0048 is immutable. Add the next ordered migration for reviewed inbox/reconciliation/security corrections without inventing provider authority or storing raw payloads."
     }
   ]
 }
