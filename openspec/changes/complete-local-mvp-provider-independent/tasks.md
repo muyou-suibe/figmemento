@@ -8,13 +8,13 @@
 
 - [x] 1.1 Obtain surcharge semantics and implement versioned server-owned customization surcharge rules/allocation snapshots for C03; reject browser amounts and stale revisions.
 - [x] 1.2 Obtain allowed option semantics and implement ordered single-select fields for C07 across domain, persistence, Admin, PDP, configured item, Cart, Checkout, and immutable Order snapshot.
-- [ ] 1.3 Obtain bounds/ordering semantics and implement normalized bounded multi-select fields for C08 with duplicate, order, cardinality, stale-rule, and snapshot evidence.
-- [ ] 1.4 Obtain range/step semantics and implement server-normalized numeric fields for C09 with exact validation and immutable snapshots.
-- [ ] 1.5 Obtain generic-file policy and implement safe private generic-file fields for C10, or keep the task blocked pending an explicit MVP scope decision; do not downgrade it to image-only silently.
-- [ ] 1.6 Obtain the predicate vocabulary and implement cycle-safe, versioned conditional-required rules for C28 across Admin, PDP, configured-item readiness, Cart/Checkout, and Order snapshots.
-- [ ] 1.7 Implement conditional-visibility rules for C29 using the same approved predicate graph, ensuring hidden browser values cannot bypass validation or leak into accepted purchase facts.
-- [ ] 1.8 Extend restricted Admin customization editing/read-back for H03 to every approved new field, surcharge, and conditional-rule type with expected version, audit, and rollback evidence.
-- [ ] 1.9 Run the Phase 1 gate: real DB/RPC constraints, rule-cycle and stale-version matrix, cross-project/Admin rejection, Cart/Checkout/Order snapshot immutability, two-worker races, fault rollback, responsive PDP/Admin tests, baseline quality commands, and migration integrity.
+- [x] 1.3 Obtain bounds/ordering semantics and implement normalized bounded multi-select fields for C08 with duplicate, order, cardinality, stale-rule, and snapshot evidence.
+- [x] 1.4 Obtain range/step semantics and implement server-normalized numeric fields for C09 with exact validation and immutable snapshots.
+- [x] 1.5 Obtain generic-file policy and implement safe private generic-file fields for C10, or keep the task blocked pending an explicit MVP scope decision; do not downgrade it to image-only silently.
+- [x] 1.6 Obtain the predicate vocabulary and implement cycle-safe, versioned conditional-required rules for C28 across Admin, PDP, configured-item readiness, Cart/Checkout, and Order snapshots.
+- [x] 1.7 Implement conditional-visibility rules for C29 using the same approved predicate graph, ensuring hidden browser values cannot bypass validation or leak into accepted purchase facts.
+- [x] 1.8 Extend restricted Admin customization editing/read-back for H03 to every approved new field, surcharge, and conditional-rule type with expected version, audit, and rollback evidence.
+- [x] 1.9 Run the Phase 1 gate: real DB/RPC constraints, rule-cycle and stale-version matrix, cross-project/Admin rejection, Cart/Checkout/Order snapshot immutability, two-worker races, fault rollback, responsive PDP/Admin tests, baseline quality commands, and migration integrity.
 
 ## 2. Photo intelligence and upload guidance
 
