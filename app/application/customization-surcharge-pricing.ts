@@ -107,7 +107,7 @@ function valueIsPresent(
       && value.choiceIds.every((choiceId) => field.constraints.choices.some((choice) => choice.id === choiceId && choice.isActive));
   }
   if (value.kind === "generic_file") return value.files.length > 0;
-  if (value.kind === "numeric") return Number.isFinite(value.value);
+  if (value.kind === "numeric") return value.value.length > 0;
   return value.value.trim().length > 0;
 }
 

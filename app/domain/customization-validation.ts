@@ -13,6 +13,7 @@ import type {
   CustomizationValues,
 } from "./customization-value.ts";
 import { validateCustomizationCropPolicy } from "./customization-value.ts";
+import { parseExactDecimal } from "./exact-decimal.ts";
 
 export type CustomizationValidationIssueCode =
   | "invalid_authoritative_configuration"
@@ -119,8 +120,6 @@ const IMAGE_MIME_TYPES: readonly AllowedImageMimeType[] = [
 const GENERIC_FILE_MIME_TYPES: readonly AllowedGenericFileMimeType[] = [
   "application/pdf",
   "text/plain",
-  "application/zip",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ];
 
 export function parseCustomizationResolvedImageMetadata(
@@ -183,9 +182,8 @@ function normalizeImageValue(value: CustomizationImageValue): CustomizationImage
 }
 
 function normalizeNumericValue(value: CustomizationNumericValue, field: Extract<CustomizationField, { kind: "numeric" }>): CustomizationNumericValue {
-  const decimals = Math.max(0, Math.min(6, (field.constraints.step.toString().split(".")[1] ?? "").length));
-  const factor = 10 ** decimals;
-  return { ...value, value: Math.round(value.value * factor) / factor };
+  void field;
+  return { ...value, value: parseExactDecimal(value.value)?.canonical ?? value.value };
 }
 
 function normalizeMultiSelectValue(
@@ -254,7 +252,10 @@ function collectAuthoritativeFieldIssues(
 }
 
 function predicateReferences(predicate: CustomizationPredicate | undefined): string[] {
-  return predicate ? [predicate.fieldId] : [];
+  if (!predicate) return [];
+  if (predicate.kind === "all" || predicate.kind === "any") return predicate.predicates.flatMap(predicateReferences);
+  if (predicate.kind === "not") return predicateReferences(predicate.predicate);
+  return [predicate.fieldId];
 }
 
 /** Validates the bounded, non-expression predicate graph before it is used. */
@@ -264,7 +265,27 @@ export function validateCustomizationRuleGraph(
   const issues: CustomizationValidationIssue[] = [];
   const byId = new Map(fields.map((field) => [field.id, field]));
   const edges = new Map<string, string[]>();
+  let ruleCount = 0;
   for (const field of fields) {
+    ruleCount += Number(!!field.rules?.requiredWhen) + Number(!!field.rules?.visibleWhen);
+    const check = (predicate: CustomizationPredicate | undefined) => {
+      if (!predicate) return;
+      if (predicate.kind === "all" || predicate.kind === "any") { predicate.predicates.forEach(check); return; }
+      if (predicate.kind === "not") { check(predicate.predicate); return; }
+      const target = byId.get(predicate.fieldId);
+      if (!target || !target.isActive || target.productId !== field.productId) {
+        issues.push(issue("$.fields", "invalid_rule_graph", "Rule reference must target an active field of the same Product."));
+        return;
+      }
+      if (predicate.kind === "single_select_is" || predicate.kind === "multi_select_contains") {
+        const requiredKind = predicate.kind === "single_select_is" ? "single_select" : "multi_select";
+        if (target.kind !== requiredKind || !target.constraints.choices.some(choice => choice.id === predicate.choiceId && choice.isActive)) {
+          issues.push(issue("$.fields", "invalid_rule_graph", "Rule choice is unknown, inactive, or belongs to the wrong field kind."));
+        }
+      }
+    };
+    check(field.rules?.requiredWhen);
+    check(field.rules?.visibleWhen);
     const refs = [
       ...predicateReferences(field.rules?.requiredWhen),
       ...predicateReferences(field.rules?.visibleWhen),
@@ -275,6 +296,7 @@ export function validateCustomizationRuleGraph(
     }
     edges.set(field.id, refs);
   }
+  if (ruleCount > 32) issues.push(issue("$.fields", "invalid_rule_graph", "Product configuration exceeds 32 conditional rules."));
   const visiting = new Set<string>();
   const visited = new Set<string>();
   const visit = (id: string): void => {
@@ -294,7 +316,7 @@ function valueIsPresent(value: CustomizationValue | undefined): boolean {
   if (value.kind === "generic_file") return value.files.length > 0;
   if (value.kind === "multi_select") return value.choiceIds.length > 0;
   if (value.kind === "single_select") return value.choiceId.length > 0;
-  if (value.kind === "numeric") return Number.isFinite(value.value);
+  if (value.kind === "numeric") return parseExactDecimal(value.value) !== null;
   return value.value.trim().length > 0;
 }
 
@@ -303,18 +325,13 @@ function predicateMatches(
   valuesByFieldId: ReadonlyMap<string, CustomizationValue>,
 ): boolean {
   if (!predicate) return false;
+  if (predicate.kind === "all") return predicate.predicates.every(child => predicateMatches(child, valuesByFieldId));
+  if (predicate.kind === "any") return predicate.predicates.some(child => predicateMatches(child, valuesByFieldId));
+  if (predicate.kind === "not") return !predicateMatches(predicate.predicate, valuesByFieldId);
   const value = valuesByFieldId.get(predicate.fieldId);
   if (predicate.kind === "field_present") return valueIsPresent(value);
-  if (predicate.kind === "choice_selected") {
-    return value?.kind === "single_select"
-      ? value.choiceId === predicate.choiceId
-      : value?.kind === "multi_select" && value.choiceIds.includes(predicate.choiceId);
-  }
-  if (value?.kind !== "numeric") return false;
-  if (predicate.operator === "eq") return value.value === predicate.value;
-  if (predicate.operator === "neq") return value.value !== predicate.value;
-  if (predicate.operator === "gte") return value.value >= predicate.value;
-  return value.value <= predicate.value;
+  if (predicate.kind === "single_select_is") return value?.kind === "single_select" && value.choiceId === predicate.choiceId;
+  return value?.kind === "multi_select" && value.choiceIds.includes(predicate.choiceId);
 }
 
 export function isCustomizationFieldVisible(
@@ -331,9 +348,13 @@ function validateNumericValue(
 ): CustomizationValidationIssue[] {
   const issues: CustomizationValidationIssue[] = [];
   const { min, max, step } = field.constraints;
-  if (value.value < min || value.value > max) issues.push(issue(`${path}.value`, "numeric_out_of_range", "Numeric value is outside the configured range."));
-  const quotient = (value.value - min) / step;
-  if (Math.abs(quotient - Math.round(quotient)) > 1e-9) issues.push(issue(`${path}.value`, "numeric_step_mismatch", "Numeric value does not match the configured step."));
+  const actual = parseExactDecimal(value.value);
+  const minimum = parseExactDecimal(min);
+  const maximum = parseExactDecimal(max);
+  const increment = parseExactDecimal(step);
+  if (!actual || !minimum || !maximum || !increment || increment.scaled <= BigInt(0)) return [issue(`${path}.value`, "numeric_out_of_range", "Numeric value or constraints are invalid.")];
+  if (actual.scaled < minimum.scaled || actual.scaled > maximum.scaled) issues.push(issue(`${path}.value`, "numeric_out_of_range", "Numeric value is outside the configured range."));
+  if ((actual.scaled - minimum.scaled) % increment.scaled !== BigInt(0)) issues.push(issue(`${path}.value`, "numeric_step_mismatch", "Numeric value does not match the configured step."));
   return issues;
 }
 
@@ -510,10 +531,10 @@ export function validateCustomizationValuesAgainstFields(
         if (!choice) issues.push(issue(`${valuePath}.choiceIds`, "unknown_choice", "Multi-select choice is not configured for this field."));
         else if (!choice.isActive) issues.push(issue(`${valuePath}.choiceIds`, "inactive_choice", "Inactive multi-select choices cannot be selected."));
       }
-      const effectiveMinimum = Math.max(field.required ? 1 : 0, field.constraints.minSelections);
-      if (choiceIds.length < effectiveMinimum) issues.push(issue(`${valuePath}.choiceIds`, "selection_count_too_low", "Selection count is below the configured minimum."));
+      const baseMinimum = field.constraints.minSelections;
+      if (choiceIds.length < baseMinimum) issues.push(issue(`${valuePath}.choiceIds`, "selection_count_too_low", "Selection count is below the configured minimum."));
       if (choiceIds.length > field.constraints.maxSelections) issues.push(issue(`${valuePath}.choiceIds`, "selection_count_too_high", "Selection count exceeds the configured maximum."));
-      if (choiceIds.length === 0 && effectiveMinimum === 0) {
+      if (choiceIds.length === 0 && baseMinimum === 0) {
         valuesByFieldId.delete(value.fieldId);
       } else {
         normalizedValues.push(normalizeMultiSelectValue(normalized, field));
@@ -528,29 +549,47 @@ export function validateCustomizationValuesAgainstFields(
       if (normalized.value.length > field.constraints.maxLength) {
         issues.push(issue(`${valuePath}.value`, "text_too_long", "Text value exceeds the configured maximum length."));
       }
-      if (field.required && normalized.value.length === 0) {
-        issues.push(issue(`${valuePath}.value`, "required_field_empty", "Required text customization value is empty."));
-      }
     }
     normalizedValues.push(normalized);
   });
 
   const normalizedByFieldId = new Map(normalizedValues.map((value) => [value.fieldId, value]));
+  const visibility = new Map<string, boolean>();
+  const visiting = new Set<string>();
+  const visible = (field: CustomizationField): boolean => {
+    const prior = visibility.get(field.id);
+    if (prior !== undefined) return prior;
+    if (visiting.has(field.id)) return false;
+    visiting.add(field.id);
+    const refs = new Set(predicateReferences(field.rules?.visibleWhen));
+    const available = new Map(normalizedValues.filter(value => {
+      if (!refs.has(value.fieldId)) return false;
+      const reference = fieldsById.get(value.fieldId);
+      return reference?.isActive && visible(reference);
+    }).map(value => [value.fieldId, value]));
+    const result = !field.rules?.visibleWhen || predicateMatches(field.rules.visibleWhen, available);
+    visiting.delete(field.id);
+    visibility.set(field.id, result);
+    return result;
+  };
   input.fields.forEach((field, index) => {
     if (field.productId !== input.productId || !field.isActive) return;
     const submitted = normalizedByFieldId.get(field.id);
-    if (field.rules?.visibleWhen && !predicateMatches(field.rules.visibleWhen, normalizedByFieldId) && submitted) {
+    if (!visible(field)) {
+      if (!valuesByFieldId.has(field.id)) return;
       issues.push(issue(`$.values[${index}]`, "hidden_value", "Hidden customization fields cannot submit a value."));
+      return;
     }
-    const conditionalRequired = field.rules?.requiredWhen && predicateMatches(field.rules.requiredWhen, normalizedByFieldId);
-    if (conditionalRequired && !valueIsPresent(submitted)) {
-      issues.push(issue(`$.fields[${index}].id`, "conditional_required", "Customization field is required when its condition is satisfied."));
+    const available = new Map(normalizedValues.filter(value => {
+      const reference = fieldsById.get(value.fieldId);
+      return reference?.isActive && visible(reference);
+    }).map(value => [value.fieldId, value]));
+    const conditionalRequired = !!field.rules?.requiredWhen && predicateMatches(field.rules.requiredWhen, available);
+    if ((field.required || conditionalRequired) && !valueIsPresent(submitted)) {
+      issues.push(issue(`$.fields[${index}].id`, conditionalRequired ? "conditional_required" : valuesByFieldId.has(field.id) ? "required_field_empty" : "required_field_missing", "Customization field is required when visible and its condition is satisfied."));
     }
-  });
-
-  input.fields.forEach((field, index) => {
-    if (field.productId === input.productId && field.isActive && field.required && !valuesByFieldId.has(field.id)) {
-      issues.push(issue(`$.fields[${index}].id`, "required_field_missing", "Required customization field has no customer value."));
+    if (submitted?.kind === "multi_select" && conditionalRequired && submitted.choiceIds.length < Math.max(field.kind === "multi_select" ? field.constraints.minSelections : 0, 1)) {
+      issues.push(issue(`$.fields[${index}].id`, "selection_count_too_low", "Selection count is below the effective minimum."));
     }
   });
 

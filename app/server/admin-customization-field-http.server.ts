@@ -1,6 +1,7 @@
 import {
   AdminCustomizationFieldCommandBoundary,
   AdminCustomizationFieldQueryBoundary,
+  AdminCustomizationFieldRestoreBoundary,
   type AdminCustomizationFieldBoundaryResult,
   type AdminCustomizationFieldConfiguration,
   type AdminCustomizationReadModel,
@@ -89,10 +90,9 @@ export async function handleAdminCustomizationFieldMutation(
     return Response.json({ status: "invalid_request", message: "JSON request required." }, { status: 400 });
   }
   const body: unknown = await request.json().catch(() => null);
-  const boundary = new AdminCustomizationFieldCommandBoundary(
-    staticVerifier(authorization),
-    dependencies.createRepositories,
-  );
+  const boundary = typeof body === "object" && body !== null && "restoreFromRevision" in body
+    ? new AdminCustomizationFieldRestoreBoundary(staticVerifier(authorization), dependencies.createRepositories)
+    : new AdminCustomizationFieldCommandBoundary(staticVerifier(authorization), dependencies.createRepositories);
   return responseForCommand(await boundary.execute({
     ...(typeof body === "object" && body !== null ? body : {}),
     productId,

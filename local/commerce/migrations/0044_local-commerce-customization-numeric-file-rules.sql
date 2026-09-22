@@ -25,13 +25,21 @@ BEGIN
       elsif v_field->>'kind'='numeric' then
         if (select array_agg(key order by key) from jsonb_object_keys(v_value) key)
              is distinct from array['fieldCode','fieldId','kind','value']
-          or jsonb_typeof(v_value->'value') is distinct from 'number'
+          or jsonb_typeof(v_value->'value') is distinct from 'string'
+          or v_value->>'value' !~ '^-?[0-9]+(\.[0-9]{1,4})?$'
+          or v_field->'constraints'->>'min' !~ '^-?[0-9]+(\.[0-9]{1,4})?$'
+          or v_field->'constraints'->>'max' !~ '^-?[0-9]+(\.[0-9]{1,4})?$'
+          or v_field->'constraints'->>'step' !~ '^-?[0-9]+(\.[0-9]{1,4})?$'
           or v_field->'constraints'->>'min' is null
           or v_field->'constraints'->>'max' is null
           or v_field->'constraints'->>'step' is null
+          or (v_field->'constraints'->>'min')::numeric < -1000000000
+          or (v_field->'constraints'->>'max')::numeric > 1000000000
+          or (v_field->'constraints'->>'min')::numeric > (v_field->'constraints'->>'max')::numeric
           or (v_value->>'value')::numeric < (v_field->'constraints'->>'min')::numeric
           or (v_value->>'value')::numeric > (v_field->'constraints'->>'max')::numeric
-          or abs(mod((v_value->>'value')::numeric - (v_field->'constraints'->>'min')::numeric, (v_field->'constraints'->>'step')::numeric)) > 0.000000001
+          or (v_field->'constraints'->>'step')::numeric <= 0
+          or mod((v_value->>'value')::numeric - (v_field->'constraints'->>'min')::numeric, (v_field->'constraints'->>'step')::numeric) <> 0
         then return null; end if;
         v_present := true;
       elsif v_field->>'kind'='generic_file' then
@@ -92,8 +100,8 @@ create table local_commerce.generic_file_receipts (
   constraint generic_file_receipts_field_check check (length(btrim(field_key)) > 0),
   constraint generic_file_receipts_revision_check check (configuration_revision > 0),
   constraint generic_file_receipts_filename_check check (original_filename is null or (length(original_filename) between 1 and 240 and original_filename !~ '[[:cntrl:]]')),
-  constraint generic_file_receipts_mime_check check (content_type in ('application/pdf','text/plain','application/zip','application/vnd.openxmlformats-officedocument.wordprocessingml.document')),
-  constraint generic_file_receipts_size_check check (byte_size > 0 and byte_size <= 52428800),
+  constraint generic_file_receipts_mime_check check (content_type in ('application/pdf','text/plain')),
+  constraint generic_file_receipts_size_check check (byte_size > 0 and byte_size <= 20971520),
   constraint generic_file_receipts_digest_check check (content_digest ~ '^[a-f0-9]{64}$'),
   constraint generic_file_receipts_locator_check check (internal_locator ~ '^[A-Za-z0-9._-]+/generic/[a-f0-9-]{36}$'),
   constraint generic_file_receipts_status_check check (receipt_status in ('pending','ready','failed')),
@@ -237,8 +245,8 @@ begin
   if p_command = 'begin' then
     if p_product_id is null or p_field_key is null or length(btrim(p_field_key)) = 0
       or p_configuration_revision is null or p_configuration_revision < 1
-      or p_content_type not in ('application/pdf','text/plain','application/zip','application/vnd.openxmlformats-officedocument.wordprocessingml.document')
-      or p_byte_size is null or p_byte_size <= 0 or p_byte_size > 52428800
+      or p_content_type not in ('application/pdf','text/plain')
+      or p_byte_size is null or p_byte_size <= 0 or p_byte_size > 20971520
       or p_content_digest is null or p_content_digest !~ '^[a-f0-9]{64}$'
       or (p_original_filename is not null and (length(p_original_filename) < 1 or length(p_original_filename) > 240 or p_original_filename ~ '[[:cntrl:]]')) then
       return jsonb_build_object('status','unavailable');
@@ -253,7 +261,7 @@ begin
       or v_field->>'kind' is distinct from 'generic_file' or v_field->>'isActive' is distinct from 'true'
       or not exists(select 1 from jsonb_array_elements_text(v_field#>'{constraints,allowedMimeTypes}') mime where mime = p_content_type)
       or p_byte_size > coalesce((v_field#>>'{constraints,maxBytes}')::bigint,0)
-      or coalesce((v_field#>>'{constraints,maxFileCount}')::integer,0) < 1 then
+      or coalesce((v_field#>>'{constraints,maxFileCount}')::integer,0) not between 1 and 3 then
       return jsonb_build_object('status','conflict');
     end if;
     insert into local_commerce.generic_file_receipts(project_id,owner_id,product_id,field_key,configuration_revision,

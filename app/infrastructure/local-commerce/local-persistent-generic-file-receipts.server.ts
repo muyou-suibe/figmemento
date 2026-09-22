@@ -122,7 +122,7 @@ export function createLocalPersistentGenericFileReceiptAuthority(
     }): Promise<GenericFileReceiptResult> {
       if (!uuid(input.productId) || !input.fieldId || !Number.isSafeInteger(input.configurationRevision)
         || input.configurationRevision < 1 || input.bytes.byteLength < 1
-        || input.bytes.byteLength > input.constraints.maxBytes
+        || input.bytes.byteLength > input.constraints.maxBytes || input.bytes.byteLength > 20_971_520
         || !input.constraints.allowedMimeTypes.includes(input.contentType as never)) return { status: "rejected" };
       const contentDigest = await digest(input.bytes);
       const begun = await call({ command: "begin", productId: input.productId, fieldId: input.fieldId,

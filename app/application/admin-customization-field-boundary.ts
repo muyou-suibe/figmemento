@@ -11,6 +11,7 @@ import {
   type CustomizationField,
   type CustomizationFieldDefinition,
 } from "../domain/customization-field.ts";
+import { validateCustomizationRuleGraph } from "../domain/customization-validation.ts";
 import type {
   AdminAuthorizationResult,
   AdminPrincipal,
@@ -26,6 +27,22 @@ export interface AdminCustomizationFieldConfiguration {
   productId: string;
   configurationRevision: string;
   fields: readonly CustomizationField[];
+  surchargeRules?: readonly AdminCustomizationSurchargeRule[];
+  historicalRevisions?: readonly number[];
+}
+
+export interface RestoreCustomizationConfigurationIntent {
+  productId: string;
+  expectedCurrentRevision: string;
+  restoreFromRevision: number;
+}
+
+export interface AdminCustomizationSurchargeRule {
+  ruleKey: string;
+  expectedRevision: number | null;
+  fieldId: string;
+  amountCents: number;
+  currency: "USD";
 }
 
 export interface AdminCustomizationStableFieldIdentity {
@@ -36,7 +53,7 @@ export interface AdminCustomizationStableFieldIdentity {
 
 export type AdminCustomizationFieldReadResult =
   | { status: "found"; value: AdminCustomizationFieldConfiguration }
-  | { status: "not_configured" }
+  | { status: "not_configured"; surchargeRules?: readonly AdminCustomizationSurchargeRule[] }
   | { status: "not_found" }
   | { status: "invalid_configuration"; issues: readonly CatalogValidationIssue[] }
   | { status: "source_failure"; operation: string };
@@ -66,6 +83,7 @@ export interface ReplaceCustomizationConfigurationIntent {
   productId: string;
   expectedCurrentRevision: string | null;
   fields: readonly AdminCustomizationFieldReplacement[];
+  surchargeRules?: readonly AdminCustomizationSurchargeRule[];
 }
 
 /**
@@ -96,6 +114,11 @@ export type AdminCustomizationFieldWriteResult =
 export interface CustomizationFieldAtomicPublicationRepository {
   publishCustomizationConfiguration(
     intent: ReplaceCustomizationConfigurationIntent,
+    actor: AdminPrincipal,
+  ): Promise<AdminCustomizationFieldWriteResult>;
+  restoreCustomizationConfiguration?(
+    intent: RestoreCustomizationConfigurationIntent,
+    actor: AdminPrincipal,
   ): Promise<AdminCustomizationFieldWriteResult>;
 }
 
@@ -110,8 +133,10 @@ export type AdminCustomizationReadModel =
       productId: string;
       configurationRevision: string;
       fields: readonly CustomizationField[];
+      surchargeRules?: readonly AdminCustomizationSurchargeRule[];
+      historicalRevisions?: readonly number[];
     }
-  | { status: "not_configured"; productId: string };
+  | { status: "not_configured"; productId: string; surchargeRules?: readonly AdminCustomizationSurchargeRule[] };
 
 export type AdminCustomizationFieldBoundaryResult<T> =
   | { status: "found"; value: T; principal: AdminPrincipal }
@@ -204,7 +229,7 @@ export function parseReplaceCustomizationConfigurationIntent(
   if (!isRecord(value)) {
     return { ok: false, issues: [validationIssue("$", "invalid_type", "Customization configuration replacement must be an object.")] };
   }
-  const issues = unknownFieldIssues(value, ["productId", "expectedCurrentRevision", "fields"]);
+  const issues = unknownFieldIssues(value, ["productId", "expectedCurrentRevision", "fields", "surchargeRules"]);
   if (!isIdentifier(value.productId)) {
     issues.push(validationIssue("$.productId", "invalid_format", "Product ID is invalid."));
   }
@@ -229,7 +254,7 @@ export function parseReplaceCustomizationConfigurationIntent(
       issues.push(validationIssue(path, "invalid_type", "Replacement field must be an object."));
       return;
     }
-    issues.push(...unknownFieldIssues(candidate, ["identity", "label", "kind", "required", "isActive", "position", "constraints"], path));
+    issues.push(...unknownFieldIssues(candidate, ["identity", "label", "kind", "required", "isActive", "position", "constraints", "rules"], path));
     const identity = parseIdentity(candidate.identity, `${path}.identity`);
     if (!identity.ok) issues.push(...identity.issues);
     const definition = parseCustomizationFieldDefinition({
@@ -240,6 +265,7 @@ export function parseReplaceCustomizationConfigurationIntent(
       isActive: candidate.isActive,
       position: candidate.position,
       constraints: candidate.constraints,
+      rules: candidate.rules,
     });
     if (!definition.ok) issues.push(...prefixIssues(definition.issues, path));
     if (!identity.ok || !definition.ok) return;
@@ -261,6 +287,44 @@ export function parseReplaceCustomizationConfigurationIntent(
     else newDraftIds.add(identity.value.draftId);
     fields.push({ ...definition.value, identity: identity.value });
   });
+  const surchargeRules: AdminCustomizationSurchargeRule[] = [];
+  if (value.surchargeRules !== undefined) {
+    if (!Array.isArray(value.surchargeRules) || value.surchargeRules.length > 100) {
+      issues.push(validationIssue("$.surchargeRules", "invalid_value", "Surcharge replacement must be a bounded array."));
+    } else {
+      const ruleKeys = new Set<string>();
+      const selectors = new Set<string>();
+      value.surchargeRules.forEach((candidate, index) => {
+        const path = `$.surchargeRules[${index}]`;
+        if (!isRecord(candidate)) { issues.push(validationIssue(path, "invalid_type", "Surcharge must be an object.")); return; }
+        issues.push(...unknownFieldIssues(candidate, ["ruleKey", "expectedRevision", "fieldId", "amountCents", "currency"], path));
+        if (!isIdentifier(candidate.ruleKey) || !isIdentifier(candidate.fieldId)
+          || candidate.currency !== "USD" || !Number.isSafeInteger(candidate.amountCents)
+          || Number(candidate.amountCents) < 0 || Number(candidate.amountCents) > 2_147_483_647
+          || (candidate.expectedRevision !== null && (!Number.isSafeInteger(candidate.expectedRevision) || Number(candidate.expectedRevision) < 1))) {
+          issues.push(validationIssue(path, "invalid_value", "Surcharge must be fixed USD cents on one approved field.")); return;
+        }
+        const target = fields.find((field) => (field.identity.kind === "existing" ? field.identity.id : field.identity.draftId) === candidate.fieldId);
+        if (!target || !target.isActive || !["image", "short_text", "long_text", "single_select", "multi_select", "numeric", "generic_file"].includes(target.kind)
+          || ruleKeys.has(candidate.ruleKey) || selectors.has(candidate.fieldId)) {
+          issues.push(validationIssue(path, "invalid_value", "Surcharge selector or rule identity is invalid.")); return;
+        }
+        ruleKeys.add(candidate.ruleKey as string);
+        selectors.add(candidate.fieldId as string);
+        surchargeRules.push(candidate as unknown as AdminCustomizationSurchargeRule);
+      });
+    }
+  }
+  if (issues.length === 0) {
+    const graph = validateCustomizationRuleGraph(fields.map((field) => ({
+      ...field,
+      id: field.identity.kind === "existing" ? field.identity.id : field.identity.draftId,
+      code: field.identity.code,
+      productId: value.productId as string,
+      configurationRevision: "pending-publication",
+    })) as CustomizationField[]);
+    if (!graph.ok) issues.push(...graph.issues.map((entry) => validationIssue(entry.path, "invalid_value", entry.message)));
+  }
   return issues.length > 0
     ? { ok: false, issues }
     : {
@@ -269,8 +333,45 @@ export function parseReplaceCustomizationConfigurationIntent(
           productId: value.productId,
           expectedCurrentRevision: value.expectedCurrentRevision as string | null,
           fields,
+          ...(value.surchargeRules !== undefined ? { surchargeRules } : {}),
         },
       };
+}
+
+export function parseRestoreCustomizationConfigurationIntent(value: unknown):
+  { ok: true; value: RestoreCustomizationConfigurationIntent } | { ok: false; issues: readonly CatalogValidationIssue[] } {
+  if (!isRecord(value)) return { ok: false, issues: [validationIssue("$", "invalid_type", "Restore request must be an object.")] };
+  const issues = unknownFieldIssues(value, ["productId", "expectedCurrentRevision", "restoreFromRevision"]);
+  if (!isIdentifier(value.productId)) issues.push(validationIssue("$.productId", "invalid_format", "Product ID is invalid."));
+  if (!isIdentifier(value.expectedCurrentRevision)) issues.push(validationIssue("$.expectedCurrentRevision", "invalid_format", "Current revision is required."));
+  if (!Number.isSafeInteger(value.restoreFromRevision) || Number(value.restoreFromRevision) < 1) issues.push(validationIssue("$.restoreFromRevision", "invalid_value", "Historical revision is invalid."));
+  return issues.length > 0 ? { ok: false, issues } : { ok: true, value: value as unknown as RestoreCustomizationConfigurationIntent };
+}
+
+export class AdminCustomizationFieldRestoreBoundary {
+  private readonly verifier: AdminSessionVerifier;
+  private readonly createRepositories: () => PrivilegedAdminCustomizationFieldRepositories;
+  constructor(verifier: AdminSessionVerifier, createRepositories: () => PrivilegedAdminCustomizationFieldRepositories) {
+    this.verifier = verifier;
+    this.createRepositories = createRepositories;
+  }
+
+  async execute(request: unknown): Promise<AdminCustomizationFieldBoundaryResult<AdminCustomizationFieldConfiguration>> {
+    const authorization = await authorize(this.verifier);
+    if (authorization.status !== "authorized") return authorization;
+    const parsed = parseRestoreCustomizationConfigurationIntent(request);
+    if (!parsed.ok) return { status: "invalid_request", issues: safeIssues(parsed.issues) };
+    try {
+      const writer = this.createRepositories().writer;
+      if (!writer.restoreCustomizationConfiguration) return { status: "source_failure", operation: "admin_customization_field_command" };
+      const saved = await writer.restoreCustomizationConfiguration(parsed.value, authorization.principal);
+      if (saved.status !== "applied") return writeFailure(saved);
+      if (saved.value.productId !== parsed.value.productId) return { status: "source_failure", operation: "admin_customization_field_command" };
+      return { status: "applied", value: saved.value, newFieldIdMappings: saved.newFieldIdMappings, principal: authorization.principal };
+    } catch {
+      return { status: "source_failure", operation: "admin_customization_field_command" };
+    }
+  }
 }
 
 function readFailure(
@@ -367,7 +468,7 @@ export class AdminCustomizationFieldQueryBoundary {
         return { status: "found", principal: authorization.principal, value: { status: "configured", ...result.value } };
       }
       if (result.status === "not_configured") {
-        return { status: "found", principal: authorization.principal, value: { status: "not_configured", productId: parsed.productId } };
+        return { status: "found", principal: authorization.principal, value: { status: "not_configured", productId: parsed.productId, ...(result.surchargeRules ? { surchargeRules: result.surchargeRules } : {}) } };
       }
       return readFailure(result, "admin_customization_field_query");
     } catch (error) {
@@ -427,7 +528,7 @@ export class AdminCustomizationFieldCommandBoundary {
       const ownershipIssues = validateExistingIdentityOwnership(parsed.value, identities.value);
       if (ownershipIssues.length > 0) return { status: "invalid_request", issues: safeIssues(ownershipIssues) };
 
-      const saved = await repositories.writer.publishCustomizationConfiguration(parsed.value);
+      const saved = await repositories.writer.publishCustomizationConfiguration(parsed.value, authorization.principal);
       if (saved.status !== "applied") return writeFailure(saved);
       if (saved.value.productId !== parsed.value.productId) {
         return {

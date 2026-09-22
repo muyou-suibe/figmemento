@@ -143,10 +143,7 @@ function hasOnlyExpectedMissingMetadata(
 function metadataFromReceipt(
   receipt: CustomerUploadReceipt,
 ): CustomizationResolvedImageMetadata | CustomizationResolvedFileMetadata {
-  if (receipt.contentType === "application/pdf"
-    || receipt.contentType === "text/plain"
-    || receipt.contentType === "application/zip"
-    || receipt.contentType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+  if (receipt.contentType === "application/pdf" || receipt.contentType === "text/plain") {
     return { receiptId: receipt.receiptId, mimeType: receipt.contentType, fileSizeBytes: receipt.byteSize };
   }
   if (!receipt.dimensions) throw new Error("Image receipt dimensions are required.");

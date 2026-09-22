@@ -122,8 +122,8 @@ test("C08 public projection hides inactive choices and Admin editor uses the sha
 test("C08 migration is ordered, additive, and only extends existing pricing/snapshot seams", async () => {
   const manifest = JSON.parse(await readFile(new URL("../local/commerce/migrations/manifest.json", import.meta.url), "utf8"));
   const migration = await readFile(new URL("../local/commerce/migrations/0043_local-commerce-customization-multi-select.sql", import.meta.url), "utf8");
-  assert.equal(manifest.schemaVersion, 44);
-  assert.equal(manifest.migrations.length, 44);
+  assert.ok(manifest.schemaVersion >= 44);
+  assert.equal(manifest.migrations.length, manifest.schemaVersion);
   assert.equal(manifest.migrations.find((entry) => entry.version === 43).version, 43);
   assert.equal(manifest.migrations.find((entry) => entry.version === 43).checksum, createHash("sha256").update(migration).digest("hex"));
   assert.match(migration, /multi_select/);

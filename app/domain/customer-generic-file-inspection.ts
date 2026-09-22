@@ -46,12 +46,7 @@ function isUtf8Text(bytes: Uint8Array): boolean {
 
 function detectContentType(bytes: Uint8Array): CustomerUploadContentType | null {
   if (startsWith(bytes, [0x25, 0x50, 0x44, 0x46, 0x2d])) return "application/pdf";
-  if (startsWith(bytes, [0x50, 0x4b, 0x03, 0x04]) || startsWith(bytes, [0x50, 0x4b, 0x05, 0x06])) {
-    const text = new TextDecoder("latin1").decode(bytes);
-    return text.includes("[Content_Types].xml") && text.includes("word/document.xml")
-      ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-      : "application/zip";
-  }
+  if (startsWith(bytes, [0x50, 0x4b, 0x03, 0x04]) || startsWith(bytes, [0x50, 0x4b, 0x05, 0x06])) return null;
   return isUtf8Text(bytes) ? "text/plain" : null;
 }
 
@@ -72,9 +67,6 @@ export function inspectCustomerGenericFileBytes(input: {
   }
   if (input.bytes.byteLength > input.constraints.maxBytes) {
     issues.push({ code: "file_too_large", message: "The private file exceeds the configured maximum." });
-  }
-  if (input.constraints.minFileCount > 1) {
-    issues.push({ code: "file_count_too_low", message: "This upload request must contain the configured minimum number of files." });
   }
   if (input.constraints.maxFileCount < 1) {
     issues.push({ code: "file_count_too_high", message: "This field does not accept a private file." });

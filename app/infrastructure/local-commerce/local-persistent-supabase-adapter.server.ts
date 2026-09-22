@@ -49,7 +49,8 @@ export type LocalCommerceRelation =
   | "digital_tickets"
   | "digital_delivery_attempts"
   | "admin_settings"
-  | "admin_settings_actions";
+  | "admin_settings_actions"
+  | "admin_customization_actions";
 
 export const LOCAL_COMMERCE_RELATIONS: ReadonlySet<LocalCommerceRelation> = new Set([
   "migration_ledger",
@@ -91,6 +92,7 @@ export const LOCAL_COMMERCE_RELATIONS: ReadonlySet<LocalCommerceRelation> = new 
   "digital_delivery_attempts",
   "admin_settings",
   "admin_settings_actions",
+  "admin_customization_actions",
 ]);
 
 export const LOCAL_COMMERCE_RPC_FUNCTIONS = [
@@ -129,6 +131,8 @@ export const LOCAL_COMMERCE_RPC_FUNCTIONS = [
   "revoke_customer_session",
   "admin_settings_read",
   "admin_settings_command",
+  "admin_customization_read",
+  "admin_customization_publish",
 ] as const;
 export type LocalCommerceRpcFunction = (typeof LOCAL_COMMERCE_RPC_FUNCTIONS)[number];
 
@@ -432,6 +436,14 @@ interface LocalCommerceRpcArguments {
     readonly p_expected_version: number;
     readonly p_support_email: string | null;
   };
+  admin_customization_read: {
+    readonly p_project_id: string; readonly p_marker_digest: string; readonly p_product_id: string;
+  };
+  admin_customization_publish: {
+    readonly p_project_id: string; readonly p_marker_digest: string; readonly p_product_id: string;
+    readonly p_expected_revision: number | null; readonly p_actor_id: string;
+    readonly p_fields: unknown; readonly p_surcharges: unknown; readonly p_restored_from_revision: number | null;
+  };
 }
 
 type LocalPersistentAdapterIssue =
@@ -457,10 +469,22 @@ export type LocalPersistentMediaReleaseBindingResult =
       readonly receiptLifecycle: "removed" | null }
   | { readonly status: "conflict" | "not_found" | "unavailable" };
 
+/** Opaque local API keys are apikey credentials, never bearer JWTs. */
+export function localPersistentApiKeyFetch(key: string, transport: typeof fetch = fetch): typeof fetch {
+  if (!key.startsWith("sb_secret_") && !key.startsWith("sb_publishable_")) return transport;
+  return (input, init) => {
+    const headers = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined));
+    headers.delete("Authorization");
+    headers.set("apikey", key);
+    return transport(input, { ...init, headers });
+  };
+}
+
 const DEFAULT_CLIENT_FACTORY: LocalPersistentSupabaseClientFactory = {
   create(url, serviceRoleKey) {
     return createClient(url, serviceRoleKey, {
       auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+      global: { fetch: localPersistentApiKeyFetch(serviceRoleKey) },
     });
   },
 };

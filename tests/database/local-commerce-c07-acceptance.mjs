@@ -8,6 +8,7 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { createServer } from "node:net";
 import { importJWK, SignJWT } from "jose";
 import { catalogDatabaseRows, catalogTestEnvironment, ids } from "../fixtures/local-persistent-catalog.mjs";
+import { quarantineSyntheticShippingRule } from "./local-commerce-shipping-fixture-quarantine.mjs";
 import { LocalCatalogAuthority } from "../../app/infrastructure/local-commerce/local-catalog-authority.server.ts";
 import { createConfiguredGuestDraftOwnerService, getGuestDraftOwnerCookieName } from "../../app/lib/guest-draft-owner.ts";
 import { ensureGuestResourceOwner } from "../../app/application/guest-resource-ownership.server.ts";
@@ -167,12 +168,15 @@ rows.configurations[0].definition = {
     },
   }],
 };
+let insertedShippingRuleId;
+try {
 for (const [key, table] of Object.entries({ categories: "catalog_categories", products: "catalog_products", variants: "catalog_variants", configurations: "catalog_configuration_snapshots", rules: "catalog_pricing_rules" })) {
   const response = await fetch(`${prep.config.endpoints.apiUrl}/rest/v1/${table}`, {
     method: "POST", headers, body: JSON.stringify(rows[key]), signal: AbortSignal.timeout(5_000),
   });
   if (response.status !== 201) assert.fail(`C07 synthetic ${key} setup: ${response.status} ${await response.text()}`);
   await response.arrayBuffer();
+  if (key === "rules") insertedShippingRuleId = rows.rules[0].id;
 }
 
 const catalog = new LocalCatalogAuthority(env);
@@ -370,3 +374,7 @@ try {
 console.info("C07 REAL DISPOSABLE ACCEPTANCE PASS", JSON.stringify({
   run, project, postgresMajor: 17, ledger: "42/42", pending: 0, migration: "0042", remote: false,
 }));
+} finally {
+  if (insertedShippingRuleId) quarantineSyntheticShippingRule({ sql, project, id: insertedShippingRuleId,
+    ruleKey: rows.rules[0].rule_key, method: rows.rules[0].definition.method });
+}

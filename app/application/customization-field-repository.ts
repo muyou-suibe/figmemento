@@ -8,6 +8,7 @@ import {
   parseCustomizationField,
   type CustomizationField,
 } from "../domain/customization-field.ts";
+import { validateCustomizationRuleGraph } from "../domain/customization-validation.ts";
 
 /**
  * The authoritative, current customization configuration for one Product.
@@ -97,8 +98,8 @@ export function normalizeCustomizationFieldConfiguration(
 
 /**
  * Administrator reads retain inactive definitions so a complete replacement
- * can explicitly reactivate or preserve them. Public catalog reads must use
- * `normalizeCustomizationFieldConfiguration`, which remains active-only.
+ * can explicitly reactivate or preserve them. Public catalog reads validate
+ * the complete definition before projecting active fields and choices only.
  */
 export function normalizeAdminCustomizationFieldConfiguration(
   expectedProductId: string,
@@ -153,9 +154,6 @@ function normalizeCustomizationFieldConfigurationWithActivity(
     if (parsed.value.productId !== expectedProductId) {
       issues.push(configurationIssue(`$.fields[${index}].productId`, "ownership", "Customization field belongs to another Product."));
     }
-    if (!allowInactive && !parsed.value.isActive) {
-      issues.push(configurationIssue(`$.fields[${index}].isActive`, "invalid_value", "Inactive fields cannot appear in a current configuration."));
-    }
     if (parsed.value.configurationRevision !== value.configurationRevision) {
       issues.push(configurationIssue(`$.fields[${index}].configurationRevision`, "invalid_value", "Customization field revision does not match the current configuration."));
     }
@@ -186,6 +184,10 @@ function normalizeCustomizationFieldConfigurationWithActivity(
     issues.push(configurationIssue("$.fields", "duplicate", `Customization field position '${position}' is duplicated.`));
   }
 
+  if (issues.length === 0) {
+    const graph = validateCustomizationRuleGraph(fields);
+    if (!graph.ok) issues.push(...graph.issues.map((item) => configurationIssue(item.path, "invalid_value", item.message)));
+  }
   if (issues.length > 0) return { status: "invalid_configuration", issues };
 
   return {
@@ -195,6 +197,7 @@ function normalizeCustomizationFieldConfigurationWithActivity(
       configurationRevision: value.configurationRevision,
       fields: fields
         .toSorted((left, right) => left.position - right.position)
+        .filter((field) => allowInactive || field.isActive)
         .map((field) => allowInactive ? field : publicCustomizationField(field)),
     },
   };

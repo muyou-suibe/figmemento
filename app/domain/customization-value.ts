@@ -43,7 +43,7 @@ export interface CustomizationNumericValue {
   fieldId: string;
   fieldCode: string;
   kind: "numeric";
-  value: number;
+  value: string;
 }
 
 /**
@@ -281,12 +281,12 @@ export function parseCustomizationValue(
       ...unknownFieldIssues(value, ["fieldId", "fieldCode", "kind", "value"]),
       ...collectFieldIdentityIssues(value),
     ];
-    if (typeof value.value !== "number" || !Number.isFinite(value.value)) issues.push(validationIssue("$.value", "invalid_value", "Numeric customization value must be finite."));
+    if (typeof value.value !== "string" || !/^-?\d+(?:\.\d{1,4})?$/.test(value.value)) issues.push(validationIssue("$.value", "invalid_value", "Numeric customization value must be a plain decimal string."));
     return issues.length > 0 ? validationFailure(...issues) : validationSuccess({
       fieldId: value.fieldId as string,
       fieldCode: value.fieldCode as string,
       kind: "numeric",
-      value: value.value as number,
+      value: value.value as string,
     });
   }
 

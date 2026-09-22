@@ -5,6 +5,7 @@ import test from "node:test";
 import {
   CUSTOMIZATION_FIELD_SOURCE_FAILURE_OPERATION,
   customizationFieldSourceFailure,
+  normalizeAdminCustomizationFieldConfiguration,
   normalizeCustomizationFieldConfiguration,
 } from "../app/application/customization-field-repository.ts";
 
@@ -81,13 +82,53 @@ test("sorts valid source fields solely by unique authoritative position", () => 
   assert.deepEqual(result.value.fields.map((entry) => entry.id), ["field-first", "field-later"]);
 });
 
-test("rejects Product ownership, inactive fields, and inconsistent revisions", () => {
+test("validates the complete canonical configuration before projecting active fields", () => {
+  const active = field();
+  const inactive = field({ id: "field-retired", code: "retired", label: "Retired", isActive: false, position: 1 });
+  const value = configuration([inactive, active]);
+  const admin = normalizeAdminCustomizationFieldConfiguration(productId, value);
+  const publicResult = normalizeCustomizationFieldConfiguration(productId, value);
+  assert.equal(admin.status, "found");
+  assert.deepEqual(admin.value.fields.map((entry) => entry.id), [active.id, inactive.id]);
+  assert.equal(publicResult.status, "found");
+  assert.deepEqual(publicResult.value.fields.map((entry) => entry.id), [active.id]);
+  assert.equal(publicResult.value.configurationRevision, configurationRevision);
+
+  const allInactive = normalizeCustomizationFieldConfiguration(productId, configuration([inactive]));
+  assert.deepEqual(allInactive, { status: "found", value: { productId, configurationRevision, fields: [] } });
+});
+
+test("public choice projection retains active identities and conditional rules", () => {
+  const choices = [
+    { id: "choice-live", code: "live", label: "Live", position: 0, isActive: true },
+    { id: "choice-retired", code: "retired", label: "Retired", position: 1, isActive: false },
+  ];
+  const selector = field({ id: "field-selector", code: "selector", kind: "single_select", constraints: { choices }, position: 0 });
+  const multi = field({ id: "field-multi", code: "multi", kind: "multi_select", required: false, constraints: { choices, minSelections: 0, maxSelections: 1 }, position: 1 });
+  const conditional = field({ id: "field-conditional", code: "conditional", required: false, position: 2,
+    rules: { visibleWhen: { kind: "field_present", fieldId: selector.id }, requiredWhen: { kind: "single_select_is", fieldId: selector.id, choiceId: choices[0].id } },
+  });
+  const value = configuration([selector, multi, conditional]);
+  const admin = normalizeAdminCustomizationFieldConfiguration(productId, value);
+  const publicResult = normalizeCustomizationFieldConfiguration(productId, value);
+  assert.equal(admin.status, "found");
+  assert.equal(publicResult.status, "found");
+  for (const index of [0, 1]) {
+    assert.deepEqual(admin.value.fields[index].constraints.choices.map((choice) => choice.id), choices.map((choice) => choice.id));
+    assert.deepEqual(publicResult.value.fields[index].constraints.choices.map((choice) => choice.id), [choices[0].id]);
+  }
+  assert.deepEqual(publicResult.value.fields[2].rules, conditional.rules);
+});
+
+test("rejects Product ownership and inconsistent revisions even on inactive fields", () => {
   const foreign = invalid(configuration([field({ productId: "product-other" })]));
   assert.ok(foreign.issues.some((issue) => issue.code === "ownership"));
-  const inactive = invalid(configuration([field({ isActive: false })]));
-  assert.ok(inactive.issues.some((issue) => issue.path.endsWith(".isActive")));
   const revision = invalid(configuration([field({ configurationRevision: "revision-other" })]));
   assert.ok(revision.issues.some((issue) => issue.path.endsWith(".configurationRevision")));
+  const hiddenForeign = invalid(configuration([field(), field({ id: "field-other", code: "other", position: 1, isActive: false, productId: "product-other" })]));
+  assert.ok(hiddenForeign.issues.some((issue) => issue.code === "ownership"));
+  const hiddenRevision = invalid(configuration([field(), field({ id: "field-other", code: "other", position: 1, isActive: false, configurationRevision: "revision-other" })]));
+  assert.ok(hiddenRevision.issues.some((issue) => issue.path.endsWith(".configurationRevision")));
 });
 
 test("rejects blank configuration revisions and malformed fields", () => {
@@ -95,6 +136,7 @@ test("rejects blank configuration revisions and malformed fields", () => {
   assert.ok(invalid(configuration([{ not: "a field" }])).issues.some((issue) => issue.path.startsWith("$.fields[0]")));
   assert.ok(invalid(configuration([field({ kind: "unsupported" })])).issues.some((issue) => issue.code === "invalid_value"));
   assert.ok(invalid(configuration([field({ constraints: { maxLength: 0 } })])).issues.some((issue) => issue.code === "invalid_value"));
+  assert.ok(invalid(configuration([field(), field({ id: "field-other", code: "other", position: 1, isActive: false, constraints: { maxLength: 0 } })])).issues.some((issue) => issue.code === "invalid_value"));
 });
 
 test("rejects duplicate stable IDs, Product-scoped codes, and positions instead of inventing a tie-breaker", () => {
@@ -104,6 +146,13 @@ test("rejects duplicate stable IDs, Product-scoped codes, and positions instead 
   assert.ok(duplicateCode.issues.some((issue) => issue.message.includes("code")));
   const duplicatePosition = invalid(configuration([field(), field({ id: "field-other", code: "other" })]));
   assert.ok(duplicatePosition.issues.some((issue) => issue.message.includes("position")));
+  for (const duplicate of [
+    field({ code: "other", position: 1, isActive: false }),
+    field({ id: "field-other", position: 1, isActive: false }),
+    field({ id: "field-other", code: "other", isActive: false }),
+  ]) {
+    assert.ok(invalid(configuration([field(), duplicate])).issues.some((issue) => issue.code === "duplicate"));
+  }
 });
 
 test("keeps source failures safe and distinct from not found and invalid configuration", () => {

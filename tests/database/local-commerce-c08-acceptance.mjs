@@ -5,12 +5,12 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { spawn, spawnSync } from "node:child_process";
 import { createServer } from "node:net";
-import { importJWK, SignJWT } from "jose";
 
 import { catalogDatabaseRows, catalogTestEnvironment, ids } from "../fixtures/local-persistent-catalog.mjs";
+import { quarantineSyntheticShippingRule } from "./local-commerce-shipping-fixture-quarantine.mjs";
 
 const run = process.argv.find((value) => /^run-[a-f0-9]{8}$/.test(value));
-assert.equal(run, "run-9d2e7a4c", "C08 acceptance is bound to the authorized fresh run");
+assert.equal(run, "run-b74c8e21", "C08 acceptance is bound to the authorized final run");
 assert.ok(process.argv.includes("--confirm-disposable"), "explicit disposable confirmation required");
 
 const root = process.cwd();
@@ -19,7 +19,7 @@ const prep = JSON.parse(readFileSync(`${dir}/ledger-preparation.json`, "utf8"));
 const marker = JSON.parse(readFileSync(`${dir}/project-marker.json`, "utf8"));
 const manifest = JSON.parse(readFileSync(`${root}/local/commerce/migrations/manifest.json`, "utf8"));
 const project = prep.config.projectId;
-assert.equal(project, "figmemento-local-commerce-test-run-9d2e7a4c");
+assert.equal(project, "figmemento-local-commerce-test-run-b74c8e21");
 assert.equal(prep.config.postgresMajorVersion, 17);
 assert.equal(marker.projectId, project);
 assert.equal(marker.runId, run);
@@ -49,29 +49,24 @@ const sql = (query) => command("docker", [
 assert.match(sql("show server_version_num;"), /^17/);
 assert.equal(sql(`select local_commerce.verify_project_identity(${sqlLiteral(project)},${sqlLiteral(prep.markerDigest)});`), "t");
 const ledger = JSON.parse(sql("select coalesce(json_agg(json_build_object('version',version,'migrationId',migration_id,'checksum',checksum) order by version),'[]') from local_commerce.migration_ledger;"));
-assert.equal(ledger.length, 43);
-assert.equal(manifest.schemaVersion, 43);
+assert.equal(ledger.length, 46);
+assert.equal(manifest.schemaVersion, 46);
 for (const [index, migration] of manifest.migrations.entries()) {
   assert.equal(ledger[index].version, migration.version);
   assert.equal(ledger[index].migrationId, migration.migrationId);
   assert.equal(ledger[index].checksum, migration.checksum);
   assert.equal(createHash("sha256").update(readFileSync(`${root}/local/commerce/migrations/${migration.filename}`)).digest("hex"), migration.checksum);
 }
-assert.equal(sql("select count(*) from local_commerce.migration_ledger where version > 43;"), "0");
+assert.equal(sql("select count(*) from local_commerce.migration_ledger where version > 46;"), "0");
 assert.equal(sql(`select count(*) from local_commerce.project_identities where project_id=${sqlLiteral(project)} and marker_digest=${sqlLiteral(prep.markerDigest)} and project_kind='disposable_test' and environment='test' and lifecycle='active';`), "1");
 
 const status = JSON.parse(command("node_modules/.bin/supabase", ["status", "--workdir", dir, "-o", "json"]));
 assert.equal(status.API_URL, prep.config.endpoints.apiUrl);
-const restContainer = exactContainers.find((container) => container.Name.startsWith("/supabase_rest_"));
-assert.ok(restContainer, "exact C08 PostgREST container must be running");
-const jwtSecretPair = restContainer.Config.Env.find((entry) => entry.startsWith("PGRST_JWT_SECRET="));
-assert.ok(jwtSecretPair, "exact C08 PostgREST signing authority must be present");
-const jwtAuthority = JSON.parse(jwtSecretPair.slice("PGRST_JWT_SECRET=".length));
-const octKey = jwtAuthority.keys.find((key) => key.kty === "oct");
-assert.ok(octKey);
-const signingKey = await importJWK(octKey, "HS256");
-const serviceRoleKey = await new SignJWT({ role: "service_role", iss: "supabase", iat: Math.floor(Date.now() / 1000) })
-  .setProtectedHeader({ alg: "HS256", typ: "JWT" }).setIssuedAt().setExpirationTime("2h").sign(signingKey);
+assert.equal(process.env.C08_DISPOSABLE_RUN_ID, run, "exact-run credential scope required");
+const serviceRoleKey = process.env.C08_DISPOSABLE_SECRET_KEY ?? process.env.C08_DISPOSABLE_SERVICE_ROLE_KEY;
+assert.ok(serviceRoleKey, "local CLI credential required");
+const keyHeaders = { apikey: serviceRoleKey,
+  ...(!serviceRoleKey.startsWith("sb_secret_") ? { authorization: `Bearer ${serviceRoleKey}` } : {}) };
 
 const env = {
   ...process.env,
@@ -112,8 +107,7 @@ env.WRANGLER_WRITE_LOGS = "false";
 env.LOCAL_COMMERCE_ACCEPTANCE_DISABLE_INSPECTOR = "true";
 
 const headers = {
-  apikey: serviceRoleKey,
-  authorization: `Bearer ${serviceRoleKey}`,
+  ...keyHeaders,
   "content-type": "application/json",
   "content-profile": "local_commerce",
 };
@@ -156,12 +150,15 @@ synthetic.configurations[0].definition = {
   }],
 };
 
+let insertedShippingRuleId;
+try {
 for (const [key, table] of Object.entries({ categories: "catalog_categories", products: "catalog_products", variants: "catalog_variants", configurations: "catalog_configuration_snapshots", rules: "catalog_pricing_rules" })) {
   const response = await fetch(`${prep.config.endpoints.apiUrl}/rest/v1/${table}`, {
     method: "POST", headers, body: JSON.stringify(synthetic[key]), signal: AbortSignal.timeout(5_000),
   });
   assert.equal(response.status, 201, `C08 synthetic ${key} setup failed: ${response.status}`);
   await response.arrayBuffer();
+  if (key === "rules") insertedShippingRuleId = synthetic.rules[0].id;
 }
 
 const { createConfiguredGuestDraftOwnerService, getGuestDraftOwnerCookieName } = await import("../../app/lib/guest-draft-owner.ts");
@@ -309,7 +306,9 @@ try {
     email: `c08-${suffix}@example.invalid`, firstName: "C08", lastName: "Acceptance", country: "US",
     city: "Test", addressLine1: "Synthetic C08 address", postalCode: "00000", shippingMethod: synthetic.rules[0].definition.method,
   });
-  assert.equal(checkout.status, 200);
+  if (checkout.status !== 200) {
+    assert.fail(`C08 Checkout: ${checkout.status} ${await checkout.text()}\n${second.logs.slice(-3000)}`);
+  }
   const checkoutProjection = await checkout.json();
   assert.equal(checkoutProjection.status, "accepted");
   assert.equal(checkoutProjection.tax.status, "not_activated");
@@ -360,4 +359,8 @@ try {
   else await stop(first);
 }
 
-console.info("C08 REAL DISPOSABLE ACCEPTANCE PASS", JSON.stringify({ run, project, postgresMajor: 17, ledger: "43/43", pending: 0, migration: "0043", remote: false, orderReference }));
+console.info("C08 REAL DISPOSABLE ACCEPTANCE PASS", JSON.stringify({ run, project, postgresMajor: 17, ledger: "46/46", pending: 0, migration: "0046", remote: false, orderReference }));
+} finally {
+  if (insertedShippingRuleId) quarantineSyntheticShippingRule({ sql, project, id: insertedShippingRuleId,
+    ruleKey: synthetic.rules[0].rule_key, method: synthetic.rules[0].definition.method });
+}

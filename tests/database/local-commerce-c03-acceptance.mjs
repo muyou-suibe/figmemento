@@ -14,6 +14,7 @@ import { persistentCartHttp } from "../../app/server/local-persistent-cart-http.
 import { persistentCheckoutHttp } from "../../app/server/local-persistent-checkout-http.server.ts";
 import { persistentOrderCreateHttp } from "../../app/server/local-persistent-order-http.server.ts";
 import { catalogDatabaseRows } from "../fixtures/local-persistent-catalog.mjs";
+import { quarantineSyntheticShippingRule } from "./local-commerce-shipping-fixture-quarantine.mjs";
 
 assert.deepEqual(process.argv.slice(2), ["run-d7e3c0af", "--confirm-disposable-c03"]);
 const root = path.resolve(".");
@@ -133,9 +134,9 @@ rows.configurations[0].definition.fields = [
     configurationRevision: "1", constraints: { maxLength: 120 } },
 ];
 const shippingMethod = `c03_${randomUUID().replaceAll("-", "").slice(0, 20)}`;
+rows.rules = rows.rules.filter((rule) => rule.definition.kind === "shipping");
 rows.rules[0].rule_key = `c03-shipping-${randomUUID()}`;
 rows.rules[0].definition.method = shippingMethod;
-rows.rules[1].rule_key = `c03-coupon-${randomUUID()}`;
 rows.rules.push(
   { project_id: projectId, id: randomUUID(), version: 1, lifecycle: "active", rule_key: `c03-caption-${randomUUID()}`, revision: 1, rule_status: "active",
     definition: { kind: "customization_surcharge", ruleRevision: 1, productId, configurationRevision: "1", selector: { kind: "field_present", fieldId: fieldCaption }, amountCents: 300, currency: "USD" } },
@@ -145,6 +146,7 @@ rows.rules.push(
     definition: { kind: "customization_surcharge", ruleRevision: 1, productId: randomUUID(), configurationRevision: "1", selector: { kind: "field_present", fieldId: fieldCaption }, amountCents: 999, currency: "USD" } },
 );
 const serviceHeaders = { apikey: retainedStack.SERVICE_ROLE_KEY, authorization: `Bearer ${retainedStack.SERVICE_ROLE_KEY}`, "content-type": "application/json", "content-profile": "local_commerce" };
+let insertedShippingRuleId;
 async function persistSyntheticCatalog() {
   const existing = await fetch(`${stack.API_URL}/rest/v1/catalog_products?project_id=eq.${projectId}&id=eq.${productId}&select=id`, {
     headers: { ...serviceHeaders, "accept-profile": "local_commerce" }, signal: AbortSignal.timeout(10_000),
@@ -155,6 +157,7 @@ async function persistSyntheticCatalog() {
   for (const [key, table] of Object.entries({ categories: "catalog_categories", products: "catalog_products", variants: "catalog_variants", configurations: "catalog_configuration_snapshots", rules: "catalog_pricing_rules" })) {
     const response = await fetch(`${stack.API_URL}/rest/v1/${table}`, { method: "POST", headers: { ...serviceHeaders, prefer: "return=minimal" }, body: JSON.stringify(rows[key]), signal: AbortSignal.timeout(10_000) });
     assert.equal(response.status, 201, `${table}: ${await response.text()}`);
+    if (key === "rules") insertedShippingRuleId = rows.rules[0].id;
   }
 }
 const checks = [];
@@ -169,7 +172,7 @@ const sqlFailure = (query) => {
   assert.equal(result.error, undefined, "bounded immutable-rejection probe failed");
   return result;
 };
-{
+try {
   await persistSyntheticCatalog();
   await check("exact disposable marker, PostgreSQL 17, and 41/41 ordered checksums", async () => {});
   Object.assign(process.env, env);
@@ -267,4 +270,7 @@ const sqlFailure = (query) => {
   });
   console.log(JSON.stringify({ status: "PASS", task: "1.1", projectId, schemaVersion: 41, ledger: "41/41", checks: checks.length,
     cart: { finalUnitPriceCents: 3000, totalSurchargeCents: 500, allocations: 2 }, order: { orderId, pricingSnapshot: true }, remote: false }));
+} finally {
+  if (insertedShippingRuleId) quarantineSyntheticShippingRule({ sql, project: projectId, id: insertedShippingRuleId,
+    ruleKey: rows.rules[0].rule_key, method: rows.rules[0].definition.method });
 }

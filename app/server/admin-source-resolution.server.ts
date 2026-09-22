@@ -47,10 +47,21 @@ export function readAdminCatalogSourceConfiguration(
     : { status: "local_fake", source: "local_fake", restartLoss: true };
 }
 
-/** Catalog/Customization never acquire persistent write authority in Task 8. */
+/** General Admin Catalog Product/Variant/SKU commands remain on their accepted
+ * source; H03 customization is selected separately below. */
 export function resolveAuthorizedAdminCatalogSource<T>(
   production: () => T,
   localFake: () => T,
 ): T {
   return resolveAuthorizedSource(production, localFake, localFake);
+}
+
+/** H03 alone may select durable customization commands. General Admin Catalog
+ * Product/Variant/SKU authority deliberately retains its existing split. */
+export function resolveAuthorizedAdminCustomizationSource<T>(
+  production: () => T,
+  localFake: () => T,
+  localPersistent: () => T,
+): T {
+  return resolveAuthorizedSource(production, localFake, localPersistent);
 }

@@ -2,6 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { acceptCustomerGenericFileUpload } from "../app/application/customer-generic-file-acceptance-service.ts";
 import { createDeterministicCustomerUploadFakes } from "../app/testing/customer-upload-fakes.ts";
+import nextConfig from "../next.config.ts";
+
+test("C10 multipart transport leaves bounded envelope room above the 20 MiB business maximum", () => {
+  assert.equal(nextConfig.experimental?.serverActions?.bodySizeLimit, "21mb");
+});
 
 const constraints = {
   allowedMimeTypes: ["application/pdf", "text/plain"],

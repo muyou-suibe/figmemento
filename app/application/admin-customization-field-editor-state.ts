@@ -32,7 +32,7 @@ export function defaultCustomizationConstraints(
       : kind === "multi_select"
       ? { choices: [{ id: "new:choice-1", code: "choice-1", label: "Choice 1", position: 0, isActive: true }], minSelections: 0, maxSelections: 1 }
       : kind === "numeric"
-        ? { min: 0, max: 100, step: 1 }
+        ? { min: "0", max: "100", step: "1" }
       : kind === "generic_file"
         ? { allowedMimeTypes: ["application/pdf", "text/plain"], maxBytes: 5_000_000, minFileCount: 0, maxFileCount: 1 }
       : { maxLength: 100 };
@@ -55,6 +55,7 @@ export function editorFieldsFromConfiguration(
     isActive: field.isActive,
     position: field.position,
     constraints: field.constraints,
+    ...(field.rules ? { rules: field.rules } : {}),
   })).toSorted((left, right) => left.position - right.position);
 }
 

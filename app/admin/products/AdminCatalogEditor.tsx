@@ -26,6 +26,7 @@ interface AdminCatalogEditorProps {
   variants: readonly ProductVariant[];
   assets: readonly ProductAsset[];
   fulfillmentConfigs: readonly ProductFulfillmentConfig[];
+  customizationSource?: "local_fake" | "local_persistent" | "production";
 }
 
 interface MutationIssue {
@@ -134,6 +135,7 @@ function ProductEditor({
   variants,
   assets,
   fulfillmentConfig,
+  customizationSource,
 }: {
   product: CatalogProduct;
   categories: readonly Category[];
@@ -142,6 +144,7 @@ function ProductEditor({
   variants: readonly ProductVariant[];
   assets: readonly ProductAsset[];
   fulfillmentConfig?: ProductFulfillmentConfig;
+  customizationSource?: AdminCatalogEditorProps["customizationSource"];
 }) {
   const mutation = useCatalogMutation();
 
@@ -188,7 +191,7 @@ function ProductEditor({
       />
       <AdminProductAssetEditor product={product} assets={assets} variants={variants} />
       <AdminProductFulfillmentEditor product={product} config={fulfillmentConfig} />
-      <AdminCustomizationFieldEditor product={product} />
+      {customizationSource !== "local_persistent" ? <AdminCustomizationFieldEditor product={product} /> : null}
     </details>
   );
 }
@@ -209,9 +212,9 @@ function SeoFields({ seo }: { seo: Category["seo"] }) {
   return <fieldset className={styles.seo}><legend>SEO metadata</legend><TextField name="seoTitle" label="SEO title" defaultValue={seo.title} /><TextField name="canonicalPath" label="Canonical path" defaultValue={seo.canonicalPath} /><label className={styles.full}><span>SEO description</span><textarea name="seoDescription" defaultValue={seo.description} rows={3} /></label><TextField name="imageAssetId" label="SEO image asset ID" defaultValue={seo.imageAssetId} /></fieldset>;
 }
 
-export function AdminCatalogEditor({ categories, products, options, optionValues, variants, assets, fulfillmentConfigs }: AdminCatalogEditorProps) {
+export function AdminCatalogEditor({ categories, products, options, optionValues, variants, assets, fulfillmentConfigs, customizationSource }: AdminCatalogEditorProps) {
   return <div className={`${styles.workspace} ${styles.fusionAdminWorkspace}`}>
     <section><div className={styles.sectionHeading}><div><p className="eyebrow">Single-level taxonomy</p><h2>Categories</h2></div><span>{categories.length}</span></div><div className={styles.list}>{categories.map((category) => <CategoryEditor key={category.id} category={category} />)}</div></section>
-    <section><div className={styles.sectionHeading}><div><p className="eyebrow">Catalog records</p><h2>Products</h2></div><span>{products.length}</span></div><div className={styles.list}>{products.map((product) => <ProductEditor key={product.id} product={product} categories={categories} options={options.filter((item) => item.productId === product.id)} optionValues={optionValues.filter((item) => item.productId === product.id)} variants={variants.filter((item) => item.productId === product.id)} assets={assets.filter((item) => item.productId === product.id)} fulfillmentConfig={fulfillmentConfigs.find((item) => item.productId === product.id)} />)}</div></section>
+    <section><div className={styles.sectionHeading}><div><p className="eyebrow">Catalog records</p><h2>Products</h2></div><span>{products.length}</span></div><div className={styles.list}>{products.map((product) => <ProductEditor key={product.id} product={product} categories={categories} options={options.filter((item) => item.productId === product.id)} optionValues={optionValues.filter((item) => item.productId === product.id)} variants={variants.filter((item) => item.productId === product.id)} assets={assets.filter((item) => item.productId === product.id)} fulfillmentConfig={fulfillmentConfigs.find((item) => item.productId === product.id)} customizationSource={customizationSource} />)}</div></section>
   </div>;
 }

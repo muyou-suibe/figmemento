@@ -139,6 +139,19 @@ test("strict replacement parser accepts approved definitions and rejects duplica
   }
 });
 
+test("H03 protected replacement preserves bounded recursive rules and rejects invalid references", () => {
+  const source = field({ required: false });
+  const dependent = field({
+    identity: { kind: "existing", id: "field-note", code: "note" }, position: 1,
+    rules: { visibleWhen: { kind: "all", predicates: [{ kind: "field_present", fieldId: "field-name" }, { kind: "not", predicate: { kind: "not", predicate: { kind: "field_present", fieldId: "field-name" } } }] } },
+  });
+  const parsed = parseReplaceCustomizationConfigurationIntent(intent({ fields: [source, dependent] }));
+  assert.equal(parsed.ok, true);
+  assert.deepEqual(parsed.value.fields[1].rules, dependent.rules);
+  assert.equal(parseReplaceCustomizationConfigurationIntent(intent({ fields: [source, { ...dependent, rules: { visibleWhen: { kind: "field_present", fieldId: "unknown" } } }] })).ok, false);
+  assert.equal(parseReplaceCustomizationConfigurationIntent(intent({ fields: [source, { ...dependent, rules: { visibleWhen: { kind: "field_present", fieldId: "field-note" } } }] })).ok, false);
+});
+
 test("reused stable identity requires its immutable Product-scoped code", async () => {
   const source = repositories();
   const result = await new AdminCustomizationFieldCommandBoundary(authorized, () => source).execute(
@@ -275,5 +288,6 @@ test("admin boundary has no infrastructure, legacy, private-upload, or catalog-p
     new URL("../app/application/admin-customization-field-boundary.ts", import.meta.url),
     "utf8",
   );
-  assert.doesNotMatch(source, /@supabase\/supabase-js|customization_schema|customer_upload|customization_draft|order_upload|storage|product_assets|product_variants|product_options|price|currency|surcharge|migration|\.sql/i);
+  assert.doesNotMatch(source, /@supabase\/supabase-js|customization_schema|customer_upload|customization_draft|order_upload|storage|product_assets|product_variants|product_options|migration|\.sql/i);
+  assert.match(source, /surchargeRules/);
 });

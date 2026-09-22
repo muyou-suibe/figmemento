@@ -373,7 +373,10 @@ test("Task 4.x configuration boundaries stay offline and do not drift into uploa
   const source = (await Promise.all(paths.map((path) => readFile(new URL(path, import.meta.url), "utf8")))).join("\n");
   assert.doesNotMatch(source, /customization_drafts|customization_draft_values|customer_upload_receipts|customization_value_images|CustomerUploadRepository|object store|preview service|receipt lifecycle/i);
   assert.doesNotMatch(source, /customization_schema|seed\.sql|seed example|ProductAsset|product_assets/i);
-  assert.doesNotMatch(source, /product_variants|product_options|skuCode|variantId|optionId|priceCents|currency|surcharge|weightGrams|leadTime|fulfillment/i);
+  const adminBoundary = await readFile(new URL("../app/application/admin-customization-field-boundary.ts", import.meta.url), "utf8");
+  assert.doesNotMatch(source.replace(adminBoundary, ""), /product_variants|product_options|skuCode|variantId|optionId|priceCents|currency|surcharge|weightGrams|leadTime|fulfillment/i);
+  assert.doesNotMatch(adminBoundary, /product_variants|product_options|skuCode|variantId|optionId|priceCents|weightGrams|leadTime|fulfillment/i);
+  assert.match(adminBoundary, /surchargeRules/);
   assert.doesNotMatch(source, /fetch\s*\(/i);
 
   const originalFetch = globalThis.fetch;

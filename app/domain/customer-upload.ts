@@ -69,8 +69,6 @@ const IMAGE_CONTENT_TYPES: readonly AllowedImageMimeType[] = [
 const GENERIC_FILE_CONTENT_TYPES: readonly AllowedGenericFileMimeType[] = [
   "application/pdf",
   "text/plain",
-  "application/zip",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ];
 
 const TIMESTAMP_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$/;

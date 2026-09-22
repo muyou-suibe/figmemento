@@ -2,7 +2,7 @@
   "format": "figmemento-local-commerce-migration-manifest/v1",
   "schema": "local_commerce",
   "projectId": "figmemento-local-commerce",
-  "schemaVersion": 44,
+  "schemaVersion": 46,
   "migrations": [
     {
       "version": 1,
@@ -352,9 +352,25 @@
       "version": 44,
       "migrationId": "local-commerce-customization-numeric-file-rules",
       "filename": "0044_local-commerce-customization-numeric-file-rules.sql",
-      "checksum": "dee3525ee79c09fd6528de9c69fe438a20136d4867994f4ffa61c2ffd96b38cd",
+      "checksum": "9db56fc11721f78c2a37e2451e73c3d8648bb070b798fcc8e58d8cc112bb6803",
       "rollback": "For a disposable project only, preserve the accepted Phase 1 customization and ledger evidence before explicit project recreation. Never reset retained development data or rewrite immutable purchase facts.",
       "forwardFix": "Extends the existing server-owned customization pricing seam and adds the isolated generic-file receipt/command boundary for bounded numeric and generic-file value shapes. Never edit 0001–0043; later corrections use 0045+ and retain private receipt ownership and configuration revision checks."
+    },
+    {
+      "version": 45,
+      "migrationId": "local-commerce-admin-customization-authority",
+      "filename": "0045_local-commerce-admin-customization-authority.sql",
+      "checksum": "692879bd499010896f94ff187f3c37b0c88070208ac4ce71216301910b8b7e5e",
+      "rollback": "On a disposable project, preserve H03 evidence and recreate only that exact project with explicit approval. Never reset retained development data or mutate historical accepted configuration revisions.",
+      "forwardFix": "After application, never edit 0045. Use the next ordered migration for reviewed H03 security, CAS, history or audit corrections while preserving canonical Catalog and immutable Order facts."
+    },
+    {
+      "version": 46,
+      "migrationId": "local-commerce-admin-customization-surcharge-field-kinds",
+      "filename": "0046_local-commerce-admin-customization-surcharge-field-kinds.sql",
+      "checksum": "8ef23981972a0b90a4469c505da7e2baf3d43db7fac551f84f80cb83067b9bec",
+      "rollback": "Preserve the exact disposable project's accepted ledger and H03 evidence; an applied 0046 is immutable and must not be rolled back in place. Never reset retained development.",
+      "forwardFix": "If applied 0046 needs correction, add 0047 or later without changing fixed field_present amount, currency, or canonical pricing authority."
     }
   ]
 }

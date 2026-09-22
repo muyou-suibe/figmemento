@@ -208,7 +208,8 @@ test("Task 4.5 UI and client graph do not gain forbidden authority or privileged
   const server = await readFile(new URL("../app/server/admin-customization-field-http.server.ts", import.meta.url), "utf8");
   assert.match(ui, /Add image field[\s\S]*Add short text field[\s\S]*Add long text field[\s\S]*Add single-select field/);
   assert.match(ui, /readOnly=\{field\.identity\.kind === "existing"\}/);
-  assert.doesNotMatch(ui, /supabase-server|server-customization-configuration-writer|SupabaseCustomizationConfigurationWriter|product_options|product_variants|skuCode|priceCents|surcharge|dependsOn|supplier|manufacturing instruction|bucket|storage provider|production preview|upload receipt/i);
+  assert.doesNotMatch(ui, /supabase-server|server-customization-configuration-writer|SupabaseCustomizationConfigurationWriter|product_options|product_variants|skuCode|priceCents|dependsOn|supplier|manufacturing instruction|bucket|storage provider|production preview|upload receipt/i);
+  assert.match(ui, /Fixed customization surcharges \(USD cents\)/);
   assert.match(ui, /Add numeric field[\s\S]*Add private file field/);
   assert.match(ui, /Conditional rules/);
   assert.match(route, /handleAdminCustomizationFieldQuery[\s\S]*handleAdminCustomizationFieldMutation/);

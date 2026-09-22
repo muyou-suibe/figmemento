@@ -8,10 +8,11 @@ import {
   validationSuccess,
   type CatalogValidationResult,
 } from "./catalog/validation.ts";
+import { parseExactDecimal } from "./exact-decimal.ts";
 
 export type CustomizationFieldKind = "image" | "short_text" | "long_text" | "single_select" | "multi_select" | "numeric" | "generic_file";
 export type AllowedImageMimeType = "image/jpeg" | "image/png" | "image/webp";
-export type AllowedGenericFileMimeType = "application/pdf" | "text/plain" | "application/zip" | "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+export type AllowedGenericFileMimeType = "application/pdf" | "text/plain";
 
 export interface CustomizationDimensions {
   width: number;
@@ -57,9 +58,9 @@ export interface ImageCustomizationFieldConstraints {
 }
 
 export interface NumericCustomizationFieldConstraints {
-  min: number;
-  max: number;
-  step: number;
+  min: string;
+  max: string;
+  step: string;
   helpText?: string;
 }
 
@@ -73,8 +74,11 @@ export interface GenericFileCustomizationFieldConstraints {
 
 export type CustomizationPredicate =
   | { kind: "field_present"; fieldId: string }
-  | { kind: "choice_selected"; fieldId: string; choiceId: string }
-  | { kind: "numeric_comparison"; fieldId: string; operator: "eq" | "neq" | "gte" | "lte"; value: number };
+  | { kind: "single_select_is"; fieldId: string; choiceId: string }
+  | { kind: "multi_select_contains"; fieldId: string; choiceId: string }
+  | { kind: "all"; predicates: CustomizationPredicate[] }
+  | { kind: "any"; predicates: CustomizationPredicate[] }
+  | { kind: "not"; predicate: CustomizationPredicate };
 
 export interface CustomizationFieldRules {
   requiredWhen?: CustomizationPredicate;
@@ -296,18 +300,20 @@ function parseNumericConstraints(
 ): CatalogValidationResult<NumericCustomizationFieldConstraints> {
   if (!isRecord(value)) return validationFailure(validationIssue(path, "invalid_type", "Numeric constraints must be an object."));
   const issues = unknownFieldIssues(value, ["min", "max", "step", "helpText"], path);
-  const validNumber = (candidate: unknown): candidate is number => typeof candidate === "number" && Number.isFinite(candidate);
-  if (!validNumber(value.min)) issues.push(validationIssue(`${path}.min`, "invalid_value", "Numeric minimum must be finite."));
-  if (!validNumber(value.max)) issues.push(validationIssue(`${path}.max`, "invalid_value", "Numeric maximum must be finite."));
-  if (!validNumber(value.step) || value.step <= 0) issues.push(validationIssue(`${path}.step`, "invalid_value", "Numeric step must be a positive finite number."));
-  if (validNumber(value.min) && validNumber(value.max) && value.min > value.max) issues.push(validationIssue(`${path}.min`, "invalid_value", "Numeric minimum cannot exceed maximum."));
+  const min = parseExactDecimal(value.min);
+  const max = parseExactDecimal(value.max);
+  const step = parseExactDecimal(value.step);
+  if (!min) issues.push(validationIssue(`${path}.min`, "invalid_value", "Numeric minimum must be a plain decimal string."));
+  if (!max) issues.push(validationIssue(`${path}.max`, "invalid_value", "Numeric maximum must be a plain decimal string."));
+  if (!step || step.scaled <= BigInt(0)) issues.push(validationIssue(`${path}.step`, "invalid_value", "Numeric step must be a positive plain decimal string."));
+  if (min && max && min.scaled > max.scaled) issues.push(validationIssue(`${path}.min`, "invalid_value", "Numeric minimum cannot exceed maximum."));
   if (value.helpText !== undefined && !isSafePlainText(value.helpText, 240)) issues.push(validationIssue(`${path}.helpText`, "invalid_value", "Help text must be safe plain text of at most 240 characters."));
-  if (validNumber(value.min) && Math.abs(value.min) > 1_000_000_000) issues.push(validationIssue(`${path}.min`, "invalid_value", "Numeric bounds are outside the approved range."));
-  if (validNumber(value.max) && Math.abs(value.max) > 1_000_000_000) issues.push(validationIssue(`${path}.max`, "invalid_value", "Numeric bounds are outside the approved range."));
+  if (min && (min.scaled < -BigInt("10000000000000") || min.scaled > BigInt("10000000000000"))) issues.push(validationIssue(`${path}.min`, "invalid_value", "Numeric bounds are outside the approved range."));
+  if (max && (max.scaled < -BigInt("10000000000000") || max.scaled > BigInt("10000000000000"))) issues.push(validationIssue(`${path}.max`, "invalid_value", "Numeric bounds are outside the approved range."));
   return issues.length > 0 ? validationFailure(...issues) : validationSuccess({
-    min: value.min as number,
-    max: value.max as number,
-    step: value.step as number,
+    min: min!.canonical,
+    max: max!.canonical,
+    step: step!.canonical,
     ...(typeof value.helpText === "string" ? { helpText: value.helpText.trim() } : {}),
   });
 }
@@ -315,8 +321,6 @@ function parseNumericConstraints(
 const ALLOWED_GENERIC_FILE_MIME_TYPES: readonly AllowedGenericFileMimeType[] = [
   "application/pdf",
   "text/plain",
-  "application/zip",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ];
 
 function parseGenericFileConstraints(
@@ -331,9 +335,9 @@ function parseGenericFileConstraints(
     if (value.allowedMimeTypes.some((mimeType) => !ALLOWED_GENERIC_FILE_MIME_TYPES.includes(mimeType as AllowedGenericFileMimeType))) issues.push(validationIssue(`${path}.allowedMimeTypes`, "invalid_value", "Generic-file MIME type is not allowlisted."));
     if (new Set(value.allowedMimeTypes).size !== value.allowedMimeTypes.length) issues.push(validationIssue(`${path}.allowedMimeTypes`, "duplicate", "Generic-file MIME types must be unique."));
   }
-  if (!isPositiveInteger(value.maxBytes)) issues.push(validationIssue(`${path}.maxBytes`, "invalid_value", "Maximum generic-file bytes must be a positive integer."));
-  if (!isNonNegativeInteger(value.minFileCount) || value.minFileCount > 10) issues.push(validationIssue(`${path}.minFileCount`, "invalid_value", "Minimum generic-file count must be from 0 to 10."));
-  if (!isPositiveInteger(value.maxFileCount) || value.maxFileCount > 10) issues.push(validationIssue(`${path}.maxFileCount`, "invalid_value", "Maximum generic-file count must be from 1 to 10."));
+  if (!isPositiveInteger(value.maxBytes) || value.maxBytes > 20_971_520) issues.push(validationIssue(`${path}.maxBytes`, "invalid_value", "Maximum generic-file bytes must be from 1 to 20 MiB."));
+  if (!isNonNegativeInteger(value.minFileCount) || value.minFileCount > 3) issues.push(validationIssue(`${path}.minFileCount`, "invalid_value", "Minimum generic-file count must be from 0 to 3."));
+  if (!isPositiveInteger(value.maxFileCount) || value.maxFileCount > 3) issues.push(validationIssue(`${path}.maxFileCount`, "invalid_value", "Maximum generic-file count must be from 1 to 3."));
   if (isNonNegativeInteger(value.minFileCount) && isPositiveInteger(value.maxFileCount) && value.minFileCount > value.maxFileCount) issues.push(validationIssue(`${path}.minFileCount`, "invalid_value", "Minimum generic-file count cannot exceed maximum."));
   if (value.helpText !== undefined && !isSafePlainText(value.helpText, 240)) issues.push(validationIssue(`${path}.helpText`, "invalid_value", "Help text must be safe plain text of at most 240 characters."));
   return issues.length > 0 ? validationFailure(...issues) : validationSuccess({
@@ -345,24 +349,33 @@ function parseGenericFileConstraints(
   });
 }
 
-function parsePredicate(value: unknown, path: string): CatalogValidationResult<CustomizationPredicate> {
+function parsePredicate(value: unknown, path: string, depth = 1, budget = { nodes: 0 }): CatalogValidationResult<CustomizationPredicate> {
   if (!isRecord(value)) return validationFailure(validationIssue(path, "invalid_type", "Customization predicate must be an object."));
-  const fieldIdOk = isIdentifier(value.fieldId);
-  const issues = fieldIdOk ? [] : [validationIssue(`${path}.fieldId`, "invalid_format", "Predicate field ID is invalid.")];
+  budget.nodes += 1;
+  if (depth > 4 || budget.nodes > 32) return validationFailure(validationIssue(path, "invalid_value", "Predicate depth or node limit exceeded."));
+  const issues = (value.kind === "field_present" || value.kind === "single_select_is" || value.kind === "multi_select_contains") && !isIdentifier(value.fieldId)
+    ? [validationIssue(`${path}.fieldId`, "invalid_format", "Predicate field ID is invalid.")] : [];
   if (value.kind === "field_present") {
     issues.push(...unknownFieldIssues(value, ["kind", "fieldId"], path));
     return issues.length > 0 ? validationFailure(...issues) : validationSuccess({ kind: "field_present", fieldId: value.fieldId as string });
   }
-  if (value.kind === "choice_selected") {
+  if (value.kind === "single_select_is" || value.kind === "multi_select_contains") {
     issues.push(...unknownFieldIssues(value, ["kind", "fieldId", "choiceId"], path));
     if (!isIdentifier(value.choiceId)) issues.push(validationIssue(`${path}.choiceId`, "invalid_format", "Predicate choice ID is invalid."));
-    return issues.length > 0 ? validationFailure(...issues) : validationSuccess({ kind: "choice_selected", fieldId: value.fieldId as string, choiceId: value.choiceId as string });
+    return issues.length > 0 ? validationFailure(...issues) : validationSuccess({ kind: value.kind, fieldId: value.fieldId as string, choiceId: value.choiceId as string });
   }
-  if (value.kind === "numeric_comparison") {
-    issues.push(...unknownFieldIssues(value, ["kind", "fieldId", "operator", "value"], path));
-    if (!["eq", "neq", "gte", "lte"].includes(value.operator as string)) issues.push(validationIssue(`${path}.operator`, "invalid_value", "Numeric predicate operator is not approved."));
-    if (typeof value.value !== "number" || !Number.isFinite(value.value)) issues.push(validationIssue(`${path}.value`, "invalid_value", "Numeric predicate value must be finite."));
-    return issues.length > 0 ? validationFailure(...issues) : validationSuccess({ kind: "numeric_comparison", fieldId: value.fieldId as string, operator: value.operator as "eq" | "neq" | "gte" | "lte", value: value.value as number });
+  if (value.kind === "all" || value.kind === "any") {
+    issues.push(...unknownFieldIssues(value, ["kind", "predicates"], path));
+    if (!Array.isArray(value.predicates) || value.predicates.length < 1 || value.predicates.length > 32) return validationFailure(...issues, validationIssue(`${path}.predicates`, "invalid_value", "Predicate group must contain 1 to 32 children."));
+    const children = value.predicates.map((child, index) => parsePredicate(child, `${path}.predicates[${index}]`, depth + 1, budget));
+    for (const child of children) if (!child.ok) issues.push(...child.issues);
+    return issues.length > 0 ? validationFailure(...issues) : validationSuccess({ kind: value.kind, predicates: children.map((child) => child.ok ? child.value : null).filter((child): child is CustomizationPredicate => child !== null) });
+  }
+  if (value.kind === "not") {
+    issues.push(...unknownFieldIssues(value, ["kind", "predicate"], path));
+    const child = parsePredicate(value.predicate, `${path}.predicate`, depth + 1, budget);
+    if (!child.ok) issues.push(...child.issues);
+    return issues.length > 0 || !child.ok ? validationFailure(...issues) : validationSuccess({ kind: "not", predicate: child.value });
   }
   issues.push(validationIssue(`${path}.kind`, "invalid_value", "Predicate kind is not approved."));
   return validationFailure(...issues);
