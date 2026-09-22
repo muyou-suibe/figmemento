@@ -28,9 +28,9 @@
 
 ## 3. Payment reliability foundation
 
-- [ ] 3.1 Obtain the refund policy and implement the provider-neutral refund aggregate/operator command for E07 with exact remaining amount, expected version, idempotency, immutable ledger, cross-owner/Admin rejection, and local fixtures only.
-- [ ] 3.2 Implement the durable provider-neutral webhook inbox/reconciliation boundary for E28 with raw-evidence safety, stable dedupe, ordering, replay, crash/restart, unmatched/unknown states, and no real provider call.
-- [ ] 3.3 Run the Phase 3 gate: refund concurrency/replay/fault matrix, duplicate/out-of-order inbox events, two live workers, process restart, safe Admin HTTP, no Payment/Order corruption, baseline quality commands, and migration integrity.
+- [x] 3.1 Obtain the refund policy and implement the provider-neutral refund aggregate/operator command for E07 with exact remaining amount, expected version, idempotency, immutable ledger, cross-owner/Admin rejection, and local fixtures only.
+- [x] 3.2 Implement the durable provider-neutral webhook inbox/reconciliation boundary for E28 with raw-evidence safety, stable dedupe, ordering, replay, crash/restart, unmatched/unknown states, and no real provider call.
+- [x] 3.3 Run the Phase 3 gate: refund concurrency/replay/fault matrix, duplicate/out-of-order inbox events, two live workers, process restart, safe Admin HTTP, no Payment/Order corruption, baseline quality commands, and migration integrity.
 
 ## 4. Promotions and coupons
 
